@@ -1,6 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["oso_kernel", "oso_loader", "xtask"]
+members = [
+	"components/kernel/macro_def",
+	"components/kernel/macro_impl",
+	"components/loader/macro_def",
+	"components/loader/macro_impl",
+]
 
 [profile.dev.package.xtask]
 opt-level = 3
