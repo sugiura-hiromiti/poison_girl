@@ -1,9 +1,0 @@
-[package]
-name = "oso_error"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-
-[lints.clippy]
-tabs_in_doc_comments = "allow"
