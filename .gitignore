@@ -9,3 +9,4 @@ mnt/
 **/tmp/
 .direnv/
 **/*.txt
+**/Cargo.lock

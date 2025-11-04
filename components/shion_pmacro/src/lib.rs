@@ -1,25 +1,3 @@
-//! # OSO Procedural Macros
-//!
-//! This crate provides procedural macros for the OSO operating system project.
-//! It includes macros for font data processing, integer type implementations,
-//! wrapper function generation, UEFI status code generation, and ELF parsing
-//! utilities.
-//!
-//! ## Features
-//!
-//! - **Font Data Processing**: Convert font files to embedded data structures
-//! - **Integer Implementation**: Generate implementations for integer types
-//! - **Wrapper Functions**: Generate wrapper functions for traits
-//! - **UEFI Status Codes**: Generate status code enums from UEFI specifications
-//! - **ELF Testing**: Utilities for testing ELF header and program header
-//!   parsing
-//!
-//! ## Usage
-//!
-//! This crate is designed to be used as a procedural macro dependency in OSO
-//! kernel and related projects. The macros are compile-time code generators
-//! that help reduce boilerplate and ensure consistency across the codebase.
-
 #![feature(proc_macro_diagnostic)]
 
 extern crate proc_macro;

@@ -1,12 +1,11 @@
 [package]
-name = "oso_kernel"
+name = "shion_kernel"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-oso_error = { path = "../oso_error" }
-oso_no_std_shared = { path = "../oso_no_std_shared" }
-oso_proc_macro = { path = "../oso_proc_macro" }
+kernel_pmacro_def = { path = "../macro_def" }
+shion_error = { path = "../../deps/error" }
 
 [features]
 rgb = []

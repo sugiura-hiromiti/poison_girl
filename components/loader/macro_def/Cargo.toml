@@ -1,6 +1,7 @@
 [package]
-name = "macro_def"
+name = "loader_macro_def"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+shion_proc_macro_helper = { path = "../../deps/pmacro_helper" }

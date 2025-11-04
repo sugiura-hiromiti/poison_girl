@@ -1,20 +1,20 @@
 [package]
-name = "oso_loader"
+name = "shion_loader"
 version = "0.1.0"
 authors = ["OSO Development Team"]
 categories = ["embedded", "no-std", "os"]
-documentation = "https://docs.rs/oso_loader"
+documentation = "https://docs.rs/shion_loader"
 edition = "2024"
 keywords = ["bootloader", "uefi", "elf", "kernel", "operating-system"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/oso-os/oso"
-description = "UEFI-based bootloader for the OSO operating system with ELF kernel loading support"
+repository = "https://github.com/sugiura-hiromiti/shion"
+description = "UEFI-based bootloader for the shion operating system with ELF kernel loading support"
 
 [dependencies]
-oso_error = { path = "../oso_error" }
-oso_no_std_shared = { path = "../oso_no_std_shared" }
-oso_proc_macro = { path = "../oso_proc_macro" }
+loader_macro_def = { path = "../macro_def" }
+shion_error = { path = "../../deps/error" }
+shion_no_std = { path = "../../deps/no_std" }
 
 [features]
 default = ["bltonly"]

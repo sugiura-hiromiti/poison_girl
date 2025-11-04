@@ -44,11 +44,11 @@
             ];
 
           shellHook = ''
-            echo -e "\033[1;32m\n\noso development environment loaded"
+            echo -e "\n\033[1;32mshion development environment loaded"
             echo -e "Available tools:"
             echo -e "  - qemu-system-aarch64: $(which qemu-system-aarch64 2>/dev/null || echo 'not found')"
             echo -e "  - binutils: $(which readelf 2>/dev/null || echo 'not found')"
-            echo -e "Platform: ${if pkgs.stdenv.isDarwin then "macOS" else "Linux"}\n\n\033[0m"
+            echo -e "Platform: ${if pkgs.stdenv.isDarwin then "macOS" else "Linux"}\033[0m\n"
           '';
         };
       }

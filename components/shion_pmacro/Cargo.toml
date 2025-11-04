@@ -1,15 +1,15 @@
 [package]
 name = "oso_proc_macro"
 version = "0.1.0"
-edition = "2024"
-description = "Procedural macros for the OSO operating system project"
-authors = ["OSO Project Contributors"]
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/oso-project/oso"
-documentation = "https://docs.rs/oso_proc_macro"
-keywords = ["os", "kernel", "procedural-macros", "uefi", "elf"]
+authors = ["sugiura hiromiti"]
 categories = ["development-tools::procedural-macro-helpers", "os"]
+documentation = "https://docs.rs/oso_proc_macro"
+edition = "2024"
+keywords = ["os", "kernel", "procedural-macros", "uefi", "elf"]
+license = "MIT OR Apache-2.0"
 readme = "README.md"
+repository = "https://github.com/oso-project/oso"
+description = "Procedural macros for the OSO operating system project"
 
 [lib]
 proc-macro = true

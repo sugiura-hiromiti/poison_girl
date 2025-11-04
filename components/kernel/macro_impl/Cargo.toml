@@ -1,6 +1,7 @@
 [package]
-name = "macro_impl"
+name = "kernel_pmacro_impl"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+shion_pmacro_helper = { path = "../../deps/pmacro_helper" }

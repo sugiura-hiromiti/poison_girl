@@ -1,10 +1,10 @@
 [package]
-name = "oso_no_std_shared"
+name = "shion_no_std"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-oso_error = { path = "../oso_error" }
+shion_error = { path = "../error" }
 
 [lints.clippy]
 tabs_in_doc_comments = "allow"
