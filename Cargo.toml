@@ -1,8 +1,47 @@
 [workspace]
+members = ["crates/kernel", "crates/loader"]
 resolver = "2"
-members = ["components/kernel/core", "components/loader/core"]
 
 [workspace.dependencies]
+anyhow = "*"
+aquamarine = "*"
+clap = { version = "*", features = ["derive"] }
+clap_derive = { version = "*" }
+colored = "*"
+html5ever = "0.36"
+itertools = "*"
+markup5ever_rcdom = "*"
+ovmf-prebuilt = "*"
+poison_girl_dev_fs = { path = "./crates/dev/fs/" }
+poison_girl_dev_orchestrate = { path = "./crates/dev/orchestrate/" }
+poison_girl_error = { path = "./crates/error" }
+poison_girl_kernel = { path = "./crates/kernel" }
+poison_girl_no_std = { path = "./crates/no_std" }
+poison_girl_proc_macro_def = { path = "./crates/macro/def" }
+poison_girl_proc_macro_helper = { path = "./crates/macro/helper" }
+poison_girl_proc_macro_impl = { path = "./crates/macro/impl" }
+proc-macro2 = "*"
+quickcheck = "*"
+quote = "*"
+string_cache = "*"
+strum = "*"
+strum_macros = "*"
+syn = { version = "*", features = ["full", "extra-traits"] }
+tempfile = "*"
+toml = { version = "*", features = ["parse"] }
+ureq = "*"
 
-[profile.dev.package.xtask]
-opt-level = 3
+[workspace.lints.clippy]
+tabs_in_doc_comments = "allow"
+mut_from_ref = "allow"
+
+# [profile.dev.package.xtask]
+# opt-level = 3
+
+[package]
+name = "poison_girl"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+poison_girl_dev_orchestrate = { workspace = true }

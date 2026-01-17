@@ -1,0 +1,21 @@
+[package]
+name = "poison_girl_kernel"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+poison_girl_error = { workspace = true }
+poison_girl_no_std = { workspace = true }
+poison_girl_proc_macro_def = { workspace = true }
+
+[features]
+rgb = []
+bgr = []
+bitmask = []
+bltonly = []
+default = ["bltonly"]
+
+[lints.clippy]
+tabs_in_doc_comments = "allow"
+assign_op_pattern = "allow"
+mut_from_ref = "allow"

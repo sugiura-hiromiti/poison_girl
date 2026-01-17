@@ -1,56 +1,80 @@
+# flake.nix
 {
+  description = "mogok dev env";
   inputs = {
     nixpkgs = {
       url = "github:nixos/nixpkgs/nixpkgs-unstable";
     };
-    flake-utils = {
-      url = "github:numtide/flake-utils";
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+    };
+    systems = {
+      url = "github:nix-systems/default";
+    };
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs = {
+        nixpkgs = {
+          follows = "nixpkgs";
+        };
+      };
     };
   };
+
   outputs =
-    {
+    inputs@{
       nixpkgs,
-      flake-utils,
-      ...
+      flake-parts,
+      systems,
+      fenix,
+      self,
     }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in
-      {
-        devShells.default = pkgs.mkShell {
-          buildInputs =
-            with pkgs;
-            [
-              # Core build tools
-              binutils
-              dosfstools
-              qemu
-
-              (writeShellScriptBin "x" ''
-                cargo xt $1 $2 $3 $4 $5 $6 $7 $8 $9 $10
-              '')
-            ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-              # macOS-specific tools (hdiutil is built-in, no need to add)
-              container
-            ]
-            ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
-              # Linux-specific tools
-              util-linux # for losetup on Linux (no-op on macOS)
-              mount
-              umount
-            ];
-
-          shellHook = ''
-            echo -e "\n\033[1;32mshion development environment loaded"
-            echo -e "Available tools:"
-            echo -e "  - qemu-system-aarch64: $(which qemu-system-aarch64 2>/dev/null || echo 'not found')"
-            echo -e "  - binutils: $(which readelf 2>/dev/null || echo 'not found')"
-            echo -e "Platform: ${if pkgs.stdenv.isDarwin then "macOS" else "Linux"}\033[0m\n"
-          '';
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = import systems;
+      perSystem =
+        {
+          self,
+          pkgs,
+          lib,
+          system,
+          config,
+          specialArgs,
+          options,
+          ...
+        }:
+        let
+          fx = fenix.packages.${system};
+          rust = fx.latest;
+          pkgs = import nixpkgs {
+            inherit system;
+            config = {
+              allowUnfree = true;
+            };
+          };
+        in
+        {
+          devShells = {
+            default = pkgs.mkShell {
+              buildInputs =
+                with pkgs;
+                [
+                  rust.toolchain
+                  taplo
+                  # Core build tools
+                  binutils
+                  dosfstools
+                  qemu
+                ]
+                ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+                ]
+                ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+                  util-linux # for losetup on Linux (no-op on macOS)
+                  mount
+                  umount
+                ];
+              shellHook = "";
+            };
+          };
         };
-      }
-    );
+    };
 }

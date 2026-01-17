@@ -1,9 +1,9 @@
 #![feature(string_from_utf8_lossy_owned)]
 #![feature(exit_status_error)]
 
-use oso_dev_util::cargo::Assets;
-use oso_dev_util::cargo::Opts;
-use oso_dev_util::decl_manage::crate_::OsoCrate;
+use poison_girl_dev_orchestrate::cargo::Assets;
+use poison_girl_dev_orchestrate::cargo::Opts;
+use poison_girl_dev_orchestrate::decl_manage::crate_::OsoCrate;
 
 pub mod builder;
 pub mod qemu;
