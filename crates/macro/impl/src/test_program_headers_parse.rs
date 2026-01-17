@@ -9,9 +9,7 @@
 //! and validation.
 
 use crate::RsltP;
-use anyhow::Result as Rslt;
-use anyhow::anyhow;
-use poison_girl_dev_fs::fs::check_oso_kernel;
+use poison_girl_dev_fs::fs::check_poison_girl_kernel;
 use proc_macro2::Span;
 use std::process::Command;
 
@@ -215,7 +213,7 @@ fn parse_program_header_type(
 }
 
 pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,> {
-	check_oso_kernel()?;
+	check_poison_girl_kernel()?;
 
 	let program_headers_info = readelf_l_out()?;
 

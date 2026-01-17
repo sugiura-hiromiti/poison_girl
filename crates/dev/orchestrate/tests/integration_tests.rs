@@ -1,7 +1,9 @@
-use oso_dev_util::cargo::*;
-use oso_dev_util::decl_manage::crate_::CrateInfo;
-use oso_dev_util::fs::*;
-use std::path::PathBuf;
+use {
+	poison_girl_dev_orchestrate::{
+		cargo::*, decl_manage::crate_::CrateInfo, fs::*,
+	},
+	std::path::PathBuf,
+};
 
 #[test]
 fn test_basic_functionality() {
@@ -70,6 +72,7 @@ fn test_assets_struct() {
 			code: PathBuf::from("/ovmf/code",),
 			vars: PathBuf::from("/ovmf/vars",),
 		},
+		host:     Runtime::Linux,
 	};
 
 	assert_eq!(assets.firmware.code, PathBuf::from("/ovmf/code"));
@@ -207,8 +210,7 @@ fn test_memory_efficiency() {
 #[test]
 fn test_thread_safety() {
 	// Test that enums can be used across threads
-	use std::sync::Arc;
-	use std::thread;
+	use std::{sync::Arc, thread};
 
 	let build_mode = Arc::new(BuildMode::Debug,);
 	let arch = Arc::new(Arch::Aarch64,);
@@ -343,7 +345,7 @@ fn test_path_handling() {
 	let firmware =
 		Firmware { code: code_path.clone(), vars: vars_path.clone(), };
 
-	let assets = Assets { firmware, };
+	let assets = Assets { firmware, host: Runtime::Linux, };
 
 	// Test that paths are preserved
 	assert_eq!(assets.firmware.code, code_path);

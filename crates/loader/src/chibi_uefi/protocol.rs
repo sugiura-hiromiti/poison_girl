@@ -1,23 +1,26 @@
-use super::Handle;
-use super::image_handle;
-use super::table::boot_services;
-use crate::guid;
-use crate::raw::protocol::device_path::DevicePathProtocol;
-use crate::raw::protocol::file::SimpleFileSystemProtocol;
-use crate::raw::protocol::graphic::GraphicsOutputProtocol;
-use crate::raw::protocol::text::TextOutputProtocol;
-use crate::raw::service::BootServices;
-use crate::raw::types::Guid;
-use crate::raw::types::UnsafeHandle;
-use crate::raw::types::file::FileInfo;
-use crate::raw::types::file::FileSystemInfo;
-use crate::raw::types::file::FileSystemVolumeLabel;
-use core::ffi::c_void;
-use core::ptr;
-use core::ptr::NonNull;
-use oso_error::Rslt;
-use oso_error::loader::UefiError;
-use oso_error::oso_err;
+use {
+	super::{Handle, image_handle, table::boot_services},
+	crate::{
+		guid,
+		raw::{
+			protocol::{
+				device_path::DevicePathProtocol,
+				file::SimpleFileSystemProtocol,
+				graphic::GraphicsOutputProtocol, text::TextOutputProtocol,
+			},
+			service::BootServices,
+			types::{
+				Guid, UnsafeHandle,
+				file::{FileInfo, FileSystemInfo, FileSystemVolumeLabel},
+			},
+		},
+	},
+	core::{
+		ffi::c_void,
+		ptr::{self, NonNull},
+	},
+	poison_girl_error::{Rslt, loader::UefiError, poison_girl_err},
+};
 
 type RsltU<T,> = Rslt<T, UefiError,>;
 
@@ -55,7 +58,6 @@ impl Protocol for GraphicsOutputProtocol {
 
 impl BootServices {
 	/// # Safety
-	/// TODO: fill doc comment
 	pub unsafe fn locate_handle_buffer(
 		&self,
 		ty: HandleSearchType,
@@ -95,7 +97,6 @@ impl BootServices {
 	}
 
 	/// # Safety
-	/// TODO: fill doc comment
 	pub unsafe fn handles_for_protocol<P: Protocol,>(
 		&self,
 	) -> RsltU<&mut [UnsafeHandle],> {
@@ -104,14 +105,13 @@ impl BootServices {
 	}
 
 	/// # Safety
-	/// TODO: fill doc comment
 	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> RsltU<Handle,> {
 		let handles = unsafe { self.handles_for_protocol::<P>() }?;
-		let first_handle = *handles
-			.first()
-			.ok_or(oso_err!(UefiError::Custom("length of handles is 0")),)?;
+		let first_handle = *handles.first().ok_or(poison_girl_err!(
+			UefiError::Custom("length of handles is 0")
+		),)?;
 		unsafe { Handle::from_ptr(first_handle,) }
-			.ok_or(oso_err!(UefiError::Custom("handle is null")),)
+			.ok_or(poison_girl_err!(UefiError::Custom("handle is null")),)
 	}
 
 	/// # Parms
@@ -135,7 +135,6 @@ impl BootServices {
 	/// 詳細は引数の型定義参照
 	///
 	/// # Safety
-	/// TODO: fill safety section
 	pub unsafe fn open_protocol<P: Protocol,>(
 		&self,
 		necessity: OpenProtoNecessity,

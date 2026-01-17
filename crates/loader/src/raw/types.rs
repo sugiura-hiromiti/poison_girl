@@ -1,9 +1,9 @@
 //! uefi implementation
 
-use crate::Rslt;
-use crate::c_style_enum;
-use core::ffi::c_void;
-use oso_error::loader::UefiError;
+use {
+	crate::{Rslt, c_style_enum},
+	core::ffi::c_void,
+};
 
 pub mod capsule;
 pub mod event;
@@ -95,7 +95,7 @@ impl Guid {
 	}
 }
 
-oso_proc_macro::status!(2.11);
+poison_girl_proc_macro_def::status!(2.11);
 
 // #[repr(usize)]
 // #[derive(Eq, PartialEq, Clone, Debug,)]

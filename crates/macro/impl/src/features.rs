@@ -1,5 +1,4 @@
 use crate::RsltP;
-use anyhow::Result as Rslt;
 use poison_girl_dev_fs::fs::all_crates;
 use poison_girl_dev_fs::fs::read_toml;
 use poison_girl_dev_fs::util::CaseConvert;

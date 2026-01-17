@@ -1,7 +1,10 @@
-use crate::base::graphic::FRAME_BUFFER;
-use crate::base::graphic::position::Coord;
-use crate::base::graphic::position::Coordinal;
-use oso_error::Rslt;
+use {
+	crate::base::graphic::{
+		FRAME_BUFFER,
+		position::{Coord, Coordinal},
+	},
+	poison_girl_error::Rslt,
+};
 
 // TODO: modularize project structure to remove pub keyword
 const MOUSE_CURSOR_WIDTH: usize = 15;

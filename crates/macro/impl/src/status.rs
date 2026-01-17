@@ -12,20 +12,18 @@
 //! This is particularly useful for generating constants and enums for UEFI
 //! status codes in operating system development.
 
-use crate::RsltP;
-use crate::oso_proc_macro_helper::Diag;
-use anyhow::Result as Rslt;
-use anyhow::anyhow;
-use anyhow::bail;
-use html5ever::LocalNameStaticSet;
-use html5ever::local_name;
-use html5ever::tendril;
-use html5ever::tendril::TendrilSink;
-use markup5ever_rcdom::Node;
-use markup5ever_rcdom::NodeData;
-use markup5ever_rcdom::RcDom;
-use proc_macro2::Span;
-use std::rc::Rc;
+use {
+	crate::RsltP,
+	anyhow::{Result as Rslt, anyhow, bail},
+	html5ever::{
+		LocalNameStaticSet, local_name,
+		tendril::{self, TendrilSink},
+	},
+	markup5ever_rcdom::{Node, NodeData, RcDom},
+	poison_girl_proc_macro_helper::Diag,
+	proc_macro2::Span,
+	std::rc::Rc,
+};
 
 /// HTML element ID of the main status codes section in the UEFI specification
 const MAIN_SECTION_ID: &str = "status-codes";
@@ -307,7 +305,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 			///
 			/// Returns Ok(Self) for success and warning status codes,
 			/// and Err(UefiError) for error status codes.
-			pub fn ok_or(self) -> Rslt<Self, oso_error::loader::UefiError> {
+			pub fn ok_or(self) -> Rslt<Self, poison_girl_error::loader::UefiError> {
 				use alloc::string::ToString;
 				match self {
 					// Success status codes return Ok
@@ -317,7 +315,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 					// Error status codes return Err
 					#(#error_match)*
 					// Unknown status codes return custom error
-					Self(code) => Err(oso_error::oso_err!(oso_error::loader::UefiError::CustomStatus)),
+					Self(code) => Err(poison_girl_error::poison_girl_err!(poison_girl_error::loader::UefiError::CustomStatus)),
 				}
 			}
 
@@ -325,7 +323,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 			///
 			/// Similar to ok_or(), but allows applying a transformation function
 			/// to the success value before returning.
-			pub fn ok_or_with<T>(self, with: impl FnOnce(Self) -> T) -> Rslt<T, oso_error::loader::UefiError> {
+			pub fn ok_or_with<T>(self, with: impl FnOnce(Self) -> T) -> Rslt<T, poison_girl_error::loader::UefiError> {
 				let status = self.ok_or()?;
 				Ok(with(status))
 			}
@@ -370,7 +368,7 @@ fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
 	quote::quote! {
 	Self::#mnemonic => {
 		let mut mnemonic = concat!(#mnemonic_str, ": ", #msg);
-		Err(oso_error::oso_err!(UefiError::ErrorStatus(mnemonic)))
+		Err(poison_girl_error::poison_girl_err!(poison_girl_error::loader::UefiError::ErrorStatus(mnemonic)))
 	},
 	}
 }
@@ -710,9 +708,10 @@ fn inspect_node(node: Rc<Node,>,) -> Diag {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use html5ever::QualName;
-	use html5ever::ns;
+	use {
+		super::*,
+		html5ever::{QualName, ns},
+	};
 
 	const BASIC_HTML: &str = r#"
 <div class="wow" id="identical">

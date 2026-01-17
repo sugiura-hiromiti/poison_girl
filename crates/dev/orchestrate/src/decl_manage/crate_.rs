@@ -1,25 +1,25 @@
-use crate::Rslt;
-use crate::cargo::host_tuple;
-use crate::decl_manage::package::Package;
-use crate::decl_manage::package::PackageAction;
-use crate::decl_manage::package::PackageInfo;
-use crate::decl_manage::package::PackageSurvey;
-use crate::decl_manage::workspace::Workspace;
-use crate::decl_manage::workspace::WorkspaceAction;
-use crate::decl_manage::workspace::WorkspaceInfo;
-use crate::decl_manage::workspace::WorkspaceSurvey;
-use anyhow::anyhow;
-use oso_dev_util_helper::cli::Run;
-use oso_dev_util_helper::fs::CARGO_CONFIG;
-use oso_dev_util_helper::fs::CARGO_MANIFEST;
-use oso_dev_util_helper::fs::all_crates_in;
-use oso_dev_util_helper::fs::read_toml;
-use oso_dev_util_helper::fs::search_upstream_at;
-use oso_proc_macro::FromPathBuf;
-use std::ffi::OsStr;
-use std::fmt::Debug;
-use std::path::PathBuf;
-use std::process::Command;
+use {
+	crate::{
+		Rslt,
+		cargo::host_tuple,
+		decl_manage::{
+			package::{Package, PackageAction, PackageInfo, PackageSurvey},
+			workspace::{
+				Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
+			},
+		},
+	},
+	anyhow::anyhow,
+	poison_girl_dev_fs::{
+		cli::Run,
+		fs::{
+			CARGO_CONFIG, CARGO_MANIFEST, all_crates_in, read_toml,
+			search_upstream_at,
+		},
+	},
+	poison_girl_proc_macro_def::FromPathBuf,
+	std::{ffi::OsStr, fmt::Debug, path::PathBuf, process::Command},
+};
 
 pub trait Crate: Workspace + Package {
 	fn as_pkg(&self,) -> &impl Package {
@@ -300,8 +300,7 @@ pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> + Debug {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use std::path::PathBuf;
+	use {super::*, std::path::PathBuf};
 
 	// Note: The FromPathBuf macro validates paths and panics on non-existent
 	// paths This is a suspected program bug - tests should be able to use mock
@@ -482,10 +481,7 @@ mod tests {
 		let _target_result = crate_obj.default_target();
 
 		// Test build_artifact with proper CompileOpt
-		use crate::cargo::Arch;
-		use crate::cargo::BuildMode;
-		use crate::cargo::Feature;
-		use crate::cargo::Opts;
+		use crate::cargo::{Arch, BuildMode, Feature, Opts};
 		let _opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: Vec::<Feature,>::new(),

@@ -1,4 +1,4 @@
-use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+use poison_girl_no_std::bridge::graphic::PixelFormatConf;
 
 use crate::c_style_enum;
 

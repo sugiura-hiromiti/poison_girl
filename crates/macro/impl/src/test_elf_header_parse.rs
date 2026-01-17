@@ -8,13 +8,14 @@
 //! The module is primarily used for build-time analysis and validation of the
 //! kernel binary to ensure it meets the expected format and requirements.
 
-use crate::RsltP;
-use crate::oso_proc_macro_helper::Diag;
-use anyhow::Result as Rslt;
-use anyhow::bail;
-use poison_girl_dev_fs::fs::check_oso_kernel;
-use proc_macro2::Span;
-use std::process::Command;
+use {
+	crate::RsltP,
+	anyhow::{Result as Rslt, bail},
+	poison_girl_dev_fs::fs::check_poison_girl_kernel,
+	poison_girl_proc_macro_helper::Diag,
+	proc_macro2::Span,
+	std::process::Command,
+};
 
 /// Structured representation of ELF header information
 ///
@@ -801,7 +802,7 @@ fn parse_section_header_index_of_section_name_string_table(
 /// ```
 pub fn readelf_h() -> Rslt<ReadElfH,> {
 	// Ensure the kernel file exists before attempting to parse it
-	check_oso_kernel()?;
+	check_poison_girl_kernel()?;
 
 	// Execute readelf command to get header information
 	let header_info = Command::new("readelf",)
@@ -895,21 +896,6 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 mod tests {
 
 	use super::*;
-	use std::env::current_dir;
-	use std::env::set_current_dir;
-	use std::path::PathBuf;
-
-	/// Helper function to navigate to the project root for tests
-	fn go_root() -> Rslt<PathBuf,> {
-		let mut cwd = current_dir()?;
-		while let Some(oso_root,) = cwd.parent()
-			&& oso_root.file_name().unwrap() != "oso"
-		{
-			cwd = oso_root.to_owned();
-		}
-		set_current_dir(&cwd,)?;
-		Ok(cwd,)
-	}
 
 	#[test]
 	fn test_readelf_h_default() {

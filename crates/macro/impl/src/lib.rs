@@ -1,24 +1,3 @@
-//! # OSO Procedural Macro Logic
-//!
-//! This crate provides procedural macro logic and utilities for the OSO
-//! operating system project. It includes functionality for:
-//!
-//! - Font data processing and bitmap conversion
-//! - ELF file parsing and analysis
-//! - UEFI status code generation from specifications
-//! - Code generation utilities for wrapper functions and trait implementations
-//!
-//!
-//! ## Features
-//!
-//! The crate uses several unstable Rust features:
-//! - `proc_macro_diagnostic`: For emitting diagnostic messages during macro
-//!   expansion
-//! - `str_as_str`: String manipulation utilities
-//! - `iter_array_chunks`: Iterator chunking operations
-//! - `associated_type_defaults`: Default associated types in traits
-//! - `iterator_try_collect`: Fallible iterator collection
-
 #![feature(log_syntax)]
 #![feature(str_as_str)]
 #![feature(iter_array_chunks)]
@@ -26,46 +5,37 @@
 #![feature(iterator_try_collect)]
 #![feature(string_remove_matches)]
 
+pub mod features;
 /// Font data processing and bitmap conversion utilities
 pub mod font;
-
+pub mod from_path_buf;
+/// Trait implementation generation for integer types
+pub mod impl_int;
+/// UEFI status code parsing from HTML specifications
+pub mod status;
+/// ELF header parsing and analysis utilities
+pub mod test_elf_header_parse;
+/// ELF program header parsing utilities
+pub mod test_program_headers_parse;
 /// Function wrapper generation utilities
 pub mod wrapper;
 
-/// Trait implementation generation for integer types
-pub mod impl_int;
-
-/// UEFI status code parsing from HTML specifications
-pub mod status;
-
-/// ELF header parsing and analysis utilities
-pub mod test_elf_header_parse;
-
-/// ELF program header parsing utilities
-pub mod test_program_headers_parse;
-
-pub mod from_path_buf;
-
-pub mod features;
-pub mod oso_proc_macro_helper;
-
-use anyhow::Result as Rslt;
-
-use crate::oso_proc_macro_helper::Diag;
+use poison_girl_proc_macro_helper::Diag;
 
 type RsltP = Rslt<(proc_macro2::TokenStream, Vec<Diag,>,),>;
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use anyhow::anyhow;
-	use poison_girl_dev_fs::fs::check_oso_kernel;
-	use std::env::current_dir;
-	use std::env::set_current_dir;
-	use std::fs::File;
-	use std::fs::create_dir_all;
-	use std::path::PathBuf;
-	use tempfile::TempDir;
+	use {
+		super::*,
+		poison_girl_dev_fs::fs::check_poison_girl_kernel,
+		std::{
+			env::{current_dir, set_current_dir},
+			fs::{File, create_dir_all},
+			path::PathBuf,
+		},
+		tempfile::TempDir,
+	};
 
 	/// Helper function to create a temporary directory structure for testing
 	fn create_test_environment() -> (TempDir, PathBuf,) {
@@ -92,7 +62,7 @@ mod tests {
 		set_current_dir(temp_dir.path(),).expect("Failed to change directory",);
 
 		// Test that check_oso_kernel succeeds when file exists
-		let result = check_oso_kernel();
+		let result = check_poison_girl_kernel();
 
 		// Restore original directory - handle case where original directory
 		// might not exist
@@ -121,7 +91,7 @@ mod tests {
 		set_current_dir(temp_dir.path(),).expect("Failed to change directory",);
 
 		// Test that check_oso_kernel fails when file doesn't exist
-		let result = check_oso_kernel();
+		let result = check_poison_girl_kernel();
 
 		// Restore original directory - handle case where original directory
 		// might not exist
@@ -155,7 +125,7 @@ mod tests {
 		set_current_dir(temp_dir.path(),).expect("Failed to change directory",);
 
 		// Test that check_oso_kernel fails when target directory doesn't exist
-		let result = check_oso_kernel();
+		let result = check_poison_girl_kernel();
 
 		// Restore original directory - handle case where original directory
 		// might not exist
@@ -176,8 +146,8 @@ mod tests {
 	fn test_check_oso_kernel_path_construction() {
 		// We can't easily test the internal path construction without modifying
 		// the function, but we can test that it behaves consistently
-		let result1 = check_oso_kernel();
-		let result2 = check_oso_kernel();
+		let result1 = check_poison_girl_kernel();
+		let result2 = check_poison_girl_kernel();
 
 		// Both calls should have the same result (both succeed or both fail)
 		// However, if one succeeds and one fails, it might be due to
@@ -249,7 +219,7 @@ mod tests {
 	fn test_error_propagation() {
 		// Test that errors propagate correctly through the Result type
 		fn failing_function() -> Rslt<(),> {
-			check_oso_kernel()?; // This will likely fail in test environment
+			check_poison_girl_kernel()?; // This will likely fail in test environment
 			Ok((),)
 		}
 
@@ -389,7 +359,6 @@ mod tests {
 	#[test]
 	fn test_rslt_p_with_diagnostics() {
 		// Test RsltP with diagnostics
-		use crate::oso_proc_macro_helper::Diag;
 
 		fn test_function_with_diags() -> RsltP {
 			let tokens = quote::quote! { fn test() {} };
@@ -504,7 +473,6 @@ mod tests {
 	#[test]
 	fn test_multiple_module_interaction() {
 		// Test that modules can work together without conflicts
-		use crate::oso_proc_macro_helper::Diag;
 
 		// Create some diagnostics
 		let diags = vec![
@@ -570,11 +538,9 @@ mod tests {
 	#[test]
 	fn test_module_integration_comprehensive() {
 		// Test that all modules can be used together without conflicts
-		use crate::oso_proc_macro_helper;
 
 		// Test that we can create types from each module
-		let _diag =
-			oso_proc_macro_helper::Diag::Note("Integration test".to_string(),);
+		let _diag = Diag::Note("Integration test".to_string(),);
 
 		// Test that module functions exist (compilation test)
 		// We can't easily call them without proper inputs, but we can verify
@@ -585,7 +551,6 @@ mod tests {
 	#[test]
 	fn test_rslt_p_complex_scenarios() {
 		// Test RsltP with complex token streams and multiple diagnostics
-		use crate::oso_proc_macro_helper::Diag;
 
 		fn complex_function() -> RsltP {
 			let complex_tokens = quote::quote! {
@@ -663,13 +628,9 @@ mod tests {
 	#[test]
 	fn test_proc_macro2_advanced_features() {
 		// Test advanced proc_macro2 features
-		use proc_macro2::Delimiter;
-		use proc_macro2::Group;
-		use proc_macro2::Ident;
-		use proc_macro2::Literal;
-		use proc_macro2::Punct;
-		use proc_macro2::Spacing;
-		use proc_macro2::Span;
+		use proc_macro2::{
+			Delimiter, Group, Ident, Literal, Punct, Spacing, Span,
+		};
 
 		// Test creating various token types
 		let ident = Ident::new("test_ident", Span::call_site(),);
@@ -833,9 +794,10 @@ mod tests {
 	#[test]
 	fn test_concurrent_operations() {
 		// Test that our types work correctly in concurrent scenarios
-		use std::sync::Arc;
-		use std::sync::Mutex;
-		use std::thread;
+		use std::{
+			sync::{Arc, Mutex},
+			thread,
+		};
 
 		let counter = Arc::new(Mutex::new(0,),);
 		let mut handles = vec![];
@@ -875,7 +837,7 @@ mod tests {
 		assert!(size_rslt_p > 0);
 
 		// Test that our diagnostic enum is reasonably sized
-		let size_diag = mem::size_of::<crate::oso_proc_macro_helper::Diag,>();
+		let size_diag = mem::size_of::<Diag,>();
 		assert!(size_diag > 0);
 		assert!(size_diag < 1000); // Should be reasonable size
 	}

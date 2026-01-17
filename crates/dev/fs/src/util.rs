@@ -240,7 +240,6 @@ impl StringKind for PathBuf {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use quickcheck::quickcheck;
 
 	// Test String case detection
 	#[test]

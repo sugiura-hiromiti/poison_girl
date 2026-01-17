@@ -1,0 +1,11 @@
+[package]
+name = "poison_girl_dev_error"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+this_is_b = { workspace = true, features = ["std"] }
+toml = { workspace = true }
+
+[lints]
+workspace = true

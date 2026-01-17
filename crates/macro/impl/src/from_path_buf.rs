@@ -1,7 +1,4 @@
 use crate::RsltP;
-use anyhow::Result as Rslt;
-use anyhow::anyhow;
-use anyhow::bail;
 use itertools::Itertools;
 use poison_girl_dev_fs::fs::all_crates;
 use poison_girl_dev_fs::util::CaseConvert;

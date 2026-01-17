@@ -9,16 +9,16 @@
 
 extern crate alloc;
 
-use oso_error::Rslt;
-use oso_loader::chibi_uefi::service::exit_boot_services;
-use oso_loader::exec_kernel;
-use oso_loader::get_device_tree;
-use oso_loader::init;
-use oso_loader::load::kernel;
-use oso_loader::raw::table::SystemTable;
-use oso_loader::raw::types::Status;
-use oso_loader::raw::types::UnsafeHandle;
-use oso_no_std_shared::bridge::device_tree::DeviceTreeAddress;
+use poison_girl_error::Rslt;
+use poison_girl_loader::chibi_uefi::service::exit_boot_services;
+use poison_girl_loader::exec_kernel;
+use poison_girl_loader::get_device_tree;
+use poison_girl_loader::init;
+use poison_girl_loader::load::kernel;
+use poison_girl_loader::raw::table::SystemTable;
+use poison_girl_loader::raw::types::Status;
+use poison_girl_loader::raw::types::UnsafeHandle;
+use poison_girl_no_std::bridge::device_tree::DeviceTreeAddress;
 
 /// UEFI application entry point
 ///

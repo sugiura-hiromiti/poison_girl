@@ -43,22 +43,19 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
-use chibi_uefi::protocol::HandleSearchType;
-use chibi_uefi::table::boot_services;
-use core::ptr::NonNull;
-use oso_error::Rslt;
-use oso_error::loader::UefiError;
-use oso_error::oso_err;
-use oso_no_std_shared::bridge::device_tree::DeviceTreeAddress;
-use oso_no_std_shared::wfe;
-use oso_no_std_shared::wfi;
-use raw::table::SystemTable;
-use raw::types::Status;
-use raw::types::UnsafeHandle;
+use {
+	alloc::vec::Vec,
+	chibi_uefi::{protocol::HandleSearchType, table::boot_services},
+	core::ptr::NonNull,
+	poison_girl_error::{Rslt, loader::UefiError, poison_girl_err},
+	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe, wfi},
+	raw::{
+		table::SystemTable,
+		types::{Status, UnsafeHandle},
+	},
+};
 
-use crate::chibi_uefi::table::system_table;
-use crate::raw::table::ConfigTable;
+use crate::{chibi_uefi::table::system_table, raw::table::ConfigTable};
 
 /// UEFI interface wrapper providing simplified access to UEFI services
 pub mod chibi_uefi;
@@ -201,7 +198,7 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 pub fn get_device_tree() -> Rslt<NonNull<ConfigTable,>, UefiError,> {
 	unsafe { system_table().as_ref() }
 		.device_tree()?
-		.ok_or(oso_err!(UefiError::Custom("failed to get device tree")),)
+		.ok_or(poison_girl_err!(UefiError::Custom("failed to get device tree")),)
 }
 
 /// Executes the loaded kernel with proper architecture-specific setup

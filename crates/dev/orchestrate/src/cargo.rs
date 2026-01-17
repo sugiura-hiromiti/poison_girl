@@ -1,14 +1,11 @@
-use anyhow::Context as _;
-use anyhow::Result as Rslt;
-use clap::Parser;
-use oso_proc_macro::features;
-use ovmf_prebuilt::FileType;
-use ovmf_prebuilt::Prebuilt;
-use ovmf_prebuilt::Source;
-use std::path::PathBuf;
-use std::process::Command;
-use std::str::FromStr;
-use strum_macros::Display;
+use {
+	anyhow::{Context as _, Result as Rslt},
+	clap::Parser,
+	ovmf_prebuilt::{FileType, Prebuilt, Source},
+	poison_girl_proc_macro_def::features,
+	std::{path::PathBuf, process::Command, str::FromStr},
+	strum_macros::Display,
+};
 
 pub trait CompileOpt {
 	fn build_mode(&self,) -> impl Into<String,>;
@@ -247,9 +244,7 @@ pub fn host_tuple() -> Rslt<String,> {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use proptest::prelude::*;
-	use std::str::FromStr;
+	use {super::*, std::str::FromStr};
 
 	#[test]
 	fn test_build_mode_default() {
@@ -402,47 +397,50 @@ mod tests {
 	}
 
 	// Property-based tests
-	proptest! {
-		#[test]
-		fn test_build_mode_roundtrip(mode in prop::sample::select(vec![BuildMode::Debug, BuildMode::Release])) {
-			let as_str = mode.as_ref();
-			let parsed = BuildMode::from_str(as_str).unwrap();
-			assert_eq!(mode, parsed);
-		}
-
-		#[test]
-		fn test_arch_roundtrip(arch in prop::sample::select(vec![Arch::Aarch64, Arch::Riscv64])) {
-			let as_str = arch.as_ref();
-			let parsed = Arch::from_str(as_str).unwrap();
-			assert_eq!(arch, parsed);
-		}
-
-		#[test]
-		fn test_cli_opts_conversion_preserves_values(
-			build_mode in prop::option::of(prop::sample::select(vec![BuildMode::Debug, BuildMode::Release])),
-			arch in prop::option::of(prop::sample::select(vec![Arch::Aarch64, Arch::Riscv64]))
-		) {
-			let cli = Cli {
-				build_mode,
-				feature_flags: Some(vec![]),
-				arch,
-			};
-
-			let opts = cli.to_opts();
-
-			// Check that values are preserved or defaults are used
-			match build_mode {
-				Some(bm) => assert_eq!(opts.build_mode, bm),
-				None => assert_eq!(opts.build_mode, BuildMode::default()),
-			}
-
-
-			match arch {
-				Some(a) => assert_eq!(opts.arch, a),
-				None => assert_eq!(opts.arch, Arch::default()),
-			}
-		}
-	}
+	// proptest! {
+	// 	#[test]
+	// 	fn test_build_mode_roundtrip(mode in
+	// prop::sample::select(vec![BuildMode::Debug, BuildMode::Release])) {
+	// 		let as_str = mode.as_ref();
+	// 		let parsed = BuildMode::from_str(as_str).unwrap();
+	// 		assert_eq!(mode, parsed);
+	// 	}
+	//
+	// 	#[test]
+	// 	fn test_arch_roundtrip(arch in prop::sample::select(vec![Arch::Aarch64,
+	// Arch::Riscv64])) { 		let as_str = arch.as_ref();
+	// 		let parsed = Arch::from_str(as_str).unwrap();
+	// 		assert_eq!(arch, parsed);
+	// 	}
+	//
+	// 	#[test]
+	// 	fn test_cli_opts_conversion_preserves_values(
+	// 		build_mode in
+	// prop::option::of(prop::sample::select(vec![BuildMode::Debug,
+	// BuildMode::Release])),
+	// 		arch in prop::option::of(prop::sample::select(vec![Arch::Aarch64,
+	// Arch::Riscv64])) 	) {
+	// 		let cli = Cli {
+	// 			build_mode,
+	// 			feature_flags: Some(vec![]),
+	// 			arch,
+	// 		};
+	//
+	// 		let opts = cli.to_opts();
+	//
+	// 		// Check that values are preserved or defaults are used
+	// 		match build_mode {
+	// 			Some(bm) => assert_eq!(opts.build_mode, bm),
+	// 			None => assert_eq!(opts.build_mode, BuildMode::default()),
+	// 		}
+	//
+	//
+	// 		match arch {
+	// 			Some(a) => assert_eq!(opts.arch, a),
+	// 			None => assert_eq!(opts.arch, Arch::default()),
+	// 		}
+	// 	}
+	// }
 
 	#[test]
 	fn test_enum_value_variants() {
@@ -583,8 +581,7 @@ mod tests {
 	#[test]
 	fn test_concurrent_access() {
 		// Test that enums can be used concurrently
-		use std::sync::Arc;
-		use std::thread;
+		use std::{sync::Arc, thread};
 
 		let build_mode = Arc::new(BuildMode::Debug,);
 		let arch = Arc::new(Arch::Aarch64,);

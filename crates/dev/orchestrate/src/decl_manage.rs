@@ -1,13 +1,16 @@
-use crate::Rslt;
-use crate::cargo::CompileOpt;
-use crate::cargo::Opts;
-use crate::decl_manage::crate_::Crate;
-use crate::decl_manage::crate_::CrateInfo;
-use crate::decl_manage::crate_::OsoCrate;
-use crate::decl_manage::package::PackageSurvey;
-use anyhow::bail;
-use oso_dev_util_helper::fs::search_in_with;
-use std::path::PathBuf;
+use {
+	crate::{
+		Rslt,
+		cargo::{CompileOpt, Opts},
+		decl_manage::{
+			crate_::{Crate, CrateInfo, OsoCrate},
+			package::PackageSurvey,
+		},
+	},
+	anyhow::bail,
+	poison_girl_dev_fs::fs::search_in_with,
+	std::path::PathBuf,
+};
 
 pub mod crate_;
 pub mod package;

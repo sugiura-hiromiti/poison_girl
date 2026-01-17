@@ -1,0 +1,7 @@
+[package]
+name = "poison_girl_no_std_error"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+this_is_b = { workspace = true }

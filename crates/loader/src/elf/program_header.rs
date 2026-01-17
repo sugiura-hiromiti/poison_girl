@@ -1,10 +1,8 @@
-use crate::Rslt;
-use crate::elf::read_le_bytes;
-use alloc::format;
-use alloc::vec::Vec;
-use oso_error::OsoError;
-use oso_error::loader::EfiParseError;
-use oso_error::oso_err;
+use {
+	crate::{Rslt, elf::read_le_bytes},
+	alloc::{format, vec::Vec},
+	poison_girl_error::{OsoError, loader::EfiParseError, poison_girl_err},
+};
 
 #[derive(PartialEq, Eq,)]
 pub struct ProgramHeader {
@@ -57,7 +55,9 @@ impl ProgramHeader {
 			program_headers.push(program_header,);
 		}
 
-		oso_proc_macro::test_program_headers_parse!(program_headers);
+		poison_girl_proc_macro_def::test_program_headers_parse!(
+			program_headers
+		);
 
 		Ok(program_headers,)
 	}
@@ -149,9 +149,9 @@ impl TryFrom<u32,> for ProgramHeaderType {
 			0x6fff_fffb => Self::Sunwstack,
 			7 => Self::Tls,
 			_ => {
-				return Err(oso_err!(EfiParseError::InvalidProgramHeaderType(
-					value
-				)),);
+				return Err(poison_girl_err!(
+					EfiParseError::InvalidProgramHeaderType(value)
+				),);
 			},
 		};
 		Ok(ty,)

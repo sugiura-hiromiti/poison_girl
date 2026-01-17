@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-poison_girl_error = { workspace = true }
 poison_girl_no_std = { workspace = true }
+poison_girl_no_std_error = { workspace = true }
 poison_girl_proc_macro_def = { workspace = true }
 
 [features]

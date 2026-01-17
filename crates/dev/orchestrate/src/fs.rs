@@ -1,7 +1,7 @@
-use crate::Rslt;
-use crate::decl_manage::crate_::OsoCrate;
-use oso_dev_util_helper::fs::current_crate_path;
-use oso_dev_util_helper::fs::project_root_path;
+use {
+	crate::{Rslt, decl_manage::crate_::OsoCrate},
+	poison_girl_dev_fs::fs::{current_crate_path, project_root_path},
+};
 
 pub fn project_root() -> Rslt<OsoCrate,> {
 	let pr = project_root_path()?;
@@ -16,8 +16,7 @@ pub fn current_crate() -> Rslt<OsoCrate,> {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::decl_manage::crate_::CrateInfo;
+	use {super::*, crate::decl_manage::crate_::CrateInfo};
 
 	#[test]
 	fn test_project_root_function_exists() {
@@ -235,8 +234,7 @@ mod tests {
 	#[test]
 	fn test_helper_function_integration() {
 		// Test that the functions properly integrate with helper functions
-		use oso_dev_util_helper::fs::current_crate_path;
-		use oso_dev_util_helper::fs::project_root_path;
+		use poison_girl_dev_fs::fs::{current_crate_path, project_root_path};
 
 		// Test that our functions use the same underlying helpers
 		let project_helper_result = project_root_path();

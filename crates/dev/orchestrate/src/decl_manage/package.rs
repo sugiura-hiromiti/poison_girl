@@ -1,7 +1,7 @@
-use crate::Rslt;
-use crate::decl_manage::crate_::CrateAction;
-use crate::decl_manage::crate_::CrateInfo;
-use crate::decl_manage::crate_::CrateSurvey;
+use crate::{
+	Rslt,
+	decl_manage::crate_::{CrateAction, CrateInfo, CrateSurvey},
+};
 
 pub trait Package: PackageAction + PackageSurvey {
 	fn as_action(&self,) -> &impl PackageAction {
@@ -22,11 +22,7 @@ pub trait PackageInfo: Sized + CrateInfo {}
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::cargo::BuildMode;
-	use crate::decl_manage::crate_::CrateInfo;
-	use crate::decl_manage::crate_::OsoCrate;
-	use std::path::PathBuf;
+	use {super::*, crate::decl_manage::crate_::OsoCrate, std::path::PathBuf};
 
 	// Note: Working around FromPathBuf macro validation by using current
 	// directory
@@ -75,9 +71,6 @@ mod tests {
 	#[test]
 	fn test_package_survey_trait() {
 		// Test that PackageSurvey combines PackageInfo and CrateSurvey
-		use crate::cargo::Arch;
-		use crate::cargo::Feature;
-		use crate::cargo::Opts;
 
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);

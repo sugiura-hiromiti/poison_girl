@@ -1,10 +1,11 @@
-use super::Context;
-use super::read_le_bytes;
-use crate::Rslt;
-use crate::elf::Container;
-use crate::elf::ElfHeader;
-use oso_error::loader::EfiParseError;
-use oso_error::oso_err;
+use {
+	super::{Context, read_le_bytes},
+	crate::{
+		Rslt,
+		elf::{Container, ElfHeader},
+	},
+	poison_girl_error::{loader::EfiParseError, poison_girl_err},
+};
 
 pub fn gnu_hash_len(
 	binary: &[u8],
@@ -18,7 +19,7 @@ pub fn gnu_hash_len(
 	let bloom_size =
 		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	if buckets_count == 0 || min_chain == 0 || bloom_size == 0 {
-		return Err(oso_err!(EfiParseError::InvalidGnuHash {
+		return Err(poison_girl_err!(EfiParseError::InvalidGnuHash {
 			buckets_count,
 			min_chain,
 			bloom_size

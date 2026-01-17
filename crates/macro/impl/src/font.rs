@@ -4,9 +4,10 @@
 //! data for use in the OSO operating system. It handles bitmap font conversion
 //! from text-based representations to binary formats suitable for rendering.
 
-use crate::Rslt;
-use crate::RsltP;
-use syn::LitStr;
+use {
+	crate::{Rslt, RsltP},
+	syn::LitStr,
+};
 
 /// Number of ASCII characters supported (0-255)
 const CHARACTER_COUNT: usize = 256;
@@ -151,46 +152,7 @@ fn convert_bitfield(fonts: &[String],) -> Vec<u128,> {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use std::fs;
-	use tempfile::NamedTempFile;
-
-	/// Creates a temporary font file for testing
-	fn create_test_font_file() -> NamedTempFile {
-		let temp_file =
-			NamedTempFile::new().expect("Failed to create temp file",);
-
-		// Create sample font data for character 'A' (ASCII 65)
-		// 16 lines of 8 characters each, representing a simple 'A' pattern
-		let font_data = r#"
-........
-...@@...
-..@..@..
-..@..@..
-..@..@..
-..@@@@..
-..@..@..
-..@..@..
-..@..@..
-..@..@..
-........
-........
-........
-........
-........
-........"#;
-
-		// Repeat this pattern 256 times for all ASCII characters
-		let mut full_font_data = String::new();
-		for _ in 0..256 {
-			full_font_data.push_str(font_data,);
-			full_font_data.push('\n',);
-		}
-
-		fs::write(temp_file.path(), full_font_data,)
-			.expect("Failed to write test font data",);
-		temp_file
-	}
+	use {super::*, std::fs};
 
 	#[test]
 	fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),> {

@@ -88,7 +88,7 @@
 #![feature(new_range_api)]
 #![feature(generic_const_exprs)]
 
-use oso_no_std_shared::wfe;
+use poison_girl_no_std::wfe;
 
 /// Application execution and management subsystem
 ///

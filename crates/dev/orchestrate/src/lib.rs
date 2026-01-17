@@ -283,6 +283,7 @@ mod tests {
 				code: PathBuf::from("/ovmf/code",),
 				vars: PathBuf::from("/ovmf/vars",),
 			},
+			host:     cargo::Runtime::Linux,
 		};
 
 		// Verify the structure exists and is accessible

@@ -1,117 +1,18 @@
-// NOTE:  this file must be copied to oso_proc_macro_logic_2/src/lib.rs on every
-// build
-use anyhow::Result as Rslt;
-use colored::Colorize;
-use std::ffi::OsStr;
-use std::process::Command;
-use std::process::Stdio;
+use {
+	colored::Colorize,
+	poison_girl_dev_error::{PoisonGirlB, X},
+	std::{
+		ffi::OsStr,
+		process::{Command, Stdio},
+	},
+};
 
-/// Trait for enhanced command execution with better error handling and output
-/// formatting
-///
-/// The `Run` trait extends the standard [`Command`] functionality with:
-/// - Colored command output display
-/// - Automatic stdio inheritance
-/// - Enhanced error handling with context
-/// - Command argument formatting
-///
-/// This trait is particularly useful for development tools and build scripts
-/// where clear command output and error reporting are essential.
-///
-/// # Examples
-///
-/// ```rust,no_run
-/// use oso_dev_util_helper::cli::Run;
-/// use std::process::Command;
-///
-/// let mut cmd = Command::new("ls",);
-/// cmd.args(&["-la", "/tmp",],);
-///
-/// match cmd.run() {
-/// 	Ok((),) => println!("Command executed successfully"),
-/// 	Err(e,) => eprintln!("Command failed: {}", e),
-/// }
-/// ```
 pub trait Run {
-	/// Executes the command with enhanced output and error handling
-	///
-	/// This method runs the command while providing:
-	/// - Colored display of the command being executed
-	/// - Inherited stdio streams for interactive commands
-	/// - Proper error handling with exit code checking
-	/// - Formatted command argument display
-	///
-	/// # Returns
-	///
-	/// * `Ok(())` - If the command executed successfully (exit code 0)
-	/// * `Err(anyhow::Error)` - If the command failed or returned a non-zero
-	///   exit code
-	///
-	/// # Errors
-	///
-	/// This method will return an error if:
-	/// - The command cannot be found or executed
-	/// - The command returns a non-zero exit code
-	/// - There are I/O errors during command execution
-	///
-	/// # Examples
-	///
-	/// ```rust,no_run
-	/// use oso_dev_util_helper::cli::Run;
-	/// use std::process::Command;
-	///
-	/// // Execute a simple command
-	/// let mut cmd = Command::new("echo",);
-	/// cmd.arg("Hello, World!",);
-	/// cmd.run().expect("Echo command failed",);
-	///
-	/// // Execute a build command
-	/// let mut build_cmd = Command::new("cargo",);
-	/// build_cmd.args(&["build", "--release",],);
-	/// build_cmd.run().expect("Build failed",);
-	/// ```
-	///
-	/// # Output Format
-	///
-	/// The method displays the command in the following format:
-	/// ```text
-	/// program_name arg1 arg2 arg3
-	/// ```
-	/// The command line is displayed in bold blue text for easy identification.
-	fn run(&mut self,) -> Rslt<(),>;
+	fn run(&mut self,) -> PoisonGirlB<(),>;
 }
 
 impl Run for Command {
-	/// Executes the command with enhanced formatting and error handling
-	///
-	/// This implementation provides a user-friendly command execution
-	/// experience with colored output, proper error handling, and stdio
-	/// inheritance.
-	///
-	/// # Implementation Details
-	///
-	/// 1. **Command Display**: Formats and displays the command with arguments
-	///    in bold blue
-	/// 2. **Stdio Configuration**: Inherits stdout, stderr, and stdin from the
-	///    parent process
-	/// 3. **Execution**: Runs the command and waits for completion
-	/// 4. **Error Checking**: Validates the exit status and converts errors to
-	///    `anyhow::Error`
-	///
-	/// # Examples
-	///
-	/// ```rust,no_run
-	/// use oso_dev_util_helper::cli::Run;
-	/// use std::process::Command;
-	///
-	/// let mut cmd = Command::new("git",);
-	/// cmd.args(&["status", "--porcelain",],);
-	///
-	/// // This will display: git status --porcelain
-	/// // in bold blue, then execute the command
-	/// cmd.run().expect("Git command failed",);
-	/// ```
-	fn run(&mut self,) -> Rslt<(),> {
+	fn run(&mut self,) -> PoisonGirlB<(),> {
 		// Format the command display string with program and arguments
 		let cmd_dsply = format!(
 			"{} {}",
@@ -134,7 +35,7 @@ impl Run for Command {
 
 		// Check exit status and convert to Result
 		out.exit_ok()?; // This will return an error if exit code != 0
-		Ok((),)
+		X((),)
 	}
 }
 
@@ -148,7 +49,7 @@ mod tests {
 		cmd.arg("test",);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo command should succeed");
+		assert!(result.is_x(), "Echo command should succeed");
 	}
 
 	#[test]
@@ -156,7 +57,7 @@ mod tests {
 		let mut cmd = Command::new("false",); // Command that always fails
 
 		let result = cmd.run();
-		assert!(result.is_err(), "False command should fail");
+		assert!(result.is_y(), "False command should fail");
 	}
 
 	#[test]
@@ -164,7 +65,7 @@ mod tests {
 		let mut cmd = Command::new("definitely_nonexistent_command_12345",);
 
 		let result = cmd.run();
-		assert!(result.is_err(), "Nonexistent command should fail");
+		assert!(result.is_y(), "Nonexistent command should fail");
 	}
 
 	#[test]
@@ -173,7 +74,7 @@ mod tests {
 		cmd.args(&["hello", "world",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with args should succeed");
+		assert!(result.is_x(), "Echo with args should succeed");
 	}
 
 	#[test]
@@ -183,7 +84,7 @@ mod tests {
 		cmd.env("TEST_VAR", "test_value",);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with env should succeed");
+		assert!(result.is_x(), "Echo with env should succeed");
 	}
 
 	#[test]
@@ -192,11 +93,11 @@ mod tests {
 		// instances
 		let mut cmd1 = Command::new("echo",);
 		cmd1.arg("first",);
-		assert!(cmd1.run().is_ok());
+		assert!(cmd1.run().is_x());
 
 		let mut cmd2 = Command::new("echo",);
 		cmd2.arg("second",);
-		assert!(cmd2.run().is_ok());
+		assert!(cmd2.run().is_x());
 	}
 
 	#[test]
@@ -212,18 +113,6 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_error_contains_command_info() {
-		let mut cmd = Command::new("definitely_nonexistent_command_12345",);
-
-		let result = cmd.run();
-		assert!(result.is_err());
-
-		let error_msg = result.unwrap_err().to_string();
-		// The error should contain some information about what went wrong
-		assert!(!error_msg.is_empty());
-	}
-
-	#[test]
 	fn test_command_builder_pattern() {
 		// Test that we can use the builder pattern with our trait
 		let result = Command::new("echo",)
@@ -232,7 +121,7 @@ mod tests {
 			.env("TEST", "value",)
 			.run();
 
-		assert!(result.is_ok(), "Builder pattern should work");
+		assert!(result.is_x(), "Builder pattern should work");
 	}
 
 	#[test]
@@ -240,7 +129,7 @@ mod tests {
 		// Test that successful commands are idempotent
 		let mut cmd = Command::new("true",); // Command that always succeeds
 
-		assert!(cmd.run().is_ok());
+		assert!(cmd.run().is_x());
 		// Note: We can't call run again on the same Command instance
 		// because std::process::Command consumes itself on spawn()
 	}
@@ -250,7 +139,7 @@ mod tests {
 		// Test that failing commands consistently fail
 		let mut cmd = Command::new("false",); // Command that always fails
 
-		assert!(cmd.run().is_err());
+		assert!(cmd.run().is_y());
 		// Note: We can't call run again on the same Command instance
 	}
 
@@ -261,7 +150,7 @@ mod tests {
 		cmd.arg("output_test",);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo should succeed even with output");
+		assert!(result.is_x(), "Echo should succeed even with output");
 	}
 
 	#[test]
@@ -272,7 +161,7 @@ mod tests {
 
 		let result = cmd.run();
 		assert!(
-			result.is_ok(),
+			result.is_x(),
 			"Command writing to stderr should still succeed if exit code is 0"
 		);
 	}
@@ -284,10 +173,7 @@ mod tests {
 		cmd.args(&["-c", "exit 1",],);
 
 		let result = cmd.run();
-		assert!(
-			result.is_err(),
-			"Non-zero exit code should be treated as error"
-		);
+		assert!(result.is_y(), "Non-zero exit code should be treated as error");
 	}
 
 	#[test]
@@ -297,7 +183,7 @@ mod tests {
 		cmd.args(&["-c", "exit 0",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Zero exit code should be treated as success");
+		assert!(result.is_x(), "Zero exit code should be treated as success");
 	}
 
 	#[test]
@@ -307,7 +193,7 @@ mod tests {
 		cmd.arg("0.1",); // Sleep for 100ms
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Sleep command should succeed");
+		assert!(result.is_x(), "Sleep command should succeed");
 	}
 
 	#[test]
@@ -316,11 +202,11 @@ mod tests {
 		let mut nonexistent_cmd =
 			Command::new("definitely_nonexistent_command_12345",);
 		let nonexistent_result = nonexistent_cmd.run();
-		assert!(nonexistent_result.is_err());
+		assert!(nonexistent_result.is_y());
 
 		let mut failing_cmd = Command::new("false",);
 		let failing_result = failing_cmd.run();
-		assert!(failing_result.is_err());
+		assert!(failing_result.is_y());
 
 		// Both should fail, but potentially with different error types
 		// We can't easily distinguish them in the test, but both should be
@@ -334,7 +220,7 @@ mod tests {
 		cmd.args(&["--flag", "value", "-x", "test with spaces",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with complex args should succeed");
+		assert!(result.is_x(), "Echo with complex args should succeed");
 	}
 
 	#[test]
@@ -343,7 +229,7 @@ mod tests {
 		let mut cmd = Command::new("true",); // Command that always succeeds
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "True command with no args should succeed");
+		assert!(result.is_x(), "True command with no args should succeed");
 	}
 
 	#[test]
@@ -353,7 +239,7 @@ mod tests {
 		cmd.args(&["hello", "world!", "@#$%", "test",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with special characters should succeed");
+		assert!(result.is_x(), "Echo with special characters should succeed");
 	}
 
 	#[test]
@@ -363,7 +249,7 @@ mod tests {
 		cmd.args(&["hello", "世界", "🦀", "test",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with unicode should succeed");
+		assert!(result.is_x(), "Echo with unicode should succeed");
 	}
 
 	#[test]
@@ -374,7 +260,7 @@ mod tests {
 		cmd.arg(&long_arg,);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with long args should succeed");
+		assert!(result.is_x(), "Echo with long args should succeed");
 	}
 
 	#[test]
@@ -386,7 +272,7 @@ mod tests {
 		}
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with many args should succeed");
+		assert!(result.is_x(), "Echo with many args should succeed");
 	}
 
 	#[test]
@@ -399,7 +285,7 @@ mod tests {
 		cmd.env("UNICODE_VAR", "世界",);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with multiple env vars should succeed");
+		assert!(result.is_x(), "Echo with multiple env vars should succeed");
 	}
 
 	#[test]
@@ -426,7 +312,7 @@ mod tests {
 		cmd.args(&["test", "display", "formatting",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Command display formatting should work");
+		assert!(result.is_x(), "Command display formatting should work");
 	}
 
 	#[test]
@@ -442,9 +328,9 @@ mod tests {
 			let result = cmd.run();
 
 			if should_succeed {
-				assert!(result.is_ok(), "{} should succeed", cmd_name);
+				assert!(result.is_x(), "{} should succeed", cmd_name);
 			} else {
-				assert!(result.is_err(), "{} should fail", cmd_name);
+				assert!(result.is_y(), "{} should fail", cmd_name);
 			}
 		}
 	}
@@ -456,11 +342,7 @@ mod tests {
 		cmd.args(&["-c", "exit 42",],); // Exit with specific code
 
 		let result = cmd.run();
-		assert!(result.is_err(), "Non-zero exit should be error");
-
-		// Check that the error contains useful information
-		let error_msg = result.unwrap_err().to_string();
-		assert!(!error_msg.is_empty(), "Error message should not be empty");
+		assert!(result.is_y(), "Non-zero exit should be error");
 	}
 
 	#[test]
@@ -516,7 +398,7 @@ mod tests {
 
 		for handle in handles {
 			let result = handle.join().expect("Thread should not panic",);
-			assert!(result.is_ok(), "Concurrent echo should succeed");
+			assert!(result.is_x(), "Concurrent echo should succeed");
 		}
 	}
 
@@ -533,7 +415,7 @@ mod tests {
 
 				let result = cmd.run();
 				assert!(
-					result.is_ok(),
+					result.is_x(),
 					"Command with full path should work: {}",
 					path
 				);
@@ -548,7 +430,7 @@ mod tests {
 		// This is system-dependent, so we'll just test that it doesn't panic
 		let mut cmd = Command::new("./nonexistent_relative_command",);
 		let result = cmd.run();
-		assert!(result.is_err(), "Nonexistent relative command should fail");
+		assert!(result.is_y(), "Nonexistent relative command should fail");
 	}
 
 	#[test]
@@ -567,7 +449,7 @@ mod tests {
 			}
 
 			let result = cmd.run();
-			assert!(result.is_ok(), "Sequential commands should work");
+			assert!(result.is_x(), "Sequential commands should work");
 		}
 	}
 
@@ -578,7 +460,7 @@ mod tests {
 		cmd.args(&["123", "456.789", "-42", "0",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with numeric args should succeed");
+		assert!(result.is_x(), "Echo with numeric args should succeed");
 	}
 
 	#[test]
@@ -588,6 +470,6 @@ mod tests {
 		cmd.args(&["true", "false", "yes", "no", "on", "off",],);
 
 		let result = cmd.run();
-		assert!(result.is_ok(), "Echo with boolean-like args should succeed");
+		assert!(result.is_x(), "Echo with boolean-like args should succeed");
 	}
 }

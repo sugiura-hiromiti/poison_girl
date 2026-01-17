@@ -1,6 +1,7 @@
-use crate::Rslt;
-use crate::raw::types::Guid;
-use oso_error::oso_err;
+use {
+	crate::{Rslt, raw::types::Guid},
+	poison_girl_error::poison_girl_err,
+};
 
 #[macro_export]
 macro_rules! guid {
@@ -134,22 +135,21 @@ impl Hex {
 }
 
 impl TryFrom<char,> for Hex {
-	type Error = oso_error::OsoError<&'static str,>;
+	type Error = poison_girl_error::OsoError<&'static str,>;
 
 	fn try_from(value: char,) -> Result<Self, Self::Error,> {
 		let value = value as u8;
 		let code = match value {
 			c if Hex::is_valid_hex(c,) => Hex::to_hex(c,),
 			_ => {
-				return Err(oso_err!("invalid hex char. 0~f are expected"),);
+				return Err(poison_girl_err!("invalid hex char. 0~f are expected"),);
 			},
 		};
 		Ok(code,)
 	}
 }
 
-#[const_trait]
-pub trait BytesToInt<const N: usize,> {
+pub const trait BytesToInt<const N: usize,> {
 	fn le_u128(&self,) -> u128;
 	fn le_u64(&self,) -> u64 {
 		self.le_u128() as u64
@@ -197,8 +197,7 @@ where [Hex; N]: BytesNotTooLong<true,>
 	}
 }
 
-#[const_trait]
-pub trait AsBytes<const BYTES: usize, O = Self,> {
+pub const trait AsBytes<const BYTES: usize, O = Self,> {
 	type Output = O;
 	//const LIMIT: usize = BYTES / 2;
 	fn as_bytes(&self,) -> Self::Output;
@@ -234,9 +233,8 @@ impl<const BYTES: usize,> const AsBytes<BYTES, [u8; BYTES],> for [Hex; BYTES] {
 	}
 }
 
-#[const_trait]
 #[allow(dead_code)]
-trait AsLeBytes<const BYTES: usize, O = Self,>:
+const trait AsLeBytes<const BYTES: usize, O = Self,>:
 	AsBytes<BYTES, O,> + BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 {
 	fn as_le_bytes(&self,) -> Self::Output;

@@ -1,11 +1,14 @@
-use crate::into_null_terminated_utf16;
-use crate::raw::types::Boolean;
-use crate::raw::types::Status;
-use crate::raw::types::text::InputKey;
-use crate::raw::types::text::TextOutputModePtr;
-use core::ffi::c_void;
-use oso_error::Rslt;
-use oso_error::loader::UefiError;
+use {
+	crate::{
+		into_null_terminated_utf16,
+		raw::types::{
+			Boolean, Status,
+			text::{InputKey, TextOutputModePtr},
+		},
+	},
+	core::ffi::c_void,
+	poison_girl_error::{Rslt, loader::UefiError},
+};
 
 #[repr(C)]
 pub struct TextInputProtocol {

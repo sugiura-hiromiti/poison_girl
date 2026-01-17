@@ -1,11 +1,13 @@
-use super::StringTable;
-use crate::elf::read_le_bytes;
-use alloc::format;
-use alloc::vec::Vec;
-use oso_error::Rslt;
-use oso_error::loader::EfiParseError;
-use oso_error::loader::EfiParseStage;
-use oso_error::oso_err;
+use {
+	super::StringTable,
+	crate::elf::read_le_bytes,
+	alloc::{format, vec::Vec},
+	poison_girl_error::{
+		Rslt,
+		loader::{EfiParseError, EfiParseStage},
+		poison_girl_err,
+	},
+};
 
 /// Undefined section.
 pub const SHN_UNDEF: u32 = 0;
@@ -146,9 +148,9 @@ impl SectionHeader {
 		macro_rules! fields {
 			($field:ident) => {
 				let Some($field,) = read_le_bytes(offset, binary,) else {
-					return Err(oso_err!(EfiParseError::EndOfBinary {
+					return Err(poison_girl_err!(EfiParseError::EndOfBinary {
 						parser_pos: stringify!($field),
-						stage: oso_error::loader::EfiParseStage::SectionHeader
+						stage: poison_girl_error::loader::EfiParseStage::SectionHeader
 					}),);
 				};
 			};
@@ -199,7 +201,7 @@ impl SectionHeader {
 
 		let (end, overflow,) = self.offset.overflowing_add(self.size,);
 		if overflow || end > size as u64 {
-			return Err(oso_err!(EfiParseError::SizeOverflow {
+			return Err(poison_girl_err!(EfiParseError::SizeOverflow {
 				stage:    EfiParseStage::SectionHeader,
 				name:     self.name as u64,
 				expected: size as u64,
@@ -210,7 +212,7 @@ impl SectionHeader {
 
 		let (_, overflow,) = self.address.overflowing_add(self.size,);
 		if overflow {
-			return Err(oso_err!(EfiParseError::SizeOverflow {
+			return Err(poison_girl_err!(EfiParseError::SizeOverflow {
 				stage:    EfiParseStage::SectionHeader,
 				name:     self.name as u64,
 				expected: size as u64,

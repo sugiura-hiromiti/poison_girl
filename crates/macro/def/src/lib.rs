@@ -2,11 +2,10 @@
 
 extern crate proc_macro;
 
-use crate::pm_logic::atr;
-use crate::pm_logic::fnl;
-use oso_proc_macro_logic as pm_logic;
-use oso_proc_macro_logic::drv;
-use oso_proc_macro_logic::oso_proc_macro_helper::Diag;
+use poison_girl_proc_macro_helper::Diag;
+use poison_girl_proc_macro_helper::atr;
+use poison_girl_proc_macro_helper::drv;
+use poison_girl_proc_macro_helper::fnl;
 use proc_macro::Diagnostic;
 use proc_macro::Level;
 
@@ -78,7 +77,7 @@ This macro will cause a compile-time error if:
 - The path parameter is not a valid string literal"#
 );
 
-fnl!(impl_int => pm_logic::impl_int::Types,
+fnl!(impl_int => poison_girl_proc_macro_impl::impl_int::Types,
 r#"Generates implementations for integer types.
 
 This procedural macro takes a list of types and generates implementations

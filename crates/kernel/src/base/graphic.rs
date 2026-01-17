@@ -50,9 +50,9 @@ use crate::base::graphic::position::Coordinal;
 #[cfg(feature = "bitmask")] use color::Bitmask;
 #[cfg(feature = "bltonly")] use color::BltOnly;
 #[cfg(feature = "rgb")] use color::Rgb;
-use oso_error::Rslt;
-use oso_error::kernel::GraphicError;
-use oso_error::oso_err;
+use poison_girl_error::Rslt;
+use poison_girl_error::kernel::GraphicError;
+use poison_girl_error::poison_girl_err;
 // use oso_proc_macro::gen_wrapper_fn;
 
 /// Color representation and pixel format implementations
@@ -691,7 +691,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 			|| right_bottom.x() > self.width
 			|| right_bottom.y() > self.height
 		{
-			return Err(oso_err!(GraphicError::InvalidCoordinate),);
+			return Err(poison_girl_err!(GraphicError::InvalidCoordinate),);
 		}
 
 		// Convert color once for performance optimization
@@ -766,7 +766,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 			|| right_bottom.x() > self.width
 			|| right_bottom.y() > self.height
 		{
-			return Err(oso_err!(GraphicError::InvalidCoordinate),);
+			return Err(poison_girl_err!(GraphicError::InvalidCoordinate),);
 		}
 
 		let width = right_bottom.x() - left_top.x() - 1;

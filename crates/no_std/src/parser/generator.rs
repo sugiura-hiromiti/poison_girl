@@ -17,8 +17,7 @@
 //! making it suitable for system-level parsing tasks where performance and
 //! reliability are critical.
 
-use poison_girl_error::Rslt;
-use poison_girl_error::parser::ParserError;
+use poison_girl_no_std_error::PoisonGirlB;
 
 // ==================== Parser Generation Framework ====================
 
@@ -160,7 +159,7 @@ pub trait ParserComponents<C: Context,> {
 	///     }
 	/// }
 	/// ```
-	fn map<R,>(&self, context: &mut C,) -> Rslt<R,>;
+	fn map<R,>(&self, context: &mut C,) -> PoisonGirlB<R,>;
 }
 
 // ==================== Final Parser Interface ====================
@@ -207,5 +206,5 @@ pub trait Parser<C: Context,> {
 	///     }
 	/// }
 	/// ```
-	fn parse(&self,) -> Rslt<C::Output, ParserError,>;
+	fn parse(&self,) -> PoisonGirlB<C::Output,>;
 }

@@ -3,13 +3,18 @@
 //! These tests verify that different modules work together correctly
 //! and test the crate's functionality as a whole.
 
-use html5ever::namespace_url;
-use html5ever::tendril::TendrilSink;
-use oso_dev_util_helper::fs::check_oso_kernel;
-// use markup5ever::namespace_url;
-use oso_proc_macro_logic::*;
-use std::fs;
-use tempfile::NamedTempFile;
+use {
+	html5ever::tendril::TendrilSink,
+	poison_girl_dev_fs::fs::check_poison_girl_kernel,
+	poison_girl_proc_macro_impl::{
+		font, impl_int,
+		status::*,
+		test_program_headers_parse::{self},
+		wrapper,
+	},
+	std::fs,
+	tempfile::NamedTempFile,
+};
 
 #[test]
 fn test_crate_modules_are_accessible() {
@@ -110,8 +115,6 @@ fn test_impl_init_integration() {
 
 #[test]
 fn test_status_from_spec_html_parsing_integration() {
-	use status::*;
-
 	// Test the HTML parsing functions with a complete example
 	let test_html = r#"
 <!DOCTYPE html>
@@ -185,7 +188,7 @@ fn test_error_handling_integration() {
 
 	fn test_error_chain() -> Rslt<(),> {
 		// This should fail because the kernel file likely doesn't exist
-		check_oso_kernel()?;
+		check_poison_girl_kernel()?;
 		Ok((),)
 	}
 
@@ -226,10 +229,11 @@ fn test_type_conversions_integration() {
 #[test]
 fn test_proc_macro_dependencies_integration() {
 	// Test that proc macro dependencies work correctly together
-	use proc_macro2::TokenStream;
-	use quote::quote;
-	use syn::Type;
-	use syn::parse_quote;
+	use {
+		proc_macro2::TokenStream,
+		quote::quote,
+		syn::{Type, parse_quote},
+	};
 
 	// Test that we can create and manipulate token streams
 	let tokens: TokenStream = quote! {
@@ -250,11 +254,10 @@ fn test_proc_macro_dependencies_integration() {
 #[test]
 fn test_html_parsing_dependencies_integration() {
 	// Test that HTML parsing dependencies work together
-	use html5ever::QualName;
-	use html5ever::local_name;
-	use html5ever::ns;
-	use html5ever::parse_fragment;
-	use markup5ever_rcdom::RcDom;
+	use {
+		html5ever::{QualName, local_name, ns, parse_fragment},
+		markup5ever_rcdom::RcDom,
+	};
 
 	let html = r#"<div id="test"><p>Hello World</p></div>"#;
 
@@ -263,6 +266,7 @@ fn test_html_parsing_dependencies_integration() {
 		Default::default(),
 		QualName::new(None, ns!(), local_name!(""),),
 		vec![],
+		true,
 	)
 	.one(html,);
 
@@ -324,8 +328,7 @@ fn test_file_system_integration() {
 #[test]
 fn test_anyhow_error_integration() {
 	// Test that anyhow errors work consistently across modules
-	use anyhow::Result as Rslt;
-	use anyhow::anyhow;
+	use anyhow::{Result as Rslt, anyhow};
 
 	fn create_error() -> Rslt<(),> {
 		Err(anyhow!("Test error from integration test"),)

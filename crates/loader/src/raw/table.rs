@@ -1,17 +1,15 @@
-use oso_error::loader::UefiError;
-
-use super::service::BootServices;
-use super::service::RuntimeServices;
-use super::types::Char16;
-use super::types::Guid;
-use super::types::Header;
-use super::types::UnsafeHandle;
-use crate::Rslt;
-use crate::guid;
-use crate::raw::protocol::text::TextInputProtocol;
-use crate::raw::protocol::text::TextOutputProtocol;
-use core::ffi::c_void;
-use core::ptr::NonNull;
+use {
+	super::{
+		service::{BootServices, RuntimeServices},
+		types::{Char16, Guid, Header, UnsafeHandle},
+	},
+	crate::{
+		Rslt, guid,
+		raw::protocol::text::{TextInputProtocol, TextOutputProtocol},
+	},
+	core::{ffi::c_void, ptr::NonNull},
+	poison_girl_error::loader::UefiError,
+};
 
 #[repr(C)]
 pub struct SystemTable {

@@ -7,10 +7,10 @@
 //! - Managing OVMF firmware files for UEFI boot
 //! - Setting up block devices and persistent flash memory
 
-use anyhow::Result as Rslt;
-use oso_dev_util::cargo::Arch;
-use std::path::Path;
-use std::path::PathBuf;
+use {
+	poison_girl_dev_orchestrate::cargo::Arch,
+	std::path::{Path, PathBuf},
+};
 
 use crate::Xtask;
 

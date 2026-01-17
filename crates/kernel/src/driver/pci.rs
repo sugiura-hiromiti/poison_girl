@@ -85,7 +85,7 @@
 
 #![allow(dead_code)]
 
-use oso_error::Rslt;
+use poison_girl_error::Rslt;
 
 /// Main interface for Device Tree operations and parsing
 ///

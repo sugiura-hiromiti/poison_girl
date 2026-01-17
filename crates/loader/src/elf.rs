@@ -32,39 +32,38 @@
 //!
 //! Various ELF format constants are defined for validation and parsing.
 
-use crate::Rslt;
-use crate::elf::hash::gnu_hash_len;
-use crate::elf::hash::hash_len;
-use crate::elf::program_header::ProgramHeader;
-use crate::elf::section_header::SectionHeader;
-use alloc::string::String;
-use alloc::string::ToString;
-use alloc::vec;
-use alloc::vec::Vec;
-use core::cmp;
-use core::iter::Sum;
-use core::ops::Add;
-use core::ops::AddAssign;
-use core::ops::Div;
-use core::ops::DivAssign;
-use core::ops::Mul;
-use core::ops::MulAssign;
-use core::ops::Shl;
-use core::ops::Shr;
-use core::ops::Sub;
-use core::ops::SubAssign;
-use oso_error::OsoError;
-use oso_error::loader::EfiParseError;
-use oso_error::loader::EfiParseStage;
-use oso_error::oso_err;
-use program_header::ProgramHeaderType;
-use section_header::SHT_GNU_VERDEF;
-use section_header::SHT_GNU_VERNEED;
-use section_header::SHT_GNU_VERSYM;
-use section_header::SHT_REL;
-use section_header::SHT_RELA;
-use section_header::SHT_SYMTAB;
-use section_header::get_string_table;
+use {
+	crate::{
+		Rslt,
+		elf::{
+			hash::{gnu_hash_len, hash_len},
+			program_header::ProgramHeader,
+			section_header::SectionHeader,
+		},
+	},
+	alloc::{
+		string::{String, ToString},
+		vec::Vec,
+	},
+	core::{
+		cmp,
+		iter::Sum,
+		ops::{
+			Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shl, Shr, Sub,
+			SubAssign,
+		},
+	},
+	poison_girl_error::{
+		OsoError,
+		loader::{EfiParseError, EfiParseStage},
+		poison_girl_err,
+	},
+	program_header::ProgramHeaderType,
+	section_header::{
+		SHT_GNU_VERDEF, SHT_GNU_VERNEED, SHT_GNU_VERSYM, SHT_REL, SHT_RELA,
+		SHT_SYMTAB, get_string_table,
+	},
+};
 
 /// Hash table implementations for symbol lookup
 pub mod hash;
@@ -198,7 +197,7 @@ impl Elf {
 	/// 8. **Version Information**: Extracts symbol versioning data
 	pub fn parse(binary: &[u8],) -> Rslt<Self, EfiParseError,> {
 		let header = ElfHeader::parse(binary,)?;
-		oso_proc_macro::test_elf_header_parse!(header);
+		poison_girl_proc_macro_def::test_elf_header_parse!(header);
 
 		let mut offset = header.program_header_offset as usize;
 		let program_headers = ProgramHeader::parse(
@@ -258,9 +257,9 @@ impl Elf {
 
 		let mut is_position_independent_executable = false;
 		let mut shared_object_name = None;
-		let mut libraries = vec![];
-		let mut runtime_search_path_deprecated = vec![];
-		let mut runtime_search_path = vec![];
+		let mut libraries = alloc::vec![];
+		let mut runtime_search_path_deprecated = alloc::vec![];
+		let mut runtime_search_path = alloc::vec![];
 		let mut dynamic_symbol_table = SymbolTable::default();
 		let mut dynamic_relocation_with_addend = RelocationSection::default();
 		let mut dynamic_relocation = RelocationSection::default();
@@ -354,7 +353,7 @@ impl Elf {
 			)?;
 		}
 
-		let mut section_relocations = vec![];
+		let mut section_relocations = alloc::vec![];
 		for (index, section,) in section_headers.iter().enumerate() {
 			let is_relocation_addrend = section.ty == SHT_RELA;
 			if is_relocation_addrend || section.ty == SHT_REL {
@@ -872,9 +871,9 @@ fn header_flag_fields(
 			let $field =
 				read_le_bytes(offset, ident_remain,).ok_or_else(|| {
 					let field = stringify!($field);
-					oso_error::oso_err!(oso_error::loader::EfiParseError::EndOfBinary{
+					poison_girl_error::poison_girl_err!(poison_girl_error::loader::EfiParseError::EndOfBinary{
 						parser_pos: field,
-						stage: oso_error::loader::EfiParseStage::Header
+						stage: poison_girl_error::loader::EfiParseStage::Header
 					})
 				})?;
 		};
@@ -885,12 +884,12 @@ fn header_flag_fields(
 		};
 	}
 
-	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(oso_err!(
-		EfiParseError::EndOfBinary {
+	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(
+		poison_girl_err!(EfiParseError::EndOfBinary {
 			parser_pos: "ty",
-			stage:      oso_error::loader::EfiParseStage::Header,
-		}
-	),)?;
+			stage:      poison_girl_error::loader::EfiParseStage::Header,
+		}),
+	)?;
 	let ty = ElfType::try_from(ty,)?;
 	fields!(
 		machine,
@@ -984,7 +983,11 @@ impl TryFrom<u16,> for ElfType {
 			0xfeff => Self::OsSpecificRangeEnd,
 			0xff00 => Self::ProcessorSpecificRangeStart,
 			0xffff => Self::OsSpecificRangeEnd,
-			_ => return Err(oso_err!(EfiParseError::UnknownEfiType(value)),),
+			_ => {
+				return Err(poison_girl_err!(EfiParseError::UnknownEfiType(
+					value
+				)),);
+			},
 		};
 		Ok(ty,)
 	}
@@ -1002,13 +1005,15 @@ pub struct ElfHeaderIdent {
 impl ElfHeaderIdent {
 	fn new(ident: &[u8],) -> Rslt<Self, EfiParseError,> {
 		if ident.len() != ELF_IDENT_SIZE {
-			return Err(oso_err!(EfiParseError::InvalidIdentLen(ident.len())),);
+			return Err(poison_girl_err!(EfiParseError::InvalidIdentLen(
+				ident.len()
+			)),);
 		}
 
 		// check magic number
 		// size of elf magic number is 4
 		if &ident[0..4] != ELF_MAGIC_NUMBER {
-			return Err(oso_err!(EfiParseError::BadMagicNumber(
+			return Err(poison_girl_err!(EfiParseError::BadMagicNumber(
 				ident[0], ident[1], ident[2], ident[3]
 			)),);
 		}
@@ -1057,7 +1062,7 @@ impl TryFrom<u8,> for FileClass {
 		match value {
 			ELF_32_BIT_OBJECT => Ok(Self::Bit32,),
 			ELF_64_BIT_OBJECT => Ok(Self::Bit64,),
-			_ => Err(oso_err!(EfiParseError::InvalidFileClass(value)),),
+			_ => Err(poison_girl_err!(EfiParseError::InvalidFileClass(value)),),
 		}
 	}
 }
@@ -1086,7 +1091,9 @@ impl TryFrom<u8,> for TargetOsAbi {
 			0x0 => Ok(Self::SysV,),
 			0x53 => Ok(Self::Arm,),
 			0x61 => Ok(Self::Standalone,),
-			_ => Err(oso_err!(EfiParseError::OsAbiOutOfSupport(value)),),
+			_ => {
+				Err(poison_girl_err!(EfiParseError::OsAbiOutOfSupport(value)),)
+			},
 		}
 	}
 }
@@ -1118,7 +1125,7 @@ impl StringTable {
 	) -> Rslt<Self, EfiParseError,> {
 		let (end, overflow,) = offset.overflowing_add(len,);
 		if overflow || end > binary.len() {
-			return Err(oso_err!(EfiParseError::SizeOverflow {
+			return Err(poison_girl_err!(EfiParseError::SizeOverflow {
 				stage:    EfiParseStage::StringTable,
 				name:     0,
 				expected: binary.len() as u64,
@@ -1144,7 +1151,7 @@ impl StringTable {
 		Self {
 			delimitor: StringContext::Delimiter(delimiter,),
 			bytes:     bytes.to_vec(),
-			strings:   vec![],
+			strings:   alloc::vec![],
 		}
 	}
 
@@ -1182,7 +1189,7 @@ impl StringContext {
 				{
 					i += 1;
 					if i >= bytes.len() {
-						return Err(oso_err!(
+						return Err(poison_girl_err!(
 							EfiParseError::DelimiterNotFound(*delimiter)
 						),);
 					}
@@ -1230,7 +1237,7 @@ impl SymbolTable {
 				Container::Little => todo!(),
 				Container::Big => Self::SIZE_OF_SYMBOL_64,
 			},)
-			.ok_or(oso_err!(EfiParseError::TooManySymbolsOffset {
+			.ok_or(poison_girl_err!(EfiParseError::TooManySymbolsOffset {
 				offset,
 				count
 			}),)?;
@@ -1291,7 +1298,9 @@ impl TryFrom<u8,> for Endian {
 		match value {
 			1 => Ok(Self::Little,),
 			2 => Ok(Self::Big,),
-			_ => Err(oso_err!(EfiParseError::InvalidEndianFlag(value)),),
+			_ => {
+				Err(poison_girl_err!(EfiParseError::InvalidEndianFlag(value)),)
+			},
 		}
 	}
 }
