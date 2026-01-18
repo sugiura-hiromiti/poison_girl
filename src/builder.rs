@@ -10,10 +10,13 @@
 //! - Configuring and running QEMU with the appropriate firmware and disk image
 //! - Cleanup of temporary files and unmounting disk images
 
-use anyhow::Result as Rslt;
-use oso_dev_util::cargo::Assets;
-use oso_dev_util::cargo::Opts;
-use oso_dev_util::fs::project_root;
+use {
+	poison_girl_dev_error::{PoisonGirlB, X},
+	poison_girl_dev_orchestrate::{
+		cargo::{Assets, Opts},
+		fs::project_root,
+	},
+};
 
 use crate::Xtask;
 
@@ -73,10 +76,10 @@ impl Xtask {
 	///   (Windows)
 	/// - **Network Error**: If firmware download requires internet access and
 	///   fails
-	pub fn new() -> Rslt<Self,> {
+	pub fn new() -> PoisonGirlB<Self,> {
 		let opts = Opts::new();
 		let ws = project_root()?;
 		let assets = Assets::new(opts.arch,)?;
-		Ok(Self { opts, ws, assets, },)
+		X(Self { opts, ws, assets, },)
 	}
 }

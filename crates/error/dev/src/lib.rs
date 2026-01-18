@@ -92,6 +92,15 @@ impl From<toml::ser::Error,> for PoisonGirlError {
 	}
 }
 
+impl From<InvalidManifest,> for PoisonGirlError {
+	#[track_caller]
+	fn from(value: InvalidManifest,) -> Self {
+		Self {
+			loc: Location::caller(), src: DevError::InvalidManifest(value,),
+		}
+	}
+}
+
 #[derive(Debug,)]
 pub enum DevError {
 	Io(std::io::Error,),
@@ -102,6 +111,7 @@ pub enum DevError {
 	OvmfError(ovmf_prebuilt::Error,),
 	PathNotFound(PathNotFound,),
 	HostTupleNotFound(HostTupleNotFound,),
+	InvalidManifest(InvalidManifest,),
 	Todo(String,),
 }
 
@@ -110,6 +120,14 @@ pub struct PathNotFound(pub String,);
 
 #[derive(Debug,)]
 pub struct HostTupleNotFound;
+#[derive(Debug,)]
+pub struct InvalidManifest(String,);
+
+impl InvalidManifest {
+	pub fn new(s: impl Into<String,>,) -> Self {
+		Self(s.into(),)
+	}
+}
 
 #[macro_export]
 macro_rules! poison_girl_err {

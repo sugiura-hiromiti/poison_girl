@@ -1,8 +1,14 @@
 use {
-	poison_girl_dev_fs::{fs::all_crates, util::CaseConvert},
-	poison_girl_proc_macro_helper::rslt::Rslt,
+	itertools::Itertools,
+	poison_girl_dev_error::{InvalidManifest, poison_girl_err},
+	poison_girl_dev_fs::{
+		fs::{CARGO_MANIFEST, all_crates, read_toml},
+		util::CaseConvert,
+	},
+	poison_girl_proc_macro_helper::{diagnostic::Diag, rslt::Rslt},
 	proc_macro2::TokenStream,
 	quote::format_ident,
+	std::path::Path,
 };
 
 pub fn from_path_buf(item: syn::DeriveInput,) -> Rslt<TokenStream,> {
@@ -12,17 +18,28 @@ pub fn from_path_buf(item: syn::DeriveInput,) -> Rslt<TokenStream,> {
 	}
 }
 
-pub fn struct_impl(mut struct_def: syn::DeriveInput,) -> Rslt<TokenStream,> {
+fn struct_impl(mut struct_def: syn::DeriveInput,) -> Rslt<TokenStream,> {
 	trim_name(&mut struct_def,);
 
-	let enum_parts = enum_parts(&struct_def,)??;
-	let enum_name = enum_parts.name.clone();
-	let enum_dumped = enum_parts.dump();
-	let struct_dumped = struct_dump(struct_def, enum_name,)?;
-
-	Rslt::new(quote::quote! {
-		#enum_dumped
-		#struct_dumped
+	// let enum_parts = enum_parts(&struct_def,)??;
+	// let enum_name = enum_parts.name.clone();
+	// let enum_dumped = enum_parts.dump();
+	// let struct_dumped = struct_dump(struct_def, enum_name,)?;
+	//
+	// Rslt::new(quote::quote! {
+	// 	#enum_dumped
+	// 	#struct_dumped
+	// },)
+	enum_parts(&struct_def,).replace_by(|enum_def| {
+		struct_dump(struct_def.clone(), enum_def.name.clone(),).replace_by(
+			|struct_def| {
+				let enum_def = enum_def.dump();
+				Rslt::new(quote::quote! {
+					#enum_def
+					#struct_def
+				},)
+			},
+		)
 	},)
 }
 
@@ -81,47 +98,76 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,> {
 	let name = detect_chart_type(struct_def,);
 
 	let crate_list = all_crates()?;
-	let (variants, variants_attr, paths,): (
-		Vec<proc_macro2::TokenStream,>,
-		Vec<Option<proc_macro2::TokenStream,>,>,
-		Vec<proc_macro2::TokenStream,>,
-	) = crate_list
+	crate_list
 		.iter()
 		.enumerate()
 		.map(|(i, pb,)| {
 			let path = pb.to_str().ok_or("failed convert PathBuf to &str",)?;
 			let path = quote::quote! {#path};
-			let variant: String = pb.to_camel();
-			let variant = format_ident!("{variant}");
-			let variant = quote::quote! {
-				#variant
-			};
+			extract_variant_name(pb,).replace_by(|name| {
+				let variant = format_ident!("{name}");
+				let variant = quote::quote! {
+					#variant
+				};
 
-			let attr = if i == 0 {
-				Some(quote::quote! {
-					#[default]
-				},)
-			} else {
-				None
-			};
-
-			Rslt::new((variant, attr, path,),)
+				let attr = if i == 0 {
+					Some(quote::quote! {
+						#[default]
+					},)
+				} else {
+					None
+				};
+				Rslt::new((variant, attr, path,),)
+			},)
 		},)
 		.fold(Rslt::new(vec![],), |acc, item| acc.add(item,),)
 		.replace_by(|val| {
 			let len = val.len();
-			let mut variant = Vec::with_capacity(len,);
-			let mut attr = Vec::with_capacity(len,);
-			let mut path = Vec::with_capacity(len,);
+			let mut variants = Vec::with_capacity(len,);
+			let mut variants_attr = Vec::with_capacity(len,);
+			let mut paths = Vec::with_capacity(len,);
 			val.into_iter().for_each(|(v, a, p,)| {
-				variant.push(v,);
-				attr.push(a,);
-				path.push(p,);
+				variants.push(v,);
+				variants_attr.push(a,);
+				paths.push(p,);
 			},);
-			Rslt::new((variant, attr, path,),)
-		},)??;
+			Rslt::new(EnumParts {
+				name,
+				variants: variants.clone(),
+				variants_attr,
+				paths,
+			},)
+			.with_diags(
+				variants
+					.iter()
+					.map(|v| Diag::help(format!("{v:?}"),),)
+					.collect(),
+			)
+		},)
+}
 
-	Rslt::new(EnumParts { name, variants, variants_attr, paths, },)
+fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,> {
+	let manifest = p.as_ref().join(CARGO_MANIFEST,);
+	let manifest = read_toml(manifest,)?;
+	let toml::Value::String(package_name,) = manifest
+		.get("package",)
+		.ok_or(InvalidManifest::new("package",),)?
+		.get("name",)
+		.ok_or(InvalidManifest::new("name",),)?
+	else {
+		return Rslt::new_err(poison_girl_err!(InvalidManifest::new(format!(
+			"{manifest:?}"
+		))),);
+	};
+
+	// 頭の`poison_girl_`部分は長ったらしいので除く
+	let name = if package_name != "poison_girl" {
+		package_name.split("poison_girl_",).nth(1,).unwrap()
+	} else {
+		package_name
+	}
+	.to_string();
+	Rslt::new(name,)
 }
 
 fn detect_chart_type(struct_def: &syn::DeriveInput,) -> Option<syn::Type,> {

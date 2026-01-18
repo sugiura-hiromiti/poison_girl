@@ -1,4 +1,5 @@
 use {
+	poison_girl_dev_error::{X, Y},
 	poison_girl_dev_orchestrate::{
 		cargo::*, decl_manage::crate_::CrateInfo, fs::*,
 	},
@@ -246,7 +247,7 @@ fn test_fs_integration() {
 
 	// Functions should return consistent types
 	match (project_result, current_result,) {
-		(Ok(project_crate,), Ok(current_crate,),) => {
+		(X(project_crate,), X(current_crate,),) => {
 			// Both should be valid OsoCrate instances
 			let project_path = project_crate.path();
 			let current_path = current_crate.path();
@@ -263,12 +264,12 @@ fn test_fs_integration() {
 			let project_crate2 = project_crate.clone();
 			assert_eq!(project_crate, project_crate2);
 		},
-		(Err(project_err,), _,) => {
+		(Y(project_err,), _,) => {
 			// Error should be meaningful
 			let error_msg = project_err.to_string();
 			assert!(!error_msg.is_empty());
 		},
-		(_, Err(current_err,),) => {
+		(_, Y(current_err,),) => {
 			// Error should be meaningful
 			let error_msg = current_err.to_string();
 			assert!(!error_msg.is_empty());

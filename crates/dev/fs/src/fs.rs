@@ -43,6 +43,7 @@ pub fn check_poison_girl_kernel() -> PoisonGirlB<(),> {
 	X((),)
 }
 
+//  TODO: workspaceのCargo.tomlを読んでworkspace memberを取得
 pub fn all_crates() -> PoisonGirlB<Vec<PathBuf,>,> {
 	let proot = project_root_path()?;
 	let mut crates = all_crates_in(&proot,)?;
