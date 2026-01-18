@@ -1,9 +1,6 @@
 //! uefi implementation
 
-use {
-	crate::{Rslt, c_style_enum},
-	core::ffi::c_void,
-};
+use {crate::c_style_enum, core::ffi::c_void};
 
 pub mod capsule;
 pub mod event;

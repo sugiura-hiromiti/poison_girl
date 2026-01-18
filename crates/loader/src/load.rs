@@ -3,22 +3,27 @@
 //! This module provides functionality for loading ELF kernels from the
 //! filesystem and configuring graphics output for the kernel environment.
 
-use crate::Rslt;
-use crate::chibi_uefi::required_pages;
-use crate::chibi_uefi::table::boot_services;
-use crate::elf::Elf;
-use crate::elf::program_header::ProgramHeaderType;
-use crate::print;
-use crate::println;
-use crate::raw::protocol::file::FileProtocolV1;
-use crate::raw::protocol::file::SimpleFileSystemProtocol;
-use crate::raw::protocol::graphic::GraphicsOutputProtocol;
-use crate::raw::types::PhysicalAddress;
-use crate::raw::types::file::FileAttributes;
-use crate::raw::types::file::OpenMode;
-use crate::raw::types::memory::AllocateType;
-use core::ptr::NonNull;
-use oso_no_std_shared::bridge::graphic::FrameBufConf;
+use {
+	crate::{
+		chibi_uefi::{required_pages, table::boot_services},
+		elf::{Elf, program_header::ProgramHeaderType},
+		print, println,
+		raw::{
+			protocol::{
+				file::{FileProtocolV1, SimpleFileSystemProtocol},
+				graphic::GraphicsOutputProtocol,
+			},
+			types::{
+				PhysicalAddress,
+				file::{FileAttributes, OpenMode},
+				memory::AllocateType,
+			},
+		},
+	},
+	core::ptr::NonNull,
+	poison_girl_no_std::bridge::graphic::FrameBufConf,
+	poison_girl_no_std_error::{PoisonGirlB, X, Y},
+};
 
 /// Loads the kernel ELF file and prepares it for execution
 ///
@@ -47,15 +52,15 @@ use oso_no_std_shared::bridge::graphic::FrameBufConf;
 ///
 /// Panics if ELF parsing fails with an unrecoverable error, as this indicates
 /// a fundamental problem with the kernel file that cannot be resolved.
-pub fn kernel() -> Rslt<PhysicalAddress,> {
+pub fn kernel() -> PoisonGirlB<PhysicalAddress,> {
 	// Open and read the kernel ELF file
 	let mut kernel_file = open_kernel_file()?;
 	let contents = unsafe { kernel_file.as_mut() }.read_as_bytes()?;
 
 	// Parse the ELF file structure
 	let elf = match Elf::parse(&contents,) {
-		Ok(elf,) => elf,
-		Err(e,) => panic!("unrecoverable error: {e:?}"),
+		X(elf,) => elf,
+		Y(e,) => panic!("unrecoverable error: {e:?}"),
 	};
 
 	// Calculate memory requirements for all loadable segments
@@ -81,7 +86,7 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 
 	println!("head: {head:#x}, tail: {tail:#x}");
 
-	Ok(elf.entry_point_address() as u64,)
+	X(elf.entry_point_address() as u64,)
 }
 
 /// Opens the kernel ELF file from the filesystem
@@ -100,7 +105,7 @@ pub fn kernel() -> Rslt<PhysicalAddress,> {
 /// - No simple file system protocol is available
 /// - The volume cannot be opened
 /// - The kernel file does not exist or cannot be opened
-fn open_kernel_file() -> Rslt<NonNull<FileProtocolV1,>,> {
+fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,> {
 	let open_mode = OpenMode::READ;
 	let attrs = FileAttributes(0,);
 
@@ -122,7 +127,7 @@ fn open_kernel_file() -> Rslt<NonNull<FileProtocolV1,>,> {
 	let kernel_file = volume.open("oso_kernel.elf", open_mode, attrs,)?;
 	let non_null_kernel_file =
 		NonNull::new(kernel_file,).expect("reference can't be null",);
-	Ok(non_null_kernel_file,)
+	X(non_null_kernel_file,)
 }
 
 /// Calculates the memory address range required for all loadable ELF segments
@@ -238,7 +243,7 @@ fn copy_load_segment(elf: &Elf, src: &[u8],) {
 ///
 /// The returned configuration is typically passed to the kernel during
 /// initialization to enable graphics output capabilities.
-pub fn graphic_config() -> Rslt<FrameBufConf,> {
+pub fn graphic_config() -> PoisonGirlB<FrameBufConf,> {
 	let bs = boot_services();
 
 	// Open Graphics Output Protocol
@@ -258,5 +263,5 @@ pub fn graphic_config() -> Rslt<FrameBufConf,> {
 	let fbc =
 		FrameBufConf::new(pixel_format, base, size, width, height, stride,);
 
-	Ok(fbc,)
+	X(fbc,)
 }

@@ -97,7 +97,7 @@ use {
 		fmt::Write,
 		ops::{Add, Div, Mul, Sub},
 	},
-	poison_girl_error::Rslt,
+	poison_girl_no_std_error::{PoisonGirlB, X},
 	poison_girl_proc_macro_def::{font, impl_int},
 };
 
@@ -334,12 +334,12 @@ impl<C: Coordinal,> TextBuf<C,> {
 	/// - Re-enable pixel rendering (currently commented out)
 	/// - Add color support for characters
 	/// - Implement proper error handling for rendering failures
-	fn put_char(&mut self, char: u8,) -> Rslt<(),> {
+	fn put_char(&mut self, char: u8,) -> PoisonGirlB<(),> {
 		// Handle newline character
 		if char == b'\n' {
 			self.row += 1;
 			self.col = 0;
-			return Ok((),);
+			return X((),);
 		}
 
 		// Check if we've reached the bottom of the screen
@@ -375,7 +375,7 @@ impl<C: Coordinal,> TextBuf<C,> {
 			self.row += 1;
 		}
 
-		Ok((),)
+		X((),)
 	}
 }
 

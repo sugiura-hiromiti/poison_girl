@@ -34,10 +34,55 @@ impl From<ParserError,> for PoisonGirlError {
 	}
 }
 
+impl From<GraphicError,> for PoisonGirlError {
+	#[track_caller]
+	fn from(value: GraphicError,) -> Self {
+		Self {
+			_loc: Location::caller(),
+			_src: PoisonGirlErrorKind::Graphic(value,),
+		}
+	}
+}
+
+impl From<UefiError,> for PoisonGirlError {
+	#[track_caller]
+	fn from(value: UefiError,) -> Self {
+		Self {
+			_loc: Location::caller(),
+			_src: PoisonGirlErrorKind::Uefi(value,),
+		}
+	}
+}
+
+impl From<GuidError,> for PoisonGirlError {
+	#[track_caller]
+	fn from(value: GuidError,) -> Self {
+		Self {
+			_loc: Location::caller(),
+			_src: PoisonGirlErrorKind::Uefi(UefiError::Guid(value,),),
+		}
+	}
+}
+
 #[derive(Debug,)]
 pub enum PoisonGirlErrorKind {
+	Uefi(UefiError,),
 	ElfParse(ElfParseError,),
 	Parser(ParserError,),
+	Graphic(GraphicError,),
+}
+
+#[derive(Debug,)]
+pub enum UefiError {
+	CustomStatus(usize,),
+	Status(&'static str,),
+	Custom(&'static str,),
+	Guid(GuidError,),
+}
+
+#[derive(Debug,)]
+pub enum GuidError {
+	InvalidHexChar,
 }
 
 #[derive(Debug,)]
@@ -83,3 +128,15 @@ pub enum ElfParseStage {
 
 #[derive(Debug,)]
 pub enum ParserError {}
+
+#[derive(Debug,)]
+pub enum GraphicError {
+	InvalidCoordinate,
+}
+
+#[macro_export]
+macro_rules! poison_girl_err {
+	($err:expr) => {
+		$crate::PoisonGirlError::from($err,)
+	};
+}

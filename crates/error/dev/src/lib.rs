@@ -54,7 +54,7 @@ impl From<std::string::FromUtf8Error,> for PoisonGirlError {
 impl From<toml::de::Error,> for PoisonGirlError {
 	#[track_caller]
 	fn from(value: toml::de::Error,) -> Self {
-		Self { loc: Location::caller(), src: DevError::TomlError(value,), }
+		Self { loc: Location::caller(), src: DevError::TomlDeError(value,), }
 	}
 }
 
@@ -68,10 +68,27 @@ impl From<HostTupleNotFound,> for PoisonGirlError {
 	}
 }
 
-impl From<String,> for PoisonGirlError {
+impl From<ovmf_prebuilt::Error,> for PoisonGirlError {
 	#[track_caller]
-	fn from(value: String,) -> Self {
-		Self { loc: Location::caller(), src: DevError::Todo(value,), }
+	fn from(value: ovmf_prebuilt::Error,) -> Self {
+		Self { loc: Location::caller(), src: DevError::OvmfError(value,), }
+	}
+}
+
+impl From<&str,> for PoisonGirlError {
+	#[track_caller]
+	fn from(value: &str,) -> Self {
+		Self {
+			loc: Location::caller(),
+			src: DevError::Todo(value.to_string(),),
+		}
+	}
+}
+
+impl From<toml::ser::Error,> for PoisonGirlError {
+	#[track_caller]
+	fn from(value: toml::ser::Error,) -> Self {
+		Self { loc: Location::caller(), src: DevError::TomlSerError(value,), }
 	}
 }
 
@@ -80,7 +97,9 @@ pub enum DevError {
 	Io(std::io::Error,),
 	ExitStatus(std::process::ExitStatusError,),
 	FromUtf8(std::string::FromUtf8Error,),
-	TomlError(toml::de::Error,),
+	TomlDeError(toml::de::Error,),
+	TomlSerError(toml::ser::Error,),
+	OvmfError(ovmf_prebuilt::Error,),
 	PathNotFound(PathNotFound,),
 	HostTupleNotFound(HostTupleNotFound,),
 	Todo(String,),
@@ -91,3 +110,10 @@ pub struct PathNotFound(pub String,);
 
 #[derive(Debug,)]
 pub struct HostTupleNotFound;
+
+#[macro_export]
+macro_rules! poison_girl_err {
+	($err:expr) => {
+		$crate::PoisonGirlError::from($err,)
+	};
+}

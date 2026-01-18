@@ -1,45 +1,8 @@
-//! # ELF File Parsing and Loading Module
-//!
-//! This module provides comprehensive ELF (Executable and Linkable Format) file
-//! parsing capabilities for the OSO bootloader. It supports parsing ELF
-//! headers, program headers, section headers, and various ELF structures needed
-//! for kernel loading.
-//!
-//! ## Features
-//!
-//! - **ELF Header Parsing**: Validates and parses ELF file headers
-//! - **Program Header Processing**: Handles loadable segments and program
-//!   information
-//! - **Section Header Analysis**: Processes section headers for symbol tables
-//!   and relocations
-//! - **Dynamic Linking Support**: Handles dynamic symbols, relocations, and
-//!   version information
-//! - **Multi-architecture Support**: Works with 32-bit and 64-bit ELF files
-//! - **Endianness Handling**: Supports both little-endian and big-endian
-//!   formats
-//!
-//! ## ELF Structure Support
-//!
-//! The module supports parsing of:
-//! - Symbol tables (static and dynamic)
-//! - String tables
-//! - Relocation sections (REL and RELA)
-//! - Version information (definitions and requirements)
-//! - Dynamic linking information
-//! - Hash tables for symbol lookup
-//!
-//! ## Constants
-//!
-//! Various ELF format constants are defined for validation and parsing.
-
 use {
-	crate::{
-		Rslt,
-		elf::{
-			hash::{gnu_hash_len, hash_len},
-			program_header::ProgramHeader,
-			section_header::SectionHeader,
-		},
+	crate::elf::{
+		hash::{gnu_hash_len, hash_len},
+		program_header::ProgramHeader,
+		section_header::SectionHeader,
 	},
 	alloc::{
 		string::{String, ToString},
@@ -53,9 +16,8 @@ use {
 			SubAssign,
 		},
 	},
-	poison_girl_error::{
-		OsoError,
-		loader::{EfiParseError, EfiParseStage},
+	poison_girl_no_std_error::{
+		Container as _, ElfParseError, ElfParseStage, PoisonGirlB, X, Y,
 		poison_girl_err,
 	},
 	program_header::ProgramHeaderType,
@@ -93,47 +55,6 @@ const ELF_OS_ABI_INDEX: usize = 7;
 /// Index of the ABI version byte in the identification array
 const ELF_ABI_VERSION_INDEX: usize = 8;
 
-/// Represents a parsed ELF file with all its components
-///
-/// This structure contains all the parsed information from an ELF file,
-/// including headers, tables, and metadata necessary for loading and
-/// executing the binary.
-///
-/// # Fields
-///
-/// ## Core Structure
-/// - `header`: Main ELF header containing file metadata
-/// - `program_headers`: Array of program headers describing segments
-/// - `section_headers`: Array of section headers describing sections
-///
-/// ## String and Symbol Tables
-/// - `section_header_string_table`: Names of sections
-/// - `dynamic_string_table`: Strings used by dynamic linking
-/// - `dynamic_symbol_table`: Symbols for dynamic linking
-/// - `symbol_table`: Static symbol table
-/// - `string_table_for_symbol_table`: Strings for static symbols
-///
-/// ## Dynamic Linking Information
-/// - `dynamic_info`: Dynamic section information
-/// - `shared_object_name`: Name of shared object (if applicable)
-/// - `interpreter`: Path to dynamic linker/interpreter
-/// - `libraries`: List of required shared libraries
-/// - `runtime_search_path_deprecated`: Deprecated runtime search paths
-/// - `runtime_search_path`: Runtime library search paths
-///
-/// ## Relocation Information
-/// - `dynamic_relocation_with_addend`: RELA relocations
-/// - `dynamic_relocation`: REL relocations
-/// - `procedure_linkage_table_relocation`: PLT relocations
-/// - `section_relocations`: Per-section relocations
-///
-/// ## Version Information
-/// - `symbol_version_section`: Symbol version information
-/// - `version_definition_section`: Version definitions
-/// - `version_needed_section`: Required versions
-///
-/// ## Flags
-/// - `is_position_independent_executable`: Whether this is a PIE binary
 pub struct Elf {
 	pub header:                             ElfHeader,
 	pub program_headers:                    Vec<ProgramHeader,>,
@@ -160,42 +81,7 @@ pub struct Elf {
 }
 
 impl Elf {
-	/// Parses an ELF file from binary data
-	///
-	/// This method performs comprehensive parsing of an ELF file, extracting
-	/// all relevant information needed for loading and execution. The parsing
-	/// process includes validation of the ELF format and extraction of all
-	/// supported ELF structures.
-	///
-	/// # Arguments
-	///
-	/// * `binary` - Raw bytes of the ELF file to parse
-	///
-	/// # Returns
-	///
-	/// * `Ok(Elf)` - Successfully parsed ELF structure
-	/// * `Err(EfiParseError)` - If parsing fails due to invalid format or
-	///   unsupported features
-	///
-	/// # Errors
-	///
-	/// This method can fail if:
-	/// - The file is not a valid ELF file (invalid magic number)
-	/// - The ELF format is unsupported (wrong architecture, endianness, etc.)
-	/// - Required sections or headers are malformed
-	/// - Memory allocation fails during parsing
-	///
-	/// # Parsing Process
-	///
-	/// 1. **Header Parsing**: Validates and parses the main ELF header
-	/// 2. **Program Headers**: Extracts segment information for loading
-	/// 3. **Section Headers**: Processes section metadata
-	/// 4. **String Tables**: Extracts various string tables
-	/// 5. **Symbol Tables**: Processes static and dynamic symbol information
-	/// 6. **Dynamic Information**: Handles dynamic linking metadata
-	/// 7. **Relocations**: Processes relocation entries
-	/// 8. **Version Information**: Extracts symbol versioning data
-	pub fn parse(binary: &[u8],) -> Rslt<Self, EfiParseError,> {
+	pub fn parse(binary: &[u8],) -> PoisonGirlB<Self,> {
 		let header = ElfHeader::parse(binary,)?;
 		poison_girl_proc_macro_def::test_elf_header_parse!(header);
 
@@ -378,7 +264,7 @@ impl Elf {
 		let version_needed_section =
 			VersionNeededSection::parse(binary, &section_headers, ctx,)?;
 
-		Ok(Self {
+		X(Self {
 			header,
 			program_headers,
 			section_headers,
@@ -840,7 +726,7 @@ impl ElfHeader {
 	/// LSI Logic 16-bit DSP Processor
 	pub const EM_ZSP: u16 = 79;
 
-	pub fn parse(binary: &[u8],) -> Rslt<Self, EfiParseError,> {
+	pub fn parse(binary: &[u8],) -> PoisonGirlB<Self,> {
 		let ident = &binary[..ELF_IDENT_SIZE];
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
@@ -863,7 +749,7 @@ impl ElfHeader {
 fn header_flag_fields(
 	ident: ElfHeaderIdent,
 	ident_remain: &[u8],
-) -> Rslt<ElfHeader, EfiParseError,> {
+) -> PoisonGirlB<ElfHeader,> {
 	let offset = &mut 0;
 
 	macro_rules! fields {
@@ -871,9 +757,9 @@ fn header_flag_fields(
 			let $field =
 				read_le_bytes(offset, ident_remain,).ok_or_else(|| {
 					let field = stringify!($field);
-					poison_girl_error::poison_girl_err!(poison_girl_error::loader::EfiParseError::EndOfBinary{
+					poison_girl_err!(poison_girl_no_std_error::ElfParseError::EndOfBinary{
 						parser_pos: field,
-						stage: poison_girl_error::loader::EfiParseStage::Header
+						stage: poison_girl_no_std_error::ElfParseStage::Header
 					})
 				})?;
 		};
@@ -885,9 +771,9 @@ fn header_flag_fields(
 	}
 
 	let ty: u16 = read_le_bytes(offset, ident_remain,).ok_or(
-		poison_girl_err!(EfiParseError::EndOfBinary {
+		poison_girl_err!(ElfParseError::EndOfBinary {
 			parser_pos: "ty",
-			stage:      poison_girl_error::loader::EfiParseStage::Header,
+			stage:      ElfParseStage::Header,
 		}),
 	)?;
 	let ty = ElfType::try_from(ty,)?;
@@ -906,7 +792,7 @@ fn header_flag_fields(
 		section_header_index_of_section_name_string_table,
 	);
 
-	Ok(ElfHeader {
+	X(ElfHeader {
 		ident,
 		ty,
 		machine,
@@ -969,7 +855,7 @@ impl ElfType {
 }
 
 impl TryFrom<u16,> for ElfType {
-	type Error = OsoError<EfiParseError,>;
+	type Error = ElfParseError;
 
 	fn try_from(value: u16,) -> Result<Self, Self::Error,> {
 		let ty = match value {
@@ -984,9 +870,7 @@ impl TryFrom<u16,> for ElfType {
 			0xff00 => Self::ProcessorSpecificRangeStart,
 			0xffff => Self::OsSpecificRangeEnd,
 			_ => {
-				return Err(poison_girl_err!(EfiParseError::UnknownEfiType(
-					value
-				)),);
+				return Err(ElfParseError::UnknownEfiType(value,),);
 			},
 		};
 		Ok(ty,)
@@ -1003,9 +887,9 @@ pub struct ElfHeaderIdent {
 }
 
 impl ElfHeaderIdent {
-	fn new(ident: &[u8],) -> Rslt<Self, EfiParseError,> {
+	fn new(ident: &[u8],) -> PoisonGirlB<Self,> {
 		if ident.len() != ELF_IDENT_SIZE {
-			return Err(poison_girl_err!(EfiParseError::InvalidIdentLen(
+			return Y(poison_girl_err!(ElfParseError::InvalidIdentLen(
 				ident.len()
 			)),);
 		}
@@ -1013,7 +897,7 @@ impl ElfHeaderIdent {
 		// check magic number
 		// size of elf magic number is 4
 		if &ident[0..4] != ELF_MAGIC_NUMBER {
-			return Err(poison_girl_err!(EfiParseError::BadMagicNumber(
+			return Y(poison_girl_err!(ElfParseError::BadMagicNumber(
 				ident[0], ident[1], ident[2], ident[3]
 			)),);
 		}
@@ -1024,7 +908,7 @@ impl ElfHeaderIdent {
 		let target_os_abi = TargetOsAbi::try_from(ident[ELF_OS_ABI_INDEX],)?;
 		let abi_version = AbiVersion(ident[ELF_ABI_VERSION_INDEX],);
 
-		Ok(Self {
+		X(Self {
 			file_class,
 			endianness,
 			elf_version,
@@ -1056,13 +940,13 @@ impl FileClass {
 }
 
 impl TryFrom<u8,> for FileClass {
-	type Error = OsoError<EfiParseError,>;
+	type Error = ElfParseError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			ELF_32_BIT_OBJECT => Ok(Self::Bit32,),
 			ELF_64_BIT_OBJECT => Ok(Self::Bit64,),
-			_ => Err(poison_girl_err!(EfiParseError::InvalidFileClass(value)),),
+			_ => Err(ElfParseError::InvalidFileClass(value,),),
 		}
 	}
 }
@@ -1084,16 +968,14 @@ pub enum TargetOsAbi {
 }
 
 impl TryFrom<u8,> for TargetOsAbi {
-	type Error = OsoError<EfiParseError,>;
+	type Error = ElfParseError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			0x0 => Ok(Self::SysV,),
 			0x53 => Ok(Self::Arm,),
 			0x61 => Ok(Self::Standalone,),
-			_ => {
-				Err(poison_girl_err!(EfiParseError::OsAbiOutOfSupport(value)),)
-			},
+			_ => Err(ElfParseError::OsAbiOutOfSupport(value,),),
 		}
 	}
 }
@@ -1122,11 +1004,11 @@ impl StringTable {
 		offset: usize,
 		len: usize,
 		delimiter: u8,
-	) -> Rslt<Self, EfiParseError,> {
+	) -> PoisonGirlB<Self,> {
 		let (end, overflow,) = offset.overflowing_add(len,);
 		if overflow || end > binary.len() {
-			return Err(poison_girl_err!(EfiParseError::SizeOverflow {
-				stage:    EfiParseStage::StringTable,
+			return Y(poison_girl_err!(ElfParseError::SizeOverflow {
+				stage:    ElfParseStage::StringTable,
 				name:     0,
 				expected: binary.len() as u64,
 				base:     offset as u64,
@@ -1144,7 +1026,7 @@ impl StringTable {
 			i += len + 1;
 		}
 
-		Ok(rslt,)
+		X(rslt,)
 	}
 
 	fn from_slice(bytes: &[u8], delimiter: u8,) -> Self {
@@ -1180,7 +1062,7 @@ pub enum StringContext {
 }
 
 impl StringContext {
-	fn read_bytes(&self, bytes: &[u8],) -> Rslt<String, EfiParseError,> {
+	fn read_bytes(&self, bytes: &[u8],) -> PoisonGirlB<String,> {
 		let bytes = match self {
 			StringContext::Delimiter(delimiter,) => {
 				let mut i = 0;
@@ -1189,8 +1071,8 @@ impl StringContext {
 				{
 					i += 1;
 					if i >= bytes.len() {
-						return Err(poison_girl_err!(
-							EfiParseError::DelimiterNotFound(*delimiter)
+						return Y(poison_girl_err!(
+							ElfParseError::DelimiterNotFound(*delimiter)
 						),);
 					}
 				}
@@ -1202,7 +1084,7 @@ impl StringContext {
 		};
 
 		let rslt = String::from_utf8_lossy(bytes,);
-		Ok(rslt.to_string(),)
+		X(rslt.to_string(),)
 	}
 }
 
@@ -1231,20 +1113,20 @@ impl SymbolTable {
 		offset: usize,
 		count: usize,
 		context: &Context,
-	) -> Rslt<Self, EfiParseError,> {
+	) -> PoisonGirlB<Self,> {
 		let size = count
 			.checked_mul(match context.container {
 				Container::Little => todo!(),
 				Container::Big => Self::SIZE_OF_SYMBOL_64,
 			},)
-			.ok_or(poison_girl_err!(EfiParseError::TooManySymbolsOffset {
+			.ok_or(poison_girl_err!(ElfParseError::TooManySymbolsOffset {
 				offset,
 				count
 			}),)?;
 
 		let bytes = binary[offset..offset + size].to_vec();
 
-		Ok(SymbolTable {
+		X(SymbolTable {
 			bytes,
 			count,
 			ctx: context.clone(),
@@ -1292,15 +1174,13 @@ impl Endian {
 }
 
 impl TryFrom<u8,> for Endian {
-	type Error = OsoError<EfiParseError,>;
+	type Error = ElfParseError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
 		match value {
 			1 => Ok(Self::Little,),
 			2 => Ok(Self::Big,),
-			_ => {
-				Err(poison_girl_err!(EfiParseError::InvalidEndianFlag(value)),)
-			},
+			_ => Err(ElfParseError::InvalidEndianFlag(value,),),
 		}
 	}
 }
@@ -1504,7 +1384,7 @@ impl Dynamic {
 	fn parse(
 		binary: &[u8],
 		program_headers: &Vec<ProgramHeader,>,
-	) -> Rslt<Option<Self,>, EfiParseError,> {
+	) -> PoisonGirlB<Option<Self,>,> {
 		for program_header in program_headers {
 			if program_header.ty == ProgramHeaderType::Dynamic {
 				let offset = program_header.offset as usize;
@@ -1535,11 +1415,11 @@ impl Dynamic {
 					info.update(program_headers, dynamic,);
 				}
 
-				return Ok(Some(Dynamic { dyns, info, },),);
+				return X(Some(Dynamic { dyns, info, },),);
 			}
 		}
 
-		Ok(None,)
+		X(None,)
 	}
 
 	fn get_libraries(&self, string_table: &StringTable,) -> Vec<String,> {
@@ -1759,12 +1639,12 @@ impl RelocationSection {
 		size: usize,
 		is_addend: bool,
 		ctx: &Context,
-	) -> Rslt<Self, EfiParseError,> {
+	) -> PoisonGirlB<Self,> {
 		let bytes =
 			if size != 0 { &binary[offset..offset + size] } else { &[] }
 				.to_vec();
 
-		Ok(Self {
+		X(Self {
 			bytes,
 			count: size / Self::size(is_addend, ctx,),
 			context: (is_addend, ctx.clone(),),
@@ -1839,7 +1719,7 @@ impl Relocation {
 		bytes: &[u8],
 		offset: &mut usize,
 		(is_relocation_addrend, context,): &RelocationContext,
-	) -> Rslt<Self,> {
+	) -> PoisonGirlB<Self,> {
 		let relocation = match (is_relocation_addrend, &context.container,) {
 			(true, Container::Little,) => todo!(),
 			(true, Container::Big,) => {
@@ -1848,7 +1728,7 @@ impl Relocation {
 			(false, Container::Little,) => todo!(),
 			(false, Container::Big,) => Reloc::parse(bytes, offset,).into(),
 		};
-		Ok(relocation,)
+		X(relocation,)
 	}
 }
 
@@ -1924,17 +1804,17 @@ impl SymbolVersionSection {
 		binary: &[u8],
 		section_headers: &[SectionHeader],
 		ctx: &Context,
-	) -> Rslt<Option<Self,>, EfiParseError,> {
+	) -> PoisonGirlB<Option<Self,>,> {
 		let (offset, size,) = if let Some(section_header,) = section_headers
 			.iter()
 			.find(|section_header| section_header.ty == SHT_GNU_VERSYM,)
 		{
 			(section_header.offset as usize, section_header.size as usize,)
 		} else {
-			return Ok(None,);
+			return X(None,);
 		};
 		let bytes = binary[offset..offset + size].to_vec();
-		Ok(Some(Self { bytes, context: ctx.clone(), },),)
+		X(Some(Self { bytes, context: ctx.clone(), },),)
 	}
 }
 
@@ -1949,7 +1829,7 @@ impl VersionDefinitionSection {
 		binary: &[u8],
 		section_headers: &[SectionHeader],
 		ctx: &Context,
-	) -> Rslt<Option<Self,>, EfiParseError,> {
+	) -> PoisonGirlB<Option<Self,>,> {
 		let (offset, size, count,) = if let Some(section_header,) =
 			section_headers
 				.iter()
@@ -1961,10 +1841,10 @@ impl VersionDefinitionSection {
 				section_header.info as usize,
 			)
 		} else {
-			return Ok(None,);
+			return X(None,);
 		};
 		let bytes = binary[offset..offset + size].to_vec();
-		Ok(Some(Self { bytes, count, context: ctx.clone(), },),)
+		X(Some(Self { bytes, count, context: ctx.clone(), },),)
 	}
 }
 
@@ -1979,7 +1859,7 @@ impl VersionNeededSection {
 		binary: &[u8],
 		section_headers: &[SectionHeader],
 		ctx: &Context,
-	) -> Rslt<Option<Self,>, EfiParseError,> {
+	) -> PoisonGirlB<Option<Self,>,> {
 		let (offset, size, count,) = if let Some(section_header,) =
 			section_headers
 				.iter()
@@ -1991,10 +1871,10 @@ impl VersionNeededSection {
 				section_header.info as usize,
 			)
 		} else {
-			return Ok(None,);
+			return X(None,);
 		};
 		let bytes = binary[offset..offset + size].to_vec();
-		Ok(Some(Self { bytes, count, context: ctx.clone(), },),)
+		X(Some(Self { bytes, count, context: ctx.clone(), },),)
 	}
 }
 

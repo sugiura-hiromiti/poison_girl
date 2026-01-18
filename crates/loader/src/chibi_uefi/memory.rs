@@ -1,19 +1,20 @@
-use oso_error::loader::UefiError;
-
-use super::table::boot_services;
-use crate::Rslt;
-use crate::raw::service::BootServices;
-use crate::raw::types::PhysicalAddress;
-use crate::raw::types::Status;
-use crate::raw::types::memory::AllocateType;
-use crate::raw::types::memory::MemoryDescriptor;
-use crate::raw::types::memory::MemoryMapInfo;
-use crate::raw::types::memory::MemoryType;
-use core::alloc::GlobalAlloc;
-use core::alloc::Layout;
-use core::ptr::NonNull;
-
-type RsltU<T,> = Rslt<T, UefiError,>;
+use {
+	super::table::boot_services,
+	crate::raw::{
+		service::BootServices,
+		types::{
+			PhysicalAddress, Status,
+			memory::{
+				AllocateType, MemoryDescriptor, MemoryMapInfo, MemoryType,
+			},
+		},
+	},
+	core::{
+		alloc::{GlobalAlloc, Layout},
+		ptr::NonNull,
+	},
+	poison_girl_no_std_error::{Container, PoisonGirlB, X},
+};
 
 #[global_allocator]
 static LOADER_ALLOCATOR: LoaderAllocator = LoaderAllocator;
@@ -52,16 +53,16 @@ impl BootServices {
 		&self,
 		mem_ty: MemoryType,
 		size: usize,
-	) -> RsltU<NonNull<u8,>,> {
+	) -> PoisonGirlB<NonNull<u8,>,> {
 		let mut buf = core::ptr::null_mut();
 		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,) }.ok_or()?;
-		Ok(unsafe {
+		X(unsafe {
 			// "allocate_pool must not return a null pointer if successful
 			NonNull::new_unchecked(buf,)
 		},)
 	}
 
-	pub fn free_pool(&self, ptr: &mut u8,) -> RsltU<Status,> {
+	pub fn free_pool(&self, ptr: &mut u8,) -> PoisonGirlB<Status,> {
 		unsafe { (self.free_pool)(ptr,).ok_or() }
 	}
 
@@ -71,7 +72,7 @@ impl BootServices {
 		mem_ty: MemoryType,
 		page_count: usize,
 		mut alloc_head: PhysicalAddress,
-	) -> RsltU<PhysicalAddress,> {
+	) -> PoisonGirlB<PhysicalAddress,> {
 		unsafe {
 			(self.allocate_pages)(
 				allocation_type,
@@ -118,7 +119,10 @@ impl BootServices {
 		(map_size, descriptor_size,)
 	}
 
-	pub fn get_memory_map(&self, buf: &mut [u8],) -> RsltU<MemoryMapInfo,> {
+	pub fn get_memory_map(
+		&self,
+		buf: &mut [u8],
+	) -> PoisonGirlB<MemoryMapInfo,> {
 		let mut map_size = buf.len();
 		let map_buf = buf.as_mut_ptr().cast::<MemoryDescriptor>();
 		let mut map_key = 0;

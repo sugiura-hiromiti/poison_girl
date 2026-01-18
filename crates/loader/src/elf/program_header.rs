@@ -1,7 +1,7 @@
 use {
-	crate::{Rslt, elf::read_le_bytes},
+	crate::elf::read_le_bytes,
 	alloc::{format, vec::Vec},
-	poison_girl_error::{OsoError, loader::EfiParseError, poison_girl_err},
+	poison_girl_no_std_error::{ElfParseError, PoisonGirlB, X},
 };
 
 #[derive(PartialEq, Eq,)]
@@ -24,7 +24,7 @@ impl ProgramHeader {
 		binary: &[u8],
 		offset: &mut usize,
 		count: usize,
-	) -> Rslt<Vec<Self,>, EfiParseError,> {
+	) -> PoisonGirlB<Vec<Self,>,> {
 		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
 
 		let mut program_headers = Vec::with_capacity(count,);
@@ -59,7 +59,7 @@ impl ProgramHeader {
 			program_headers
 		);
 
-		Ok(program_headers,)
+		X(program_headers,)
 	}
 }
 
@@ -124,7 +124,7 @@ pub enum ProgramHeaderType {
 }
 
 impl TryFrom<u32,> for ProgramHeaderType {
-	type Error = OsoError<EfiParseError,>;
+	type Error = ElfParseError;
 
 	fn try_from(value: u32,) -> Result<Self, Self::Error,> {
 		let ty = match value {
@@ -149,9 +149,7 @@ impl TryFrom<u32,> for ProgramHeaderType {
 			0x6fff_fffb => Self::Sunwstack,
 			7 => Self::Tls,
 			_ => {
-				return Err(poison_girl_err!(
-					EfiParseError::InvalidProgramHeaderType(value)
-				),);
+				return Err(ElfParseError::InvalidProgramHeaderType(value,),);
 			},
 		};
 		Ok(ty,)

@@ -19,10 +19,8 @@ use {
 		ffi::c_void,
 		ptr::{self, NonNull},
 	},
-	poison_girl_error::{Rslt, loader::UefiError, poison_girl_err},
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, poison_girl_err},
 };
-
-type RsltU<T,> = Rslt<T, UefiError,>;
 
 pub trait Protocol {
 	const GUID: Guid;
@@ -61,7 +59,7 @@ impl BootServices {
 	pub unsafe fn locate_handle_buffer(
 		&self,
 		ty: HandleSearchType,
-	) -> RsltU<&mut [UnsafeHandle],> {
+	) -> PoisonGirlB<&mut [UnsafeHandle],> {
 		let (ty, guid, key,) = match ty {
 			HandleSearchType::AllHandles => (0, ptr::null(), ptr::null(),),
 			HandleSearchType::ByRegisterNotify(protocol_search_key,) => {
@@ -83,12 +81,12 @@ impl BootServices {
 				&mut buffer,
 			)
 		}
-		.ok_or()?;
+		.x_or()?;
 
 		let handler_range =
 			unsafe { core::slice::from_raw_parts_mut(buffer, num_handles,) };
 
-		Ok(handler_range,)
+		X(handler_range,)
 	}
 
 	/// return guid to search protocol
@@ -99,19 +97,22 @@ impl BootServices {
 	/// # Safety
 	pub unsafe fn handles_for_protocol<P: Protocol,>(
 		&self,
-	) -> RsltU<&mut [UnsafeHandle],> {
+	) -> PoisonGirlB<&mut [UnsafeHandle],> {
 		let search_ty = self.protocol_for::<P>();
 		unsafe { self.locate_handle_buffer(search_ty,) }
 	}
 
 	/// # Safety
-	pub unsafe fn handle_for_protocol<P: Protocol,>(&self,) -> RsltU<Handle,> {
+	pub unsafe fn handle_for_protocol<P: Protocol,>(
+		&self,
+	) -> PoisonGirlB<Handle,> {
 		let handles = unsafe { self.handles_for_protocol::<P>() }?;
 		let first_handle = *handles.first().ok_or(poison_girl_err!(
 			UefiError::Custom("length of handles is 0")
 		),)?;
-		unsafe { Handle::from_ptr(first_handle,) }
-			.ok_or(poison_girl_err!(UefiError::Custom("handle is null")),)
+		let hndl = unsafe { Handle::from_ptr(first_handle,) }
+			.ok_or(poison_girl_err!(UefiError::Custom("handle is null")),)?;
+		X(hndl,)
 	}
 
 	/// # Parms
@@ -139,7 +140,7 @@ impl BootServices {
 		&self,
 		necessity: OpenProtoNecessity,
 		attr: OpenProtoAttr,
-	) -> RsltU<ProtocolInterface<P,>,> {
+	) -> PoisonGirlB<ProtocolInterface<P,>,> {
 		let mut interface = ptr::null_mut();
 		unsafe {
 			(self.open_protocol)(
@@ -150,7 +151,7 @@ impl BootServices {
 				Handle::opt_to_ptr(necessity.controller.clone(),),
 				attr.0,
 			)
-			.ok_or_with(|_| ProtocolInterface {
+			.x_or_with(|_| ProtocolInterface {
 				interface: if interface.is_null() {
 					None
 				} else {
@@ -164,14 +165,14 @@ impl BootServices {
 	pub fn open_protocol_exclusive<P: Protocol,>(
 		&self,
 		handle: Handle,
-	) -> RsltU<ProtocolInterface<P,>,> {
+	) -> PoisonGirlB<ProtocolInterface<P,>,> {
 		let necessity = OpenProtoNecessity::for_app(handle,);
 		unsafe { self.open_protocol(necessity, OpenProtoAttr::EXCULSIVE,) }
 	}
 
 	pub fn open_protocol_with<P: Protocol,>(
 		&self,
-	) -> RsltU<ProtocolInterface<P,>,> {
+	) -> PoisonGirlB<ProtocolInterface<P,>,> {
 		let bs = boot_services();
 		let handle = unsafe { bs.handle_for_protocol::<P>() }?;
 		let necessity = OpenProtoNecessity::for_app(handle,);
@@ -183,11 +184,11 @@ impl BootServices {
 	pub fn handle_protocol<P: Protocol,>(
 		&self,
 		handle: Handle,
-	) -> RsltU<NonNull<ProtocolInterface<P,>,>,> {
+	) -> PoisonGirlB<NonNull<ProtocolInterface<P,>,>,> {
 		let interface = ptr::null_mut();
 		unsafe {
 			(self.handle_protocol)(handle.as_ptr(), &P::GUID, interface,)
-				.ok_or_with(|_| {
+				.x_or_with(|_| {
 					let interface =
 						(*interface).cast::<ProtocolInterface<P,>>();
 					NonNull::new(interface,).expect("interface is null",)
@@ -259,7 +260,7 @@ impl<P: Protocol,> Drop for ProtocolInterface<P,> {
 				self.handles.controller_ptr(),
 			)
 		}
-		.ok_or();
+		.x_or();
 	}
 }
 

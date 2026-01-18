@@ -34,8 +34,7 @@
 //! ### Basic Command Execution
 //!
 //! ```rust,no_run
-//! use oso_dev_util_helper::cli::Run;
-//! use std::process::Command;
+//! use {oso_dev_util_helper::cli::Run, std::process::Command};
 //!
 //! // Execute a command with enhanced output
 //! let mut cmd = Command::new("cargo",);
@@ -67,8 +66,6 @@
 #![feature(exit_status_error)]
 #![feature(proc_macro_hygiene)]
 #![feature(if_let_guard)]
-
-use anyhow::Result as Rslt;
 
 pub mod cargo;
 #[cfg_attr(doc, aquamarine::aquamarine)]
@@ -123,54 +120,12 @@ mod tests {
 	}
 
 	#[test]
-	fn test_anyhow_integration() {
-		// Test that anyhow integration works as expected
-		use anyhow::Context;
-
-		let result: Rslt<String,> =
-			Err(anyhow::anyhow!("base error"),).context("additional context",);
-
-		assert!(result.is_err());
-		let error_string = result.unwrap_err().to_string();
-		assert!(error_string.contains("additional context"));
-		// Note: The exact error message format may vary, so we just check for
-		// context
-	}
-
-	#[test]
-	fn test_error_chain() {
-		// Test error chaining functionality
-		use anyhow::Context;
-
-		fn inner_function() -> Rslt<(),> {
-			Err(anyhow::anyhow!("inner error"),)
-		}
-
-		fn outer_function() -> Rslt<(),> {
-			inner_function().context("outer context",)
-		}
-
-		let result = outer_function();
-		assert!(result.is_err());
-
-		let error = result.unwrap_err();
-		let error_string = error.to_string();
-		assert!(error_string.contains("outer context"));
-
-		// Check the error chain
-		let mut chain = error.chain();
-		assert!(chain.next().unwrap().to_string().contains("outer context"));
-		assert!(chain.next().unwrap().to_string().contains("inner error"));
-	}
-
-	#[test]
 	fn test_module_structure() {
 		// Test that the expected module structure exists
 		// This is primarily a compile-time test
 
 		// Verify we can create instances of key types
-		use cargo::Arch;
-		use cargo::BuildMode;
+		use cargo::{Arch, BuildMode};
 
 		let build_mode = BuildMode::Debug;
 		assert!(build_mode.is_debug());
@@ -195,10 +150,7 @@ mod tests {
 	#[test]
 	fn test_compile_opt_trait() {
 		// Test the CompileOpt trait functionality
-		use cargo::BuildMode;
-		use cargo::CompileOpt;
-		use cargo::Feature;
-		use cargo::Opts;
+		use cargo::{BuildMode, CompileOpt, Feature, Opts};
 
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
@@ -220,9 +172,7 @@ mod tests {
 	#[test]
 	fn test_cli_to_opts_conversion() {
 		// Test CLI to Opts conversion
-		use cargo::Arch;
-		use cargo::BuildMode;
-		use cargo::Cli;
+		use cargo::{Arch, BuildMode, Cli};
 
 		let cli = Cli {
 			build_mode:    Some(BuildMode::Release,),
@@ -256,8 +206,7 @@ mod tests {
 	#[test]
 	fn test_firmware_structure() {
 		// Test Firmware struct
-		use cargo::Firmware;
-		use std::path::PathBuf;
+		use {cargo::Firmware, std::path::PathBuf};
 
 		let firmware = Firmware {
 			code: PathBuf::from("/path/to/code",),
@@ -274,9 +223,10 @@ mod tests {
 	#[test]
 	fn test_assets_structure() {
 		// Test Assets struct
-		use cargo::Assets;
-		use cargo::Firmware;
-		use std::path::PathBuf;
+		use {
+			cargo::{Assets, Firmware},
+			std::path::PathBuf,
+		};
 
 		let assets = Assets {
 			firmware: Firmware {
@@ -294,8 +244,7 @@ mod tests {
 	#[test]
 	fn test_enum_string_conversions() {
 		// Test AsRefStr implementations
-		use cargo::Arch;
-		use cargo::BuildMode;
+		use cargo::{Arch, BuildMode};
 
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
 		assert_eq!(BuildMode::Release.as_ref(), "Release");
@@ -307,8 +256,7 @@ mod tests {
 	#[test]
 	fn test_enum_is_methods() {
 		// Test EnumIs implementations
-		use cargo::Arch;
-		use cargo::BuildMode;
+		use cargo::{Arch, BuildMode};
 
 		// BuildMode
 		assert!(BuildMode::Debug.is_debug());
@@ -326,8 +274,7 @@ mod tests {
 	#[test]
 	fn test_clone_implementations() {
 		// Test Clone implementations
-		use cargo::Arch;
-		use cargo::BuildMode;
+		use cargo::{Arch, BuildMode};
 
 		let build_mode = BuildMode::Debug;
 		let cloned_build_mode = build_mode;
@@ -341,8 +288,7 @@ mod tests {
 	#[test]
 	fn test_default_implementations() {
 		// Test Default implementations
-		use cargo::Arch;
-		use cargo::BuildMode;
+		use cargo::{Arch, BuildMode};
 
 		let default_build_mode = BuildMode::default();
 		assert!(default_build_mode.is_debug());
@@ -354,9 +300,10 @@ mod tests {
 	#[test]
 	fn test_value_enum_implementations() {
 		// Test that ValueEnum is implemented for CLI enums
-		use cargo::Arch;
-		use cargo::BuildMode;
-		use clap::ValueEnum;
+		use {
+			cargo::{Arch, BuildMode},
+			clap::ValueEnum,
+		};
 
 		// Test that we can get possible values
 		let build_mode_values = BuildMode::value_variants();
@@ -389,35 +336,9 @@ mod tests {
 	}
 
 	#[test]
-	fn test_result_type_alias() {
-		// Test that Rslt is properly aliased to anyhow::Result
-		use anyhow::Context;
-
-		fn test_function() -> Rslt<i32,> {
-			Ok(42,)
-		}
-
-		fn test_error_function() -> Rslt<i32,> {
-			Err(anyhow::anyhow!("test error"),).context("additional context",)
-		}
-
-		// Test success case
-		let result = test_function();
-		assert!(result.is_ok());
-		assert_eq!(result.unwrap(), 42);
-
-		// Test error case
-		let error_result = test_error_function();
-		assert!(error_result.is_err());
-		let error = error_result.unwrap_err();
-		assert!(error.to_string().contains("additional context"));
-	}
-
-	#[test]
 	fn test_module_imports() {
 		// Test that all modules can be imported without conflicts
-		use cargo::*;
-		use fs::*;
+		use {cargo::*, fs::*};
 
 		// Test that we can create instances of key types
 		let _build_mode = BuildMode::Debug;
@@ -436,48 +357,9 @@ mod tests {
 	}
 
 	#[test]
-	fn test_error_handling_patterns() {
-		// Test common error handling patterns used throughout the crate
-		use anyhow::Context;
-		use anyhow::Result;
-
-		fn inner_operation() -> Result<String,> {
-			Ok("success".to_string(),)
-		}
-
-		fn outer_operation() -> Rslt<String,> {
-			inner_operation().context("outer operation failed",)
-		}
-
-		// Test successful operation
-		let result = outer_operation();
-		assert!(result.is_ok());
-		assert_eq!(result.unwrap(), "success");
-
-		// Test error propagation
-		fn failing_operation() -> Result<String,> {
-			Err(anyhow::anyhow!("inner failure"),)
-		}
-
-		fn failing_outer() -> Rslt<String,> {
-			failing_operation().context("outer context",)
-		}
-
-		let error_result = failing_outer();
-		assert!(error_result.is_err());
-		let error = error_result.unwrap_err();
-		let error_chain: Vec<_,> = error.chain().collect();
-		assert!(error_chain.len() >= 2);
-	}
-
-	#[test]
 	fn test_type_system_constraints() {
 		// Test that the type system enforces expected constraints
-		use cargo::Arch;
-		use cargo::BuildMode;
-		use cargo::CompileOpt;
-		use cargo::Feature;
-		use cargo::Opts;
+		use cargo::{Arch, BuildMode, CompileOpt, Feature, Opts};
 
 		// Test that all enums implement required traits
 		fn test_enum_traits<T,>(_value: T,)
@@ -511,8 +393,7 @@ mod tests {
 	#[test]
 	fn test_path_handling() {
 		// Test path handling throughout the crate
-		use std::path::Path;
-		use std::path::PathBuf;
+		use std::path::{Path, PathBuf};
 
 		// Test that OSO_DEV_UTIL_PATH is a valid path
 		let manifest_path = Path::new(OSO_DEV_UTIL_PATH,);
@@ -537,9 +418,10 @@ mod tests {
 	#[test]
 	fn test_string_conversions_comprehensive() {
 		// Test all string conversion patterns used in the crate
-		use cargo::Arch;
-		use cargo::BuildMode;
-		use std::str::FromStr;
+		use {
+			cargo::{Arch, BuildMode},
+			std::str::FromStr,
+		};
 
 		// Test round-trip conversions for all enum variants
 		let build_modes = [BuildMode::Debug, BuildMode::Release,];
@@ -564,10 +446,7 @@ mod tests {
 	#[test]
 	fn test_memory_safety() {
 		// Test that the crate handles memory safely
-		use cargo::Arch;
-		use cargo::BuildMode;
-		use cargo::Feature;
-		use cargo::Opts;
+		use cargo::{Arch, BuildMode, Feature, Opts};
 
 		// Test that we can create and drop many instances without issues
 		let mut opts_vec = Vec::new();
@@ -620,11 +499,7 @@ mod tests {
 	#[test]
 	fn test_documentation_examples() {
 		// Test that code examples from documentation work
-		use cargo::Arch;
-		use cargo::BuildMode;
-		use cargo::CompileOpt;
-		use cargo::Feature;
-		use cargo::Opts;
+		use cargo::{Arch, BuildMode, CompileOpt, Feature, Opts};
 
 		// Example from CompileOpt documentation
 		let opts = Opts {

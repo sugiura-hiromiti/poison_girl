@@ -1,6 +1,5 @@
 use {
 	crate::{
-		Rslt,
 		cargo::host_tuple,
 		decl_manage::{
 			package::{Package, PackageAction, PackageInfo, PackageSurvey},
@@ -9,7 +8,7 @@ use {
 			},
 		},
 	},
-	anyhow::anyhow,
+	poison_girl_dev_error::{Container, PoisonGirlB, X},
 	poison_girl_dev_fs::{
 		cli::Run,
 		fs::{
@@ -32,12 +31,12 @@ pub trait Crate: Workspace + Package {
 }
 
 pub trait CrateSurvey: CrateInfo {
-	fn has_parent(&self,) -> Rslt<bool,> {
+	fn has_parent(&self,) -> PoisonGirlB<bool,> {
 		let path = self.path();
-		Ok(search_upstream_at(&path, CARGO_MANIFEST,)?.is_some(),)
+		X(search_upstream_at(&path, CARGO_MANIFEST,)?.is_some(),)
 	}
-	fn go_parent(&mut self,) -> Rslt<(),>;
-	fn fix(&self,) -> Rslt<(),> {
+	fn go_parent(&mut self,) -> PoisonGirlB<(),>;
+	fn fix(&self,) -> PoisonGirlB<(),> {
 		let mut manifest = self.toml()?;
 		if let Some(pkg,) = manifest.get_mut("package",)
 			&& let Some(toml::Value::String(name,),) = pkg.get_mut("name",)
@@ -50,7 +49,7 @@ pub trait CrateSurvey: CrateInfo {
 				toml::to_string(&manifest,)?,
 			)?;
 		};
-		Ok((),)
+		X((),)
 	}
 	fn land_on(&mut self, on: impl CrateCalled,);
 }
@@ -59,47 +58,47 @@ pub trait CrateSurvey: CrateInfo {
 pub trait CrateAction: CrateInfo {
 	// actions for all packages
 
-	fn build(&self,) -> Rslt<(),> {
+	fn build(&self,) -> PoisonGirlB<(),> {
 		self.cargo_xxx("build",)
 	}
-	fn test(&self,) -> Rslt<(),> {
+	fn test(&self,) -> PoisonGirlB<(),> {
 		self.cargo_xxx("test",)
 	}
-	fn run(&self,) -> Rslt<(),> {
+	fn run(&self,) -> PoisonGirlB<(),> {
 		self.cargo_xxx("run",)
 	}
-	fn check(&self,) -> Rslt<(),> {
+	fn check(&self,) -> PoisonGirlB<(),> {
 		self.cargo_xxx("check",)
 	}
-	fn format(&self,) -> Rslt<(),> {
+	fn format(&self,) -> PoisonGirlB<(),> {
 		self.cargo_xxx("fmt",)
 	}
-	fn cargo_xxx(&self, cmd: impl AsRef<OsStr,>,) -> Rslt<(),> {
+	fn cargo_xxx(&self, cmd: impl AsRef<OsStr,>,) -> PoisonGirlB<(),> {
 		self.cargo_xxx_with(cmd, &["",],)
 	}
 
 	// actions for all packages with specific options
 
-	fn build_with(&self, opt: &[impl AsRef<OsStr,>],) -> Rslt<(),> {
+	fn build_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
 		self.cargo_xxx_with("build", opt,)
 	}
-	fn test_with(&self, opt: &[impl AsRef<OsStr,>],) -> Rslt<(),> {
+	fn test_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
 		self.cargo_xxx_with("test", opt,)
 	}
-	fn run_with(&self, opt: &[impl AsRef<OsStr,>],) -> Rslt<(),> {
+	fn run_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
 		self.cargo_xxx_with("run", opt,)
 	}
-	fn ckeck_with(&self, opt: &[impl AsRef<OsStr,>],) -> Rslt<(),> {
+	fn ckeck_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
 		self.cargo_xxx_with("check", opt,)
 	}
-	fn fmt_with(&self, opt: &[impl AsRef<OsStr,>],) -> Rslt<(),> {
+	fn fmt_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
 		self.cargo_xxx_with("fmt", opt,)
 	}
 	fn cargo_xxx_with(
 		&self,
 		cmd: impl AsRef<OsStr,>,
 		opt: &[impl AsRef<OsStr,>],
-	) -> Rslt<(),> {
+	) -> PoisonGirlB<(),> {
 		let mut cargo = Command::new("cargo",);
 		let cargo = cargo.arg(cmd,);
 
@@ -114,24 +113,24 @@ pub trait CrateAction: CrateInfo {
 }
 
 pub trait CrateInfo: CrateCalled {
-	fn is_package(&self,) -> Rslt<bool,> {
+	fn is_package(&self,) -> PoisonGirlB<bool,> {
 		let pkg_sec = self.toml()?;
 		let pkg_sec = pkg_sec.get("package",);
 		match pkg_sec {
-			Some(_,) => Ok(true,),
-			None => Ok(false,),
+			Some(_,) => X(true,),
+			None => X(false,),
 		}
 	}
-	fn is_workspace(&self,) -> Rslt<bool,> {
+	fn is_workspace(&self,) -> PoisonGirlB<bool,> {
 		let pkg_sec = self.toml()?;
 		let pkg_sec = pkg_sec.get("workspace",);
 		match pkg_sec {
-			Some(_,) => Ok(true,),
-			None => Ok(false,),
+			Some(_,) => X(true,),
+			None => X(false,),
 		}
 	}
-	fn is_pkg_and_ws(&self,) -> Rslt<bool,> {
-		Ok(self.is_package()? && self.is_workspace()?,)
+	fn is_pkg_and_ws(&self,) -> PoisonGirlB<bool,> {
+		X(self.is_package()? && self.is_workspace()?,)
 	}
 
 	/// return path to the crate
@@ -139,15 +138,14 @@ pub trait CrateInfo: CrateCalled {
 	/// self has path in compile time
 	fn path(&self,) -> PathBuf;
 
-	fn toml(&self,) -> Rslt<toml::Table,> {
+	fn toml(&self,) -> PoisonGirlB<toml::Table,> {
 		let cargo_toml = self.path().join(CARGO_MANIFEST,);
 		read_toml(cargo_toml,)
-			.unwrap_or_else(|| panic!("{CARGO_MANIFEST} must exist"),)
 	}
 
-	fn cargo_conf(&self,) -> Option<Rslt<toml::Table,>,> {
+	fn cargo_conf(&self,) -> Option<PoisonGirlB<toml::Table,>,> {
 		let config_toml = self.path().join(CARGO_CONFIG,);
-		read_toml(config_toml,)
+		Some(read_toml(config_toml,),)
 	}
 
 	fn name(&self,) -> String {
@@ -190,16 +188,15 @@ impl CrateSurvey for OsoCrate {
 		*self = Self::from(path,);
 	}
 
-	fn go_parent(&mut self,) -> Rslt<(),> {
+	fn go_parent(&mut self,) -> PoisonGirlB<(),> {
 		if self.has_parent()? {
 			let parent = self.path();
-			let parent =
-				parent.parent().ok_or(anyhow!("can't find parent dir"),)?;
+			let parent = parent.parent().unwrap();
 			let parent = OsoCrateChart::from(parent.to_path_buf(),);
 			self.land_on(parent,);
-			Ok((),)
+			X((),)
 		} else {
-			Ok((),)
+			X((),)
 		}
 	}
 }
@@ -271,8 +268,8 @@ impl WorkspaceInfo for OsoCrate {
 impl Package for OsoCrate {}
 impl PackageAction for OsoCrate {}
 impl PackageSurvey for OsoCrate {
-	fn default_target(&self,) -> Rslt<impl Into<String,>,> {
-		Ok(match self.cargo_conf() {
+	fn default_target(&self,) -> PoisonGirlB<impl Into<String,>,> {
+		X(match self.cargo_conf() {
 			Some(conf,) => {
 				let conf = conf?;
 				let conf = conf.get("build",);

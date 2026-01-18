@@ -1,5 +1,4 @@
 use {
-	itertools::Itertools,
 	poison_girl_dev_fs::{fs::all_crates, util::CaseConvert},
 	poison_girl_proc_macro_helper::rslt::Rslt,
 	proc_macro2::TokenStream,
@@ -251,7 +250,7 @@ fn is_attred(f: &mut syn::Field,) -> bool {
 
 #[cfg(test)]
 mod tests {
-	use {super::*, quote::quote, syn::parse_quote};
+	use {super::*, itertools::Itertools, quote::quote, syn::parse_quote};
 
 	#[test]
 	fn test_from_path_buf_with_enum() {

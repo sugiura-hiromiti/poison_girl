@@ -4,11 +4,11 @@ use {
 		types::{Char16, Guid, Header, UnsafeHandle},
 	},
 	crate::{
-		Rslt, guid,
+		guid,
 		raw::protocol::text::{TextInputProtocol, TextOutputProtocol},
 	},
 	core::{ffi::c_void, ptr::NonNull},
-	poison_girl_error::loader::UefiError,
+	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
 #[repr(C)]
@@ -72,9 +72,9 @@ pub const DEVICE_TREE_TABLE_GUID: Guid =
 	guid!("b1b621d5-f19c-41a5-830b-d9152c69aae0");
 
 impl SystemTable {
-	pub fn get_config_tables(&self,) -> Rslt<ConfigTableStream, UefiError,> {
+	pub fn get_config_tables(&self,) -> PoisonGirlB<ConfigTableStream,> {
 		let config_tables = NonNull::new(self.config_tables,);
-		Ok(ConfigTableStream {
+		X(ConfigTableStream {
 			max_index: self.config_table_count,
 			config_tables,
 		},)
@@ -83,13 +83,11 @@ impl SystemTable {
 	pub fn config_table_with(
 		&self,
 		guid: Guid,
-	) -> Rslt<Option<NonNull<ConfigTable,>,>, UefiError,> {
-		Ok(self.get_config_tables()?.config_table_with(guid,),)
+	) -> PoisonGirlB<Option<NonNull<ConfigTable,>,>,> {
+		X(self.get_config_tables()?.config_table_with(guid,),)
 	}
 
-	pub fn device_tree(
-		&self,
-	) -> Rslt<Option<NonNull<ConfigTable,>,>, UefiError,> {
+	pub fn device_tree(&self,) -> PoisonGirlB<Option<NonNull<ConfigTable,>,>,> {
 		self.config_table_with(DEVICE_TREE_TABLE_GUID,)
 	}
 }

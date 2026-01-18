@@ -1,6 +1,6 @@
-use crate::{
-	Rslt,
-	decl_manage::crate_::{CrateAction, CrateInfo, CrateSurvey},
+use {
+	crate::decl_manage::crate_::{CrateAction, CrateInfo, CrateSurvey},
+	poison_girl_dev_error::PoisonGirlB,
 };
 
 pub trait Package: PackageAction + PackageSurvey {
@@ -15,7 +15,7 @@ pub trait Package: PackageAction + PackageSurvey {
 
 pub trait PackageAction: PackageInfo + CrateAction {}
 pub trait PackageSurvey: PackageInfo + CrateSurvey {
-	fn default_target(&self,) -> Rslt<impl Into<String,>,>;
+	fn default_target(&self,) -> PoisonGirlB<impl Into<String,>,>;
 }
 
 pub trait PackageInfo: Sized + CrateInfo {}
@@ -62,9 +62,7 @@ mod tests {
 
 		// If we get here without compilation errors, PackageAction is working
 		assert!(
-			build_result.is_ok()
-				|| format_result.is_ok()
-				|| check_result.is_ok()
+			build_result.is_x() || format_result.is_x() || check_result.is_x()
 		);
 	}
 
@@ -81,7 +79,7 @@ mod tests {
 
 		// Test default_target method
 		let target_result = crate_obj.default_target();
-		assert!(target_result.is_ok());
+		assert!(target_result.is_x());
 	}
 
 	#[test]

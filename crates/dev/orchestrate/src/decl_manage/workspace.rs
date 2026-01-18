@@ -1,10 +1,10 @@
-use crate::decl_manage::crate_::Crate;
-use crate::decl_manage::crate_::CrateAction;
-use crate::decl_manage::crate_::CrateCalled;
-use crate::decl_manage::crate_::CrateInfo;
-use crate::decl_manage::crate_::CrateSurvey;
-use anyhow::Result as Rslt;
-use std::ffi::OsStr;
+use {
+	crate::decl_manage::crate_::{
+		Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
+	},
+	poison_girl_dev_error::{PoisonGirlB, X},
+	std::ffi::OsStr,
+};
 
 pub trait Workspace: WorkspaceAction + WorkspaceSurvey {
 	fn as_action(&self,) -> &impl WorkspaceAction {
@@ -19,23 +19,23 @@ pub trait Workspace: WorkspaceAction + WorkspaceSurvey {
 pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 	// actions for specific package
 
-	fn build_at(&self, at: impl CrateCalled,) -> Rslt<(),>
+	fn build_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey {
 		self.cargo_xxx_at("build", at,)
 	}
-	fn test_at(&self, at: impl CrateCalled,) -> Rslt<(),>
+	fn test_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey {
 		self.cargo_xxx_at("test", at,)
 	}
-	fn run_at(&self, at: impl CrateCalled,) -> Rslt<(),>
+	fn run_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey {
 		self.cargo_xxx_at("run", at,)
 	}
-	fn check_at(&self, at: impl CrateCalled,) -> Rslt<(),>
+	fn check_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey {
 		self.cargo_xxx_at("check", at,)
 	}
-	fn fmt_at(&self, at: impl CrateCalled,) -> Rslt<(),>
+	fn fmt_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey {
 		self.cargo_xxx_at("fmt", at,)
 	}
@@ -43,7 +43,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		&self,
 		cmd: impl AsRef<OsStr,>,
 		at: impl CrateCalled,
-	) -> Rslt<(),>
+	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
@@ -56,7 +56,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		&self,
 		at: impl CrateCalled,
 		opt: &[impl AsRef<OsStr,>],
-	) -> Rslt<(),>
+	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
@@ -66,7 +66,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		&self,
 		at: impl CrateCalled,
 		opt: &[impl AsRef<OsStr,>],
-	) -> Rslt<(),>
+	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
@@ -76,7 +76,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		&self,
 		at: impl CrateCalled,
 		opt: &[impl AsRef<OsStr,>],
-	) -> Rslt<(),>
+	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
@@ -86,7 +86,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		&self,
 		at: impl CrateCalled,
 		opt: &[impl AsRef<OsStr,>],
-	) -> Rslt<(),>
+	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
@@ -96,7 +96,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		&self,
 		at: impl CrateCalled,
 		opt: &[impl AsRef<OsStr,>],
-	) -> Rslt<(),>
+	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
@@ -107,7 +107,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		cmd: impl AsRef<OsStr,>,
 		at: impl CrateCalled,
 		opt: &[impl AsRef<OsStr,>],
-	) -> Rslt<(),>
+	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
@@ -118,7 +118,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 		self_mut.land_on(at,);
 		self_mut.cargo_xxx_with(cmd, opt,)?;
 		self_mut.land_on(current,);
-		Ok((),)
+		X((),)
 	}
 }
 
@@ -176,10 +176,11 @@ pub trait WorkspaceInfo: Sized + CrateInfo {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::decl_manage::crate_::CrateInfo;
-	use crate::decl_manage::crate_::OsoCrate;
-	use std::path::PathBuf;
+	use {
+		super::*,
+		crate::decl_manage::crate_::{CrateInfo, OsoCrate},
+		std::path::PathBuf,
+	};
 
 	#[test]
 	fn test_workspace_action_at_methods() {

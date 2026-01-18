@@ -43,12 +43,14 @@
 
 extern crate alloc;
 
+use poison_girl_no_std_error::{Container, UefiError, X, Y, poison_girl_err};
+
 use {
 	alloc::vec::Vec,
 	chibi_uefi::{protocol::HandleSearchType, table::boot_services},
 	core::ptr::NonNull,
-	poison_girl_error::{Rslt, loader::UefiError, poison_girl_err},
 	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe, wfi},
+	poison_girl_no_std_error::PoisonGirlB,
 	raw::{
 		table::SystemTable,
 		types::{Status, UnsafeHandle},
@@ -195,10 +197,14 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 ///
 /// Returns `UefiError::Custom` if the device tree is not available in the
 /// UEFI configuration tables.
-pub fn get_device_tree() -> Rslt<NonNull<ConfigTable,>, UefiError,> {
-	unsafe { system_table().as_ref() }
-		.device_tree()?
-		.ok_or(poison_girl_err!(UefiError::Custom("failed to get device tree")),)
+pub fn get_device_tree() -> PoisonGirlB<NonNull<ConfigTable,>,> {
+	match unsafe { system_table().as_ref() }.device_tree() {
+		X(Some(dt,),) => X(dt,),
+		X(None,) => {
+			Y(poison_girl_err!(UefiError::Custom("failed to get device tree")),)
+		},
+		Y(e,) => Y(e,),
+	}
 }
 
 /// Executes the loaded kernel with proper architecture-specific setup

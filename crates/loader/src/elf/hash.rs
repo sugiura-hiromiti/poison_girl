@@ -1,17 +1,16 @@
 use {
 	super::{Context, read_le_bytes},
-	crate::{
-		Rslt,
-		elf::{Container, ElfHeader},
+	crate::elf::{Container, ElfHeader},
+	poison_girl_no_std_error::{
+		ElfParseError, PoisonGirlB, X, Y, poison_girl_err,
 	},
-	poison_girl_error::{loader::EfiParseError, poison_girl_err},
 };
 
 pub fn gnu_hash_len(
 	binary: &[u8],
 	mut offset: usize,
 	context: &Context,
-) -> Rslt<usize, EfiParseError,> {
+) -> PoisonGirlB<usize,> {
 	let buckets_count =
 		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	let min_chain =
@@ -19,7 +18,7 @@ pub fn gnu_hash_len(
 	let bloom_size =
 		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	if buckets_count == 0 || min_chain == 0 || bloom_size == 0 {
-		return Err(poison_girl_err!(EfiParseError::InvalidGnuHash {
+		return Y(poison_girl_err!(ElfParseError::InvalidGnuHash {
 			buckets_count,
 			min_chain,
 			bloom_size
@@ -41,7 +40,7 @@ pub fn gnu_hash_len(
 	}
 
 	if max_chain < min_chain {
-		return Ok(0,);
+		return X(0,);
 	}
 
 	// find the last chain within the bucket
@@ -52,7 +51,7 @@ pub fn gnu_hash_len(
 			read_le_bytes::<u32,>(&mut chain_offset, binary,).unwrap() as usize;
 		max_chain += 1;
 		if hash & 1 != 0 {
-			return Ok(max_chain,);
+			return X(max_chain,);
 		}
 	}
 }
@@ -62,7 +61,7 @@ pub fn hash_len(
 	mut offset: usize,
 	machine: u16,
 	context: &Context,
-) -> Rslt<usize, EfiParseError,> {
+) -> PoisonGirlB<usize,> {
 	offset = offset.saturating_add(4,);
 	let nchain = if (machine == ElfHeader::EM_FAKE_ALPHA
 		|| machine == ElfHeader::EM_S390)
@@ -72,5 +71,5 @@ pub fn hash_len(
 	} else {
 		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize
 	};
-	Ok(nchain,)
+	X(nchain,)
 }

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ovmf-prebuilt = { workspace = true }
 this_is_b = { workspace = true, features = ["std"] }
 toml = { workspace = true }
 

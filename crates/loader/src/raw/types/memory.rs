@@ -1,9 +1,9 @@
-use crate::Rslt;
-use crate::c_style_enum;
-use crate::chibi_uefi::table::boot_services;
-use alloc::format;
-use core::ops::RangeInclusive;
-use core::ptr::NonNull;
+use {
+	crate::{c_style_enum, chibi_uefi::table::boot_services},
+	alloc::format,
+	core::{ops::RangeInclusive, ptr::NonNull},
+	poison_girl_no_std_error::{PoisonGirlB, X},
+};
 
 pub const PAGE_SIZE: usize = 4096;
 
@@ -122,7 +122,7 @@ impl core::fmt::Debug for MemoryMapInfo {
 pub struct MemoryMapBackingMemory(NonNull<[u8],>,);
 
 impl MemoryMapBackingMemory {
-	pub fn new(mem_ty: MemoryType,) -> Rslt<Self,> {
+	pub fn new(mem_ty: MemoryType,) -> PoisonGirlB<Self,> {
 		let bs = boot_services();
 		let (map_size, desc_size,) = bs.memory_map_size();
 		let len = Self::safe_allocation_size_hint(map_size, desc_size,);
@@ -132,7 +132,7 @@ impl MemoryMapBackingMemory {
 
 		assert_eq!(map_size % desc_size, 0);
 
-		unsafe { Ok(Self::from_raw(alloc_pos, len,),) }
+		unsafe { X(Self::from_raw(alloc_pos, len,),) }
 	}
 
 	unsafe fn from_raw(alloc_pos: *mut u8, len: usize,) -> Self {

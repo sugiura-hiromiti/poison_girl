@@ -7,7 +7,9 @@ use {
 		color::{ColorRpr, PixelFormat},
 		position::{Coord, Coordinal},
 	},
-	poison_girl_no_std_error::{PoisonGirlB, X},
+	poison_girl_no_std_error::{
+		GraphicError, PoisonGirlB, X, Y, poison_girl_err,
+	},
 };
 // use oso_proc_macro::gen_wrapper_fn;
 

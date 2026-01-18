@@ -85,7 +85,7 @@
 
 #![allow(dead_code)]
 
-use poison_girl_error::Rslt;
+use poison_girl_no_std_error::PoisonGirlB;
 
 /// Main interface for Device Tree operations and parsing
 ///
@@ -572,7 +572,7 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	/// let value: u32 = parser.parse()?;
 	/// let next_value: u32 = parser.parse()?; // Automatically advanced
 	/// ```
-	fn parse(&mut self,) -> Rslt<T::Output,> {
+	fn parse(&mut self,) -> PoisonGirlB<T::Output,> {
 		let bytes = self.read_range();
 		T::try_interpret(bytes,)
 	}
@@ -597,7 +597,7 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	/// let future_value: u32 = parser.peek(16)?; // Look 16 bytes ahead
 	/// let current_value: u32 = parser.parse()?; // Still at original position
 	/// ```
-	fn peek(&self, offset: usize,) -> Rslt<T::Output,> {
+	fn peek(&self, offset: usize,) -> PoisonGirlB<T::Output,> {
 		let bytes = self.bytes_of(offset, T::DATA_SIZE,);
 		T::try_interpret(bytes,)
 	}
@@ -625,7 +625,7 @@ pub trait BinaryParserTarget: Sized {
 	///
 	/// * `Ok(Self::Output)` - Successfully parsed value
 	/// * `Err(...)` - Parsing error (invalid data, wrong endianness, etc.)
-	fn try_interpret(bytes: &[u8],) -> Rslt<Self::Output,>;
+	fn try_interpret(bytes: &[u8],) -> PoisonGirlB<Self::Output,>;
 }
 
 /// Implementation of `BinaryParserTarget` for `usize`
@@ -657,7 +657,7 @@ impl BinaryParserTarget for usize {
 	/// - Endianness handling (big-endian for device trees)
 	/// - Architecture-specific size handling
 	/// - Error handling for invalid input
-	fn try_interpret(_bytes: &[u8],) -> Rslt<Self::Output,> {
+	fn try_interpret(_bytes: &[u8],) -> PoisonGirlB<Self::Output,> {
 		todo!("Implement usize parsing with proper endianness conversion")
 	}
 }

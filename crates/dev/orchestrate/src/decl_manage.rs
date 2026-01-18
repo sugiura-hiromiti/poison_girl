@@ -1,13 +1,12 @@
 use {
 	crate::{
-		Rslt,
 		cargo::{CompileOpt, Opts},
 		decl_manage::{
 			crate_::{Crate, CrateInfo, OsoCrate},
 			package::PackageSurvey,
 		},
 	},
-	anyhow::bail,
+	poison_girl_dev_error::{PoisonGirlB, X, Y},
 	poison_girl_dev_fs::fs::search_in_with,
 	std::path::PathBuf,
 };
@@ -17,8 +16,8 @@ pub mod package;
 pub mod workspace;
 
 pub trait CargoCrate {
-	fn specified_target(&self,) -> Rslt<impl Into<String,>,>;
-	fn build_artifact(&self,) -> Rslt<PathBuf,>;
+	fn specified_target(&self,) -> PoisonGirlB<impl Into<String,>,>;
+	fn build_artifact(&self,) -> PoisonGirlB<PathBuf,>;
 	fn as_crate(&self,) -> &impl Crate;
 	fn as_opts(&self,) -> &impl CompileOpt;
 }
@@ -29,7 +28,7 @@ pub struct OsoCargoInterface {
 }
 
 impl CargoCrate for OsoCargoInterface {
-	fn specified_target(&self,) -> Rslt<impl Into<String,>,> {
+	fn specified_target(&self,) -> PoisonGirlB<impl Into<String,>,> {
 		let search_rslt = search_in_with(&self.ws.path(), |entry| {
 			let file_name = entry
 				.as_ref()
@@ -43,14 +42,14 @@ impl CargoCrate for OsoCargoInterface {
 		},);
 
 		match search_rslt {
-			Ok(Some(p,),) => Ok(p.to_string_lossy().to_string(),),
-			Ok(None,) => self.ws.default_target().map(|s| s.into(),),
-			Err(e,) => bail!("{e}"),
+			X(Some(p,),) => X(p.to_string_lossy().to_string(),),
+			X(None,) => self.ws.default_target().map(|s| s.into(),),
+			Y(e,) => Y(e,),
 		}
 	}
 
-	fn build_artifact(&self,) -> Rslt<PathBuf,> {
-		Ok(self
+	fn build_artifact(&self,) -> PoisonGirlB<PathBuf,> {
+		X(self
 			.ws
 			.path()
 			.join("target",)

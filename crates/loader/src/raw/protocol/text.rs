@@ -7,7 +7,7 @@ use {
 		},
 	},
 	core::ffi::c_void,
-	poison_girl_error::{Rslt, loader::UefiError},
+	poison_girl_no_std_error::PoisonGirlB,
 };
 
 #[repr(C)]
@@ -64,10 +64,10 @@ impl TextOutputProtocol {
 	/// # Params
 	///
 	/// this function expects `s` to be encoded as utf8
-	pub fn output(&mut self, s: impl AsRef<str,>,) -> Rslt<Status, UefiError,> {
+	pub fn output(&mut self, s: impl AsRef<str,>,) -> PoisonGirlB<Status,> {
 		let utf16_repr = into_null_terminated_utf16(s,);
 		let utf16_repr = utf16_repr.as_ptr();
-		unsafe { (self.output)(self, utf16_repr,) }.ok_or()
+		unsafe { (self.output)(self, utf16_repr,) }.x_or()
 	}
 
 	/// wrapper function of `(TextOutputProtocol.test)(ptr_of_u16)` call
@@ -77,7 +77,7 @@ impl TextOutputProtocol {
 		unsafe { (self.test)(self, utf16_repr,) }.is_success()
 	}
 
-	pub fn clear(&mut self,) -> Rslt<Status, UefiError,> {
-		unsafe { (self.clear)(self,) }.ok_or()
+	pub fn clear(&mut self,) -> PoisonGirlB<Status,> {
+		unsafe { (self.clear)(self,) }.x_or()
 	}
 }

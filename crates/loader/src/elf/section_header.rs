@@ -2,10 +2,8 @@ use {
 	super::StringTable,
 	crate::elf::read_le_bytes,
 	alloc::{format, vec::Vec},
-	poison_girl_error::{
-		Rslt,
-		loader::{EfiParseError, EfiParseStage},
-		poison_girl_err,
+	poison_girl_no_std_error::{
+		ElfParseError, ElfParseStage, PoisonGirlB, X, Y, poison_girl_err,
 	},
 };
 
@@ -127,7 +125,7 @@ impl SectionHeader {
 		binary: &[u8],
 		offset: &mut usize,
 		count: usize,
-	) -> Rslt<Vec<Self,>, EfiParseError,> {
+	) -> PoisonGirlB<Vec<Self,>,> {
 		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
 
 		let mut section_headers = Vec::with_capacity(count,);
@@ -138,19 +136,16 @@ impl SectionHeader {
 			section_headers.push(section_header,);
 		}
 
-		Ok(section_headers,)
+		X(section_headers,)
 	}
 
-	fn parse_fields(
-		binary: &[u8],
-		offset: &mut usize,
-	) -> Rslt<Self, EfiParseError,> {
+	fn parse_fields(binary: &[u8], offset: &mut usize,) -> PoisonGirlB<Self,> {
 		macro_rules! fields {
 			($field:ident) => {
 				let Some($field,) = read_le_bytes(offset, binary,) else {
-					return Err(poison_girl_err!(EfiParseError::EndOfBinary {
+					return poison_girl_no_std_error::Y(poison_girl_no_std_error::poison_girl_err!(poison_girl_no_std_error::ElfParseError::EndOfBinary {
 						parser_pos: stringify!($field),
-						stage: poison_girl_error::loader::EfiParseStage::SectionHeader
+						stage: poison_girl_no_std_error::ElfParseStage::SectionHeader
 					}),);
 				};
 			};
@@ -187,22 +182,22 @@ impl SectionHeader {
 			entry_size,
 		};
 
-		Ok(section_header,)
+		X(section_header,)
 	}
 
 	pub fn empty_section(_offset: &mut usize,) -> Self {
 		todo!()
 	}
 
-	pub fn check_size(&self, size: usize,) -> Rslt<(), EfiParseError,> {
+	pub fn check_size(&self, size: usize,) -> PoisonGirlB<(),> {
 		if self.ty == SHT_NOBITS || self.size == 0 {
-			return Ok((),);
+			return X((),);
 		}
 
 		let (end, overflow,) = self.offset.overflowing_add(self.size,);
 		if overflow || end > size as u64 {
-			return Err(poison_girl_err!(EfiParseError::SizeOverflow {
-				stage:    EfiParseStage::SectionHeader,
+			return Y(poison_girl_err!(ElfParseError::SizeOverflow {
+				stage:    ElfParseStage::SectionHeader,
 				name:     self.name as u64,
 				expected: size as u64,
 				base:     self.offset,
@@ -212,8 +207,8 @@ impl SectionHeader {
 
 		let (_, overflow,) = self.address.overflowing_add(self.size,);
 		if overflow {
-			return Err(poison_girl_err!(EfiParseError::SizeOverflow {
-				stage:    EfiParseStage::SectionHeader,
+			return Y(poison_girl_err!(ElfParseError::SizeOverflow {
+				stage:    ElfParseStage::SectionHeader,
 				name:     self.name as u64,
 				expected: size as u64,
 				base:     self.address,
@@ -221,7 +216,7 @@ impl SectionHeader {
 			}),);
 		}
 
-		Ok((),)
+		X((),)
 	}
 }
 
@@ -246,17 +241,17 @@ pub fn get_string_table(
 	section_headers: &[SectionHeader],
 	mut idx: usize,
 	binary: &[u8],
-) -> Rslt<StringTable, EfiParseError,> {
+) -> PoisonGirlB<StringTable,> {
 	if idx == SHN_XINDEX as usize {
 		if section_headers.is_empty() {
-			return Ok(StringTable::default(),);
+			return X(StringTable::default(),);
 		}
 
 		idx = section_headers[0].link as usize;
 	}
 
 	if idx >= section_headers.len() {
-		Ok(StringTable::default(),)
+		X(StringTable::default(),)
 	} else {
 		let section_header = &section_headers[idx];
 		section_header.check_size(binary.len(),)?;

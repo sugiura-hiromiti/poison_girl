@@ -4,10 +4,7 @@ extern crate proc_macro;
 
 use {
 	poison_girl_proc_macro_helper::{
-		atr,
-		diagnostic::{Diag, NotationDiag},
-		drv, fnl,
-		rslt::Rslt,
+		atr, diagnostic::NotationDiag, drv, fnl, rslt::Rslt,
 	},
 	proc_macro::{Diagnostic, Level},
 };

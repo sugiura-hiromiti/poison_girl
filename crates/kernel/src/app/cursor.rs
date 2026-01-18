@@ -3,7 +3,7 @@ use {
 		FRAME_BUFFER,
 		position::{Coord, Coordinal},
 	},
-	poison_girl_error::Rslt,
+	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
 // TODO: modularize project structure to remove pub keyword
@@ -38,7 +38,7 @@ pub const MOUSE_CURSOR: [[char; MOUSE_CURSOR_WIDTH]; MOUSE_CURSOR_HEIGHT] = [
 ];
 
 pub trait MouseCursorDraw {
-	fn draw_mouse_cursor(&mut self,) -> Rslt<(),>;
+	fn draw_mouse_cursor(&mut self,) -> PoisonGirlB<(),>;
 }
 
 /// belong to `gui` struct
@@ -64,7 +64,7 @@ impl Default for CursorBuf {
 }
 
 impl MouseCursorDraw for CursorBuf {
-	fn draw_mouse_cursor(&mut self,) -> Rslt<(),> {
+	fn draw_mouse_cursor(&mut self,) -> PoisonGirlB<(),> {
 		let mut coord = self.pos.clone();
 		(0..self.height).for_each(|y| {
 			for x in 0..self.width {
@@ -80,7 +80,7 @@ impl MouseCursorDraw for CursorBuf {
 			*coord.y_mut() += 1;
 		},);
 
-		Ok((),)
+		X((),)
 	}
 }
 

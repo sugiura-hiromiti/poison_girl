@@ -1,6 +1,6 @@
 use {
-	crate::{Rslt, raw::types::Guid},
-	poison_girl_error::poison_girl_err,
+	crate::raw::types::Guid,
+	poison_girl_no_std_error::{GuidError, PoisonGirlB, X},
 };
 
 #[macro_export]
@@ -13,7 +13,7 @@ macro_rules! guid {
 
 impl Guid {
 	#[track_caller]
-	pub fn gen_from_str(s: impl AsRef<str,>,) -> Rslt<Self,> {
+	pub fn gen_from_str(s: impl AsRef<str,>,) -> PoisonGirlB<Self,> {
 		let mut s = s
 			.as_ref()
 			.chars()
@@ -31,7 +31,7 @@ impl Guid {
 		let mut node: [u8; 6] = s.next_chunk().unwrap();
 		node.reverse();
 
-		Ok(Self::new(
+		X(Self::new(
 			time_low,
 			time_mid,
 			time_high_and_version,
@@ -135,14 +135,14 @@ impl Hex {
 }
 
 impl TryFrom<char,> for Hex {
-	type Error = poison_girl_error::OsoError<&'static str,>;
+	type Error = GuidError;
 
 	fn try_from(value: char,) -> Result<Self, Self::Error,> {
 		let value = value as u8;
 		let code = match value {
 			c if Hex::is_valid_hex(c,) => Hex::to_hex(c,),
 			_ => {
-				return Err(poison_girl_err!("invalid hex char. 0~f are expected"),);
+				return Err(GuidError::InvalidHexChar,);
 			},
 		};
 		Ok(code,)

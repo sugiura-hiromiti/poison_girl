@@ -208,7 +208,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 			///
 			/// Returns Ok(Self) for success and warning status codes,
 			/// and Err(UefiError) for error status codes.
-			pub fn ok_or(self) -> Rslt<Self, poison_girl_error::loader::UefiError> {
+			pub fn x_or(self) -> poison_girl_no_std_error::PoisonGirlB<Self> {
 				use alloc::string::ToString;
 				match self {
 					// Success status codes return Ok
@@ -218,7 +218,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 					// Error status codes return Err
 					#(#error_match)*
 					// Unknown status codes return custom error
-					Self(code) => Err(poison_girl_error::poison_girl_err!(poison_girl_error::loader::UefiError::CustomStatus)),
+					Self(code) => poison_girl_no_std_error::Y(poison_girl_no_std_error::poison_girl_err!(poison_girl_no_std_error::UefiError(code))),
 				}
 			}
 
@@ -226,9 +226,9 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 			///
 			/// Similar to ok_or(), but allows applying a transformation function
 			/// to the success value before returning.
-			pub fn ok_or_with<T>(self, with: impl FnOnce(Self) -> T) -> Rslt<T, poison_girl_error::loader::UefiError> {
+			pub fn x_or_with<T>(self, with: impl FnOnce(Self) -> T) -> poison_girl_no_std_error::PoisonGirlB<T,> {
 				let status = self.ok_or()?;
-				Ok(with(status))
+				poison_girl_no_std_error::X(with(status))
 			}
 		}
 	}
@@ -236,7 +236,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 
 fn ok_match(mnemonic: &syn::Ident,) -> proc_macro2::TokenStream {
 	quote::quote! {
-		Self::#mnemonic => Ok(Self::#mnemonic,),
+		Self::#mnemonic => poison_girl_no_std_error::X(Self::#mnemonic,),
 	}
 }
 
@@ -245,7 +245,7 @@ fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
 	quote::quote! {
 	Self::#mnemonic => {
 		let mut mnemonic = concat!(#mnemonic_str, ": ", #msg);
-		Err(poison_girl_error::poison_girl_err!(poison_girl_error::loader::UefiError::ErrorStatus(mnemonic)))
+		poison_girl_no_std_error::Y(poison_girl_no_std_error::poison_girl_err!(poison_girl_no_std_error::UefiError::Status(mnemonic)))
 	},
 	}
 }

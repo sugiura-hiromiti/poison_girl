@@ -293,7 +293,7 @@ mod tests {
 		assert_eq!(fonts.as_ref().unwrap().len(), 256);
 
 		// Each character should still have 128 characters (hex lines filtered)
-		for font_char in &fonts {
+		for font_char in &fonts.unwrap() {
 			assert_eq!(font_char.len(), 128);
 		}
 
