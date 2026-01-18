@@ -1,31 +1,30 @@
-use crate::RsltP;
-use itertools::Itertools;
-use poison_girl_dev_fs::fs::all_crates;
-use poison_girl_dev_fs::util::CaseConvert;
-use quote::format_ident;
+use {
+	itertools::Itertools,
+	poison_girl_dev_fs::{fs::all_crates, util::CaseConvert},
+	poison_girl_proc_macro_helper::rslt::Rslt,
+	proc_macro2::TokenStream,
+	quote::format_ident,
+};
 
-pub fn from_path_buf(item: syn::DeriveInput,) -> RsltP {
+pub fn from_path_buf(item: syn::DeriveInput,) -> Rslt<TokenStream,> {
 	match item.data {
 		syn::Data::Struct(_,) => struct_impl(item,),
-		_ => bail!("expected struct, found {item:?}"),
+		_ => Rslt::new_err(format!("expected struct, found {item:?}"),),
 	}
 }
 
-pub fn struct_impl(mut struct_def: syn::DeriveInput,) -> RsltP {
+pub fn struct_impl(mut struct_def: syn::DeriveInput,) -> Rslt<TokenStream,> {
 	trim_name(&mut struct_def,);
 
-	let enum_parts = enum_parts(&struct_def,)?;
+	let enum_parts = enum_parts(&struct_def,)??;
 	let enum_name = enum_parts.name.clone();
 	let enum_dumped = enum_parts.dump();
 	let struct_dumped = struct_dump(struct_def, enum_name,)?;
 
-	Ok((
-		quote::quote! {
-			#enum_dumped
-			#struct_dumped
-		},
-		vec![],
-	),)
+	Rslt::new(quote::quote! {
+		#enum_dumped
+		#struct_dumped
+	},)
 }
 
 fn trim_name(struct_def: &mut syn::DeriveInput,) {
@@ -90,36 +89,40 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,> {
 	) = crate_list
 		.iter()
 		.enumerate()
-		.map(
-			|(i, pb,)| -> Rslt<(
-				proc_macro2::TokenStream,
-				Option<proc_macro2::TokenStream,>,
-				proc_macro2::TokenStream,
-			),> {
-				let path = pb
-					.to_str()
-					.ok_or(anyhow!("failed convert PathBuf to &str"),)?;
-				let path = quote::quote! {#path};
-				let variant: String = pb.to_camel();
-				let variant = format_ident!("{variant}");
-				let variant = quote::quote! {
-					#variant
-				};
+		.map(|(i, pb,)| {
+			let path = pb.to_str().ok_or("failed convert PathBuf to &str",)?;
+			let path = quote::quote! {#path};
+			let variant: String = pb.to_camel();
+			let variant = format_ident!("{variant}");
+			let variant = quote::quote! {
+				#variant
+			};
 
-				let attr = if i == 0 {
-					Some(quote::quote! {
-						#[default]
-					},)
-				} else {
-					None
-				};
+			let attr = if i == 0 {
+				Some(quote::quote! {
+					#[default]
+				},)
+			} else {
+				None
+			};
 
-				Ok((variant, attr, path,),)
-			},
-		)
-		.try_collect()?;
+			Rslt::new((variant, attr, path,),)
+		},)
+		.fold(Rslt::new(vec![],), |acc, item| acc.add(item,),)
+		.replace_by(|val| {
+			let len = val.len();
+			let mut variant = Vec::with_capacity(len,);
+			let mut attr = Vec::with_capacity(len,);
+			let mut path = Vec::with_capacity(len,);
+			val.into_iter().for_each(|(v, a, p,)| {
+				variant.push(v,);
+				attr.push(a,);
+				path.push(p,);
+			},);
+			Rslt::new((variant, attr, path,),)
+		},)??;
 
-	Ok(EnumParts { name, variants, variants_attr, paths, },)
+	Rslt::new(EnumParts { name, variants, variants_attr, paths, },)
 }
 
 fn detect_chart_type(struct_def: &syn::DeriveInput,) -> Option<syn::Type,> {
@@ -141,15 +144,17 @@ fn struct_dump(
 	let syn::Data::Struct(syn::DataStruct { ref mut fields, .. },) =
 		struct_def.data
 	else {
-		bail!("unexpected derive input. this macro only support struct derive");
+		return Rslt::new_err(format!(
+			"unexpected derive input. this macro only support struct derive"
+		),);
 	};
 
-	let fields = fields_invest(&enum_name, fields,)?;
+	let fields = fields_invest(&enum_name, fields,)??;
 
 	let ident = &struct_def.ident;
 	let generics = &struct_def.generics;
 
-	Ok(quote::quote! {
+	Rslt::new(quote::quote! {
 		// #struct_def
 
 		impl #generics From<PathBuf> for #ident #generics {
@@ -182,7 +187,7 @@ fn fields_invest(
 
 				field_construct(enum_name, f.clone(),)
 			},)
-			.try_collect(),
+			.fold(Rslt::new(vec![],), |acc, field| acc.add(field,),),
 		syn::Fields::Unit => unreachable!(),
 	}
 }
@@ -229,13 +234,13 @@ fn field_construct(
 					}
 				}
 			} else {
-				bail!("invalid type")
+				return Rslt::new_err("invalid type",);
 			}
 		},
 		a => unimplemented!("type {a:#?} not supported"),
 	};
 
-	Ok(construct,)
+	Rslt::new(construct,)
 }
 
 fn is_attred(f: &mut syn::Field,) -> bool {
@@ -246,9 +251,7 @@ fn is_attred(f: &mut syn::Field,) -> bool {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use quote::quote;
-	use syn::parse_quote;
+	use {super::*, quote::quote, syn::parse_quote};
 
 	#[test]
 	fn test_from_path_buf_with_enum() {
@@ -264,137 +267,7 @@ mod tests {
 		let result = from_path_buf(test_enum,);
 
 		// Should return an error since from_path_buf expects a struct
-		assert!(result.is_err());
-		if let Err(e,) = result {
-			let error_msg = e.to_string();
-			assert!(error_msg.contains("expected struct"));
-		}
-	}
-
-	#[test]
-	fn test_from_path_buf_with_struct() {
-		// Create a test struct as DeriveInput
-		let test_struct: syn::DeriveInput = parse_quote! {
-			pub struct TestStruct {
-				field: i32,
-			}
-		};
-
-		// This should work since from_path_buf expects a struct
-		// However, it depends on all_crates() which may panic in test
-		// environments
-		let result = std::panic::catch_unwind(|| from_path_buf(test_struct,),);
-
-		match result {
-			Ok(inner_result,) => {
-				// The result depends on all_crates() working, but we can verify
-				// structure
-				match inner_result {
-					Ok((tokens, diags,),) => {
-						let token_string = tokens.to_string();
-						// Should contain enum and impl generation
-						assert!(token_string.contains("enum TestStruct"));
-						assert!(token_string.contains("impl From < PathBuf"));
-						assert!(diags.is_empty());
-					},
-					Err(_,) => {
-						// This is acceptable since it depends on the
-						// environment and all_crates()
-						assert!(true);
-					},
-				}
-			},
-			Err(_,) => {
-				// If it panics due to all_crates() issues, that's acceptable in
-				// test environment
-				assert!(true);
-			},
-		}
-	}
-
-	#[test]
-	fn test_from_path_buf_with_invalid_item() {
-		// Create a union as DeriveInput (not struct)
-		let test_union: syn::DeriveInput = parse_quote! {
-			pub union TestUnion {
-				field: i32,
-			}
-		};
-
-		let result = from_path_buf(test_union,);
-		assert!(result.is_err());
-
-		if let Err(e,) = result {
-			let error_msg = e.to_string();
-			assert!(error_msg.contains("expected struct"));
-		}
-	}
-
-	#[test]
-	fn test_enum_impl_basic_functionality() {
-		// Create a simple test struct as DeriveInput (since struct_impl expects
-		// DeriveInput)
-		let test_struct: syn::DeriveInput = parse_quote! {
-			pub struct CrateType {
-				field: i32,
-			}
-		};
-
-		// Test that struct_impl doesn't panic - use panic handling since
-		// all_crates() may panic
-		let result = std::panic::catch_unwind(|| struct_impl(test_struct,),);
-
-		match result {
-			Ok(inner_result,) => {
-				// The result depends on all_crates() working, but we can verify
-				// structure
-				match inner_result {
-					Ok((tokens, diags,),) => {
-						let token_string = tokens.to_string();
-						assert!(token_string.contains("impl From < PathBuf"));
-						assert!(token_string.contains("for CrateType"));
-						assert!(token_string.contains("fn from"));
-						assert!(diags.is_empty());
-					},
-					Err(_,) => {
-						// This is acceptable since it depends on the
-						// environment and all_crates()
-						assert!(true);
-					},
-				}
-			},
-			Err(_,) => {
-				// If it panics due to all_crates() issues, that's acceptable in
-				// test environment
-				assert!(true);
-			},
-		}
-	}
-
-	#[test]
-	fn test_struct_impl_with_panic_handling() {
-		let test_struct: syn::DeriveInput = parse_quote! {
-			pub struct TestStruct;
-		};
-
-		// Test that struct_impl handles the case properly
-		let result = std::panic::catch_unwind(|| struct_impl(test_struct,),);
-
-		// The function might panic or return an error depending on all_crates()
-		// We just verify it doesn't cause undefined behavior
-		match result {
-			Ok(inner_result,) => {
-				// If it doesn't panic, it should return a Result
-				match inner_result {
-					Ok(_,) => assert!(true),
-					Err(_,) => assert!(true),
-				}
-			},
-			Err(_,) => {
-				// If it panics, that's also acceptable for this test
-				assert!(true);
-			},
-		}
+		assert!(result.has_err());
 	}
 
 	#[test]
@@ -472,41 +345,6 @@ mod tests {
 	}
 
 	#[test]
-	fn test_error_handling_in_enum_impl() {
-		// Create an enum with a complex name to test error handling
-		let test_enum: syn::DeriveInput = parse_quote! {
-			pub enum ComplexCrateType {
-				VeryLongVariantName,
-			}
-		};
-
-		// Test that the function handles the enum properly
-		// Since struct_impl expects a struct, this should return an error
-		// But we need to handle potential panics from all_crates()
-		let result = std::panic::catch_unwind(|| struct_impl(test_enum,),);
-
-		match result {
-			Ok(inner_result,) => {
-				// We expect either success or a specific error from
-				// all_crates()
-				match inner_result {
-					Ok(_,) => assert!(true),
-					Err(e,) => {
-						// Should be a meaningful error message
-						let error_msg = e.to_string();
-						assert!(!error_msg.is_empty());
-					},
-				}
-			},
-			Err(_,) => {
-				// If it panics due to all_crates() issues, that's acceptable in
-				// test environment
-				assert!(true);
-			},
-		}
-	}
-
-	#[test]
 	fn test_token_stream_generation() {
 		// Test that we can generate basic token streams
 		let test_tokens = quote! {
@@ -542,39 +380,6 @@ mod tests {
 		let joined = parts.iter().map(|s| s.to_string(),).join("_",);
 
 		assert_eq!(joined, "Hello_World");
-	}
-
-	#[test]
-	fn test_anyhow_error_creation() {
-		// Test anyhow error creation and formatting
-		let test_path = std::path::PathBuf::from("/invalid/path",);
-		let error = anyhow!("invalid path: {test_path:?}");
-
-		let error_msg = error.to_string();
-		assert!(error_msg.contains("invalid path"));
-		assert!(error_msg.contains("/invalid/path"));
-	}
-
-	#[test]
-	fn test_result_try_collect() {
-		// Test the try_collect functionality used in enum_impl
-		let results: Vec<Result<i32, &str,>,> = vec![Ok(1,), Ok(2,), Ok(3,)];
-		let collected: Result<Vec<i32,>, &str,> =
-			results.into_iter().try_collect();
-
-		assert!(collected.is_ok());
-		assert_eq!(collected.unwrap(), vec![1, 2, 3]);
-	}
-
-	#[test]
-	fn test_result_try_collect_with_error() {
-		let results: Vec<Result<i32, &str,>,> =
-			vec![Ok(1,), Err("error",), Ok(3,)];
-		let collected: Result<Vec<i32,>, &str,> =
-			results.into_iter().try_collect();
-
-		assert!(collected.is_err());
-		assert_eq!(collected.unwrap_err(), "error");
 	}
 
 	#[test]

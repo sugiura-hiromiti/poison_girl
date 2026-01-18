@@ -1,27 +1,10 @@
-//! # ELF Header Parsing Module
-//!
-//! This module provides functionality for parsing ELF (Executable and Linkable
-//! Format) headers from the OSO kernel binary. It uses the `readelf`
-//! command-line tool to extract header information and parses it into
-//! structured Rust types.
-//!
-//! The module is primarily used for build-time analysis and validation of the
-//! kernel binary to ensure it meets the expected format and requirements.
-
 use {
-	crate::RsltP,
-	anyhow::{Result as Rslt, bail},
 	poison_girl_dev_fs::fs::check_poison_girl_kernel,
-	poison_girl_proc_macro_helper::Diag,
-	proc_macro2::Span,
+	poison_girl_proc_macro_helper::{diagnostic::Diag, rslt::Rslt},
+	proc_macro2::{Span, TokenStream},
 	std::process::Command,
 };
 
-/// Structured representation of ELF header information
-///
-/// This struct contains all the key fields from an ELF header as parsed
-/// from the output of `readelf -h`. Each field is stored as a string
-/// to preserve the original formatting from readelf.
 #[derive(Default, Debug,)]
 pub struct ReadElfH {
 	/// ELF file class (32-bit or 64-bit)
@@ -63,19 +46,6 @@ pub struct ReadElfH {
 }
 
 impl ReadElfH {
-	/// Cleans up the parsed header fields by removing extra whitespace and
-	/// comments
-	///
-	/// The `readelf` command often includes additional information after the
-	/// main value (like comments or explanations). This method extracts just
-	/// the first word/value from each field, which is typically the actual
-	/// data we need.
-	///
-	/// # Examples
-	///
-	/// - "ELF64 (64-bit)" becomes "ELF64"
-	/// - "0x401000 (entry point)" becomes "0x401000"
-	/// - "little endian" becomes "little"
 	fn fix(&mut self,) {
 		// Extract first word from each field (split on whitespace)
 		self.file_class = self
@@ -136,20 +106,7 @@ impl ReadElfH {
 	}
 }
 
-/// Trait for checking if a key-value pair matches a specific property name
-///
-/// This trait provides a method to check if the first element of a vector
-/// (representing a parsed key-value pair) matches a given key string.
 trait Property {
-	/// Checks if this key-value pair represents the specified property
-	///
-	/// # Arguments
-	///
-	/// * `key` - The property name to check for
-	///
-	/// # Returns
-	///
-	/// `true` if the first element matches the key, `false` otherwise
 	fn is_peoperty_of(&self, key: &str,) -> bool;
 }
 
@@ -160,180 +117,88 @@ impl Property for Vec<&str,> {
 	}
 }
 
-pub fn test_elf_header_parse(rslt: proc_macro2::TokenStream,) -> RsltP {
-	// Get the expected ELF header information from readelf
-	let (answer, diag,) = elf_header_info()?;
-
-	// Generate conditional assertion for debug builds only
-	Ok((
-		quote::quote! {
-			if cfg!(debug_assertions) {
-				assert_eq!(#answer, #rslt);
-			}
-		},
-		diag,
-	),)
+pub fn test_elf_header_parse(
+	rslt: proc_macro2::TokenStream,
+) -> Rslt<TokenStream,> {
+	elf_header_info().replace_by(|ts| {
+		Rslt::new(quote::quote! {
+		if cfg!(debug_assertions) {
+			assert_eq!(#ts, #rslt);
+		}
+			},)
+	},)
 }
 
-/// Generates token stream for expected ELF header information.
-///
-/// This function executes `readelf -h` on the target binary and parses the
-/// output to create a token stream representing the expected ELF header
-/// structure. This is used by the `test_elf_header_parse` macro to validate ELF
-/// header parsing.
-///
-/// # Returns
-///
-/// Returns a `proc_macro2::TokenStream` representing an `ElfHeader` struct
-/// initialization with all fields populated from the actual binary.
-///
-/// # Generated Structure
-///
-/// The generated token stream creates an ElfHeader with:
-/// - `ident`: ELF identification information (class, endianness, version, etc.)
-/// - `ty`: ELF file type (executable, shared object, etc.)
-/// - `machine`: Target machine architecture
-/// - `version`: ELF version
-/// - `entry`: Entry point address
-/// - `program_header_offset`: Offset to program header table
-/// - `section_header_offset`: Offset to section header table
-/// - `flags`: Processor-specific flags
-/// - `elf_header_size`: Size of ELF header
-/// - `program_header_entry_size`: Size of program header entries
-/// - `program_header_count`: Number of program header entries
-/// - `section_header_entry_size`: Size of section header entries
-/// - `section_header_count`: Number of section header entries
-/// - `section_header_index_of_section_name_string_table`: Index of section name
-///   string table
-///
-/// # Panics
-///
-/// This function will panic if:
-/// - The `readelf -h` command fails to execute
-/// - The readelf output cannot be parsed
-/// - Any required ELF header field is missing or malformed
-///
-/// # Dependencies
-///
-/// Requires the `readelf` command to be available in the system PATH.
-pub fn elf_header_info() -> RsltP {
-	// Execute readelf -h and parse the output
-	let header = &readelf_h()?;
-
-	// Parse individual ELF header components
-	let (ident, mut diag,) = elf_header_ident_build(header,)?;
-	let (ty, mut diag_ty,) = parse_ty(header,)?;
-	let machine = parse_machine(header,);
-	let version = parse_version(header,);
-	let entry = parse_entry(header,);
-	let program_header_offset = parse_program_header_offset(header,);
-	let section_header_offset = parse_section_header_offset(header,);
-	let flags = parse_flags(header,);
-	let elf_header_size = parse_elf_header_size(header,);
-	let program_header_entry_size = parse_program_header_entry_size(header,);
-	let program_header_count = parse_program_header_count(header,);
-	let section_header_entry_size = parse_section_header_entry_size(header,);
-	let section_header_count = parse_section_header_count(header,);
-	let section_header_index_of_section_name_string_table =
-		parse_section_header_index_of_section_name_string_table(header,);
-
-	diag.append(&mut diag_ty,);
-
-	// Generate the complete ElfHeader struct initialization
-	Ok((
-		quote::quote! {
-			ElfHeader {
-				ident: #ident,
-				ty : #ty,
-				machine : #machine,
-				version : #version,
-				entry : #entry,
-				program_header_offset : #program_header_offset,
-				section_header_offset : #section_header_offset,
-				flags : #flags,
-				elf_header_size : #elf_header_size,
-				program_header_entry_size : #program_header_entry_size,
-				program_header_count : #program_header_count,
-				section_header_entry_size : #section_header_entry_size,
-				section_header_count : #section_header_count,
-				section_header_index_of_section_name_string_table : #section_header_index_of_section_name_string_table,
-			}
-		},
-		diag,
-	),)
+pub fn elf_header_info() -> Rslt<TokenStream,> {
+	readelf_h()
+		.replace_by(|header| {
+			elf_header_ident_build(&header,)
+				.replace_by(|ident| Rslt::new((ident, header,),),)
+		},)
+		.replace_by(|(ident, header,)| {
+			parse_ty(&header,)
+				.replace_by(|ty| Rslt::new((ident, ty, header,),),)
+		},)
+		.replace_by(|(ident, ty, ref header,)| {
+			let machine = parse_machine(header,);
+			let version = parse_version(header,);
+			let entry = parse_entry(header,);
+			let program_header_offset = parse_program_header_offset(header,);
+			let section_header_offset = parse_section_header_offset(header,);
+			let flags = parse_flags(header,);
+			let elf_header_size = parse_elf_header_size(header,);
+			let program_header_entry_size =
+				parse_program_header_entry_size(header,);
+			let program_header_count = parse_program_header_count(header,);
+			let section_header_entry_size =
+				parse_section_header_entry_size(header,);
+			let section_header_count = parse_section_header_count(header,);
+			let section_header_index_of_section_name_string_table =
+				parse_section_header_index_of_section_name_string_table(header,);
+			Rslt::new(quote::quote! {
+					ElfHeader {
+						ident: #ident,
+						ty : #ty,
+						machine : #machine,
+						version : #version,
+						entry : #entry,
+						program_header_offset : #program_header_offset,
+						section_header_offset : #section_header_offset,
+						flags : #flags,
+						elf_header_size : #elf_header_size,
+						program_header_entry_size : #program_header_entry_size,
+						program_header_count : #program_header_count,
+						section_header_entry_size : #section_header_entry_size,
+						section_header_count : #section_header_count,
+						section_header_index_of_section_name_string_table :
+			#section_header_index_of_section_name_string_table, 		}
+				},)
+		},)
 }
 
-/// Builds the ELF header identification structure.
-///
-/// This function parses the ELF identification fields from the readelf output
-/// and generates a token stream representing the `ElfHeaderIdent` structure.
-/// The ELF identification contains metadata about the ELF file format.
-///
-/// # Parameters
-///
-/// * `header` - Parsed readelf -h output containing ELF header information
-///
-/// # Returns
-///
-/// Returns a token stream representing an `ElfHeaderIdent` struct
-/// initialization with all identification fields populated.
-///
-/// # ELF Identification Fields
-///
-/// - `file_class`: Whether the file is 32-bit or 64-bit
-/// - `endianness`: Byte order (little-endian or big-endian)
-/// - `elf_version`: ELF format version
-/// - `target_os_abi`: Target operating system ABI
-/// - `abi_version`: ABI version number
-fn elf_header_ident_build(header: &ReadElfH,) -> RsltP {
-	let (file_class, mut diag,) = parse_file_class(header,)?;
-	let (endianness, mut diag_endianness,) = parse_endianness(header,)?;
-	let (elf_version, mut diag_elf_version,) = parse_elf_version(header,)?;
-	let (target_os_abi, mut diag_target_os_abi,) =
-		parse_target_os_abi(header,)?;
-	let (abi_version, mut diag_abi_version,) = parse_abi_version(header,)?;
-
-	diag.append(&mut diag_endianness,);
-	diag.append(&mut diag_elf_version,);
-	diag.append(&mut diag_target_os_abi,);
-	diag.append(&mut diag_abi_version,);
-
-	Ok((
-		quote::quote! {
-			ElfHeaderIdent {
-				file_class: #file_class,
-				endianness: #endianness,
-				elf_version: #elf_version,
-				target_os_abi: #target_os_abi,
-				abi_version: #abi_version,
-			}
-		},
-		diag,
-	),)
+fn elf_header_ident_build(header: &ReadElfH,) -> Rslt<TokenStream,> {
+	parse_file_class(header,).replace_by(|file_class| {
+		parse_endianness(header,).replace_by(|endianness| {
+			parse_elf_version(header,).replace_by(|elf_version| {
+				parse_target_os_abi(header,).replace_by(|target_os_abi| {
+					parse_abi_version(header,).replace_by(|abi_version| {
+						Rslt::new(quote::quote! {
+							ElfHeaderIdent {
+								file_class: #file_class,
+								endianness: #endianness,
+								elf_version: #elf_version,
+								target_os_abi: #target_os_abi,
+								abi_version: #abi_version,
+							}
+						},)
+					},)
+				},)
+			},)
+		},)
+	},)
 }
 
-/// Parses the ELF file class from readelf output.
-///
-/// Converts the file class string from readelf into the appropriate enum
-/// variant. The file class indicates whether the ELF file is 32-bit or 64-bit.
-///
-/// # Parameters
-///
-/// * `header` - Parsed readelf output containing file class information
-///
-/// # Returns
-///
-/// Returns a token stream representing the FileClass enum variant
-///
-/// # Supported Values
-///
-/// - "ELF64" -> `FileClass::Bit64`
-/// - "ELF32" -> `FileClass::Bit32`
-///
-/// # Panics
-///
-/// Panics if the file class is not recognized
-fn parse_file_class(header: &ReadElfH,) -> RsltP {
+fn parse_file_class(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	let file_class = header.file_class.as_str();
 
 	let file_class = match file_class {
@@ -344,34 +209,16 @@ fn parse_file_class(header: &ReadElfH,) -> RsltP {
 			FileClass::Bit32
 		},
 		_ => {
-			bail!("failed to parse file_class info: {file_class}")
+			return Rslt::new_err(format!(
+				"failed to parse file_class info: {file_class}"
+			),);
 		},
 	};
 
-	Ok((file_class, vec![],),)
+	Rslt::new(file_class,)
 }
 
-/// Parses the endianness from readelf output.
-///
-/// Converts the endianness string into the appropriate enum variant.
-///
-/// # Parameters
-///
-/// * `header` - Parsed readelf output containing endianness information
-///
-/// # Returns
-///
-/// Returns a token stream representing the Endian enum variant
-///
-/// # Supported Values
-///
-/// - "little" -> `Endian::Little`
-/// - "big" -> `Endian::Big`
-///
-/// # Panics
-///
-/// Panics if the endianness is not recognized
-fn parse_endianness(header: &ReadElfH,) -> RsltP {
+fn parse_endianness(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	let endianness = header.endianness.as_str();
 
 	let endianness = match endianness {
@@ -382,31 +229,16 @@ fn parse_endianness(header: &ReadElfH,) -> RsltP {
 			Endian::Big
 		},
 		_ => {
-			bail!("failed to parse endianness info: {endianness}")
+			return Rslt::new_err(format!(
+				"failed to parse endianness info: {endianness}"
+			),);
 		},
 	};
 
-	Ok((endianness, vec![],),)
+	Rslt::new(endianness,)
 }
 
-/// Parses the ELF version from readelf output.
-///
-/// Converts the ELF version string into the appropriate constant or creates
-/// a new version variant for unrecognized versions.
-///
-/// # Parameters
-///
-/// * `header` - Parsed readelf output containing ELF version information
-///
-/// # Returns
-///
-/// Returns a token stream representing the ElfVersion constant or variant
-///
-/// # Behavior
-///
-/// - Version "1" maps to `ElfVersion::ONE`
-/// - Other versions generate a warning and create `ElfVersion(n)` variant
-fn parse_elf_version(header: &ReadElfH,) -> RsltP {
+fn parse_elf_version(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	let elf_version = header.elf_version.as_str();
 
 	let elf_version = match elf_version {
@@ -421,36 +253,12 @@ fn parse_elf_version(header: &ReadElfH,) -> RsltP {
 		},
 	};
 
-	Ok((
-		elf_version.clone(),
-		vec![Diag::Warn(format!("unrecognized elf version: {elf_version}"),)],
-	),)
+	Rslt::new(elf_version.clone(),).with_diag(Diag::note(format!(
+		"unrecognized elf version: {elf_version}"
+	),),)
 }
 
-/// Parses the target OS ABI from readelf output.
-///
-/// Converts the target OS ABI string into the appropriate enum variant.
-/// The target OS ABI indicates the operating system and ABI for which
-/// the ELF file was created.
-///
-/// # Parameters
-///
-/// * `header` - Parsed readelf output containing target OS ABI information
-///
-/// # Returns
-///
-/// Returns a token stream representing the TargetOsAbi enum variant
-///
-/// # Supported Values
-///
-/// - Contains "UNIX - System V" -> `TargetOsAbi::SysV`
-/// - Contains "Arm" -> `TargetOsAbi::Arm`
-/// - Contains "Standalone" -> `TargetOsAbi::Standalone`
-///
-/// # Panics
-///
-/// Panics if the target OS ABI is not recognized
-fn parse_target_os_abi(header: &ReadElfH,) -> RsltP {
+fn parse_target_os_abi(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	let target_os_abi = header.target_os_abi.as_str();
 
 	let target_os_abi = if target_os_abi.contains("UNIX - System V",) {
@@ -466,30 +274,13 @@ fn parse_target_os_abi(header: &ReadElfH,) -> RsltP {
 			TargetOsAbi::Standalone
 		}
 	} else {
-		bail!("unrecognized target_os_abi : {target_os_abi}");
+		return Rslt::new_err(format!("target_os_abi : {target_os_abi}"),);
 	};
 
-	Ok((target_os_abi, vec![],),)
+	Rslt::new(target_os_abi,)
 }
 
-/// Parses the ABI version from readelf output.
-///
-/// Converts the ABI version string into the appropriate constant or creates
-/// a new version variant for unrecognized versions.
-///
-/// # Parameters
-///
-/// * `header` - Parsed readelf output containing ABI version information
-///
-/// # Returns
-///
-/// Returns a token stream representing the AbiVersion constant or variant
-///
-/// # Behavior
-///
-/// - Version "1" maps to `AbiVersion::ONE`
-/// - Other versions generate a warning and create `AbiVersion(n)` variant
-fn parse_abi_version(header: &ReadElfH,) -> RsltP {
+fn parse_abi_version(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	let abi_version = header.abi_version.as_str();
 
 	let abi_version = match abi_version {
@@ -504,68 +295,25 @@ fn parse_abi_version(header: &ReadElfH,) -> RsltP {
 		},
 	};
 
-	Ok((
-		abi_version.clone(),
-		vec![Diag::Warn(format!("unrecognized abi version: {abi_version}"),)],
-	),)
+	Rslt::new(abi_version.clone(),).with_diag(Diag::note(format!(
+		"unrecognized abi version: {abi_version}"
+	),),)
 }
 
-/// Parses the ELF file type from readelf output.
-///
-/// Converts the ELF type string into the appropriate enum variant.
-/// For the OSO kernel, this function specifically validates that the
-/// file type is executable.
-///
-/// # Parameters
-///
-/// * `header` - Parsed readelf output containing ELF type information
-///
-/// # Returns
-///
-/// Returns a token stream representing the ElfType enum variant
-///
-/// # Behavior
-///
-/// - Only "EXEC" (executable) type is supported for OSO kernel
-/// - Other types will cause a compile-time error
-///
-/// # Panics
-///
-/// Panics if the ELF type is not "EXEC" (executable)
-fn parse_ty(header: &ReadElfH,) -> RsltP {
+fn parse_ty(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	let ty = header.ty.as_str();
 
 	if ty != "EXEC" {
-		bail!("oso_kernel.elf type must be executable: {ty}")
+		return Rslt::new_err(format!(
+			"oso_kernel.elf type must be executable: {ty}"
+		),);
 	}
 
-	Ok((
-		quote::quote! {
-			ElfType::Executable
-		},
-		vec![],
-	),)
+	Rslt::new(quote::quote! {
+		ElfType::Executable
+	},)
 }
 
-/// Parses the target machine architecture from readelf output.
-///
-/// Converts the machine string into the appropriate ELF machine constant.
-/// The function normalizes the machine name by converting to uppercase
-/// and replacing spaces with underscores, then prefixes with "EM_".
-///
-/// # Parameters
-///
-/// * `header` - Parsed readelf output containing machine information
-///
-/// # Returns
-///
-/// Returns a token stream representing the machine constant
-///
-/// # Examples
-///
-/// - "Advanced Micro Devices X86-64" ->
-///   `ElfHeader::EM_ADVANCED_MICRO_DEVICES_X86-64`
-/// - "AArch64" -> `ElfHeader::EM_AARCH64`
 fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	// Normalize machine name: uppercase and replace spaces with underscores
 	let machine: String = header
@@ -591,8 +339,6 @@ fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses the ELF version field (different from ELF format version).
-/// Expects a hexadecimal string prefixed with "0x".
 fn parse_version(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let version = header.version.as_str();
 	let version = &version[2..]; // Remove "0x" prefix
@@ -605,8 +351,6 @@ fn parse_version(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses the entry point address from readelf output.
-/// Expects a hexadecimal string prefixed with "0x".
 fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let entry = header.entry.as_str();
 	let entry = &entry[2..]; // Remove "0x" prefix
@@ -619,8 +363,6 @@ fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses the program header table offset from readelf output.
-/// Expects a decimal string.
 fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let program_header_offset = header.program_header_offset.as_str();
 	let program_header_offset =
@@ -636,8 +378,6 @@ fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses the section header table offset from readelf output.
-/// Expects a decimal string.
 fn parse_section_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let section_header_offset = header.section_header_offset.as_str();
 	let section_header_offset =
@@ -653,8 +393,6 @@ fn parse_section_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses processor-specific flags from readelf output.
-/// Expects a hexadecimal string prefixed with "0x".
 fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let flags = header.flags.as_str();
 	let flags = &flags[2..]; // Remove "0x" prefix
@@ -666,8 +404,6 @@ fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses the ELF header size from readelf output.
-/// Expects a decimal string.
 fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let elf_header_size = header.elf_header_size.as_str();
 	let elf_header_size = elf_header_size.parse::<u16>().unwrap_or_else(|_| {
@@ -679,8 +415,6 @@ fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses the program header entry size from readelf output.
-/// Expects a decimal string.
 fn parse_program_header_entry_size(
 	header: &ReadElfH,
 ) -> proc_macro2::TokenStream {
@@ -698,8 +432,6 @@ fn parse_program_header_entry_size(
 	}
 }
 
-/// Parses the number of program header entries from readelf output.
-/// Expects a decimal string.
 fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let program_header_count = header.program_header_count.as_str();
 	let program_header_count =
@@ -715,8 +447,6 @@ fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses the section header entry size from readelf output.
-/// Expects a decimal string.
 fn parse_section_header_entry_size(
 	header: &ReadElfH,
 ) -> proc_macro2::TokenStream {
@@ -734,8 +464,6 @@ fn parse_section_header_entry_size(
 	}
 }
 
-/// Parses the number of section header entries from readelf output.
-/// Expects a decimal string.
 fn parse_section_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	let section_header_count = header.section_header_count.as_str();
 	let section_header_count =
@@ -751,9 +479,6 @@ fn parse_section_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Parses the section header string table index from readelf output.
-/// This index points to the section containing section names.
-/// Expects a decimal string.
 fn parse_section_header_index_of_section_name_string_table(
 	header: &ReadElfH,
 ) -> proc_macro2::TokenStream {
@@ -775,31 +500,6 @@ fn parse_section_header_index_of_section_name_string_table(
 	}
 }
 
-/// Parses ELF header information from the OSO kernel binary
-///
-/// This function executes `readelf -h` on the kernel binary and parses
-/// the output to extract all ELF header fields into a structured format.
-/// It performs validation to ensure the kernel file exists before parsing.
-///
-/// # Returns
-///
-/// A `Result<ReadElfH>` containing the parsed ELF header information,
-/// or an error if the kernel file doesn't exist or parsing fails.
-///
-/// # Errors
-///
-/// This function will return an error if:
-/// - The OSO kernel ELF file doesn't exist (checked via `check_oso_kernel`)
-/// - The `readelf` command fails to execute
-/// - The command output cannot be parsed as UTF-8
-///
-/// # Examples
-///
-/// ```ignore
-/// let header = readelf_h()?;
-/// println!("Entry point: {}", header.entry);
-/// println!("Machine: {}", header.machine);
-/// ```
 pub fn readelf_h() -> Rslt<ReadElfH,> {
 	// Ensure the kernel file exists before attempting to parse it
 	check_poison_girl_kernel()?;
@@ -890,7 +590,7 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 	// Clean up the parsed fields by removing extra whitespace and comments
 	header.fix();
 
-	Ok(header,)
+	Rslt::new(header,)
 }
 #[cfg(test)]
 mod tests {

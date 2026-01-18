@@ -2,46 +2,41 @@
 
 extern crate proc_macro;
 
-use poison_girl_proc_macro_helper::Diag;
-use poison_girl_proc_macro_helper::atr;
-use poison_girl_proc_macro_helper::drv;
-use poison_girl_proc_macro_helper::fnl;
-use proc_macro::Diagnostic;
-use proc_macro::Level;
+use {
+	poison_girl_proc_macro_helper::{
+		atr,
+		diagnostic::{Diag, NotationDiag},
+		drv, fnl,
+		rslt::Rslt,
+	},
+	proc_macro::{Diagnostic, Level},
+};
 
 trait ErrorDiagnose {
 	type T;
 	fn unwrap_or_emit(self,) -> Self::T;
 }
 
-impl<T,> ErrorDiagnose for anyhow::Result<(T, Vec<Diag,>,),> {
-	type T = T;
+impl<V,> ErrorDiagnose for Rslt<V,> {
+	type T = V;
 
 	fn unwrap_or_emit(self,) -> Self::T {
-		match self {
-			Self::Ok((o, diag,),) => {
-				diag.iter().for_each(|d| match d {
-					Diag::Err(msg,) => {
-						Diagnostic::new(Level::Error, msg,).emit()
-					},
-					Diag::Warn(msg,) => {
-						Diagnostic::new(Level::Warning, msg,).emit()
-					},
-					Diag::Note(msg,) => {
-						Diagnostic::new(Level::Note, msg,).emit()
-					},
-					Diag::Help(msg,) => {
-						Diagnostic::new(Level::Help, msg,).emit()
-					},
-				},);
-
-				o
-			},
-			Self::Err(e,) => {
-				Diagnostic::new(Level::Error, format!("{e}"),).emit();
-				panic!("{e}");
-			},
+		if self.has_err() {
+			panic!("{:?}", self.into_err());
 		}
+
+		self.notation().iter().for_each(|d| match d {
+			NotationDiag::Warn(msg,) => {
+				Diagnostic::new(Level::Warning, msg,).emit();
+			},
+			NotationDiag::Note(msg,) => {
+				Diagnostic::new(Level::Note, msg,).emit();
+			},
+			NotationDiag::Help(msg,) => {
+				Diagnostic::new(Level::Help, msg,).emit();
+			},
+		},);
+		self.into_value().unwrap()
 	}
 }
 
@@ -347,189 +342,3 @@ r#""#
 );
 
 atr!(features => proc_macro2::TokenStream, syn::ItemEnum, r#""#);
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use anyhow::anyhow;
-
-	#[test]
-	fn test_error_diagnose_trait_ok() {
-		let result: anyhow::Result<(i32, Vec<Diag,>,),> = Ok((42, vec![],),);
-		let value = result.unwrap_or_emit();
-		assert_eq!(value, 42);
-	}
-
-	#[test]
-	fn test_error_diagnose_trait_ok_with_diagnostics() {
-		let diags = vec![
-			Diag::Note("Test note".to_string(),),
-			Diag::Help("Test help".to_string(),),
-		];
-		let result: anyhow::Result<(String, Vec<Diag,>,),> =
-			Ok(("success".to_string(), diags,),);
-
-		// We can't test the actual emission outside of proc_macro context,
-		// but we can test that the result structure is correct
-		match result {
-			Ok((value, diagnostics,),) => {
-				assert_eq!(value, "success");
-				assert_eq!(diagnostics.len(), 2);
-				match &diagnostics[0] {
-					Diag::Note(msg,) => assert_eq!(msg, "Test note"),
-					_ => panic!("Expected note diagnostic"),
-				}
-				match &diagnostics[1] {
-					Diag::Help(msg,) => assert_eq!(msg, "Test help"),
-					_ => panic!("Expected help diagnostic"),
-				}
-			},
-			Err(_,) => panic!("Expected Ok result"),
-		}
-	}
-
-	#[test]
-	#[should_panic]
-	fn test_error_diagnose_trait_err() {
-		let result: anyhow::Result<(i32, Vec<Diag,>,),> =
-			Err(anyhow!("Test error"),);
-		let _value = result.unwrap_or_emit();
-	}
-
-	#[test]
-	fn test_diag_variants() {
-		// Test that we can create different diagnostic types
-		let _err_diag = Diag::Err("Error message".to_string(),);
-		let _warn_diag = Diag::Warn("Warning message".to_string(),);
-		let _note_diag = Diag::Note("Note message".to_string(),);
-		let _help_diag = Diag::Help("Help message".to_string(),);
-
-		// If we get here without compilation errors, the Diag enum is working
-		assert!(true);
-	}
-
-	#[test]
-	fn test_error_diagnose_with_multiple_diagnostics() {
-		let diags = vec![
-			Diag::Warn("Warning 1".to_string(),),
-			Diag::Note("Note 1".to_string(),),
-			Diag::Help("Help 1".to_string(),),
-			Diag::Warn("Warning 2".to_string(),),
-		];
-		let result: anyhow::Result<(bool, Vec<Diag,>,),> = Ok((true, diags,),);
-
-		// Test the structure without calling unwrap_or_emit
-		match result {
-			Ok((value, diagnostics,),) => {
-				assert_eq!(value, true);
-				assert_eq!(diagnostics.len(), 4);
-
-				// Verify each diagnostic type and message
-				match &diagnostics[0] {
-					Diag::Warn(msg,) => assert_eq!(msg, "Warning 1"),
-					_ => panic!("Expected warning diagnostic"),
-				}
-				match &diagnostics[1] {
-					Diag::Note(msg,) => assert_eq!(msg, "Note 1"),
-					_ => panic!("Expected note diagnostic"),
-				}
-				match &diagnostics[2] {
-					Diag::Help(msg,) => assert_eq!(msg, "Help 1"),
-					_ => panic!("Expected help diagnostic"),
-				}
-				match &diagnostics[3] {
-					Diag::Warn(msg,) => assert_eq!(msg, "Warning 2"),
-					_ => panic!("Expected warning diagnostic"),
-				}
-			},
-			Err(_,) => panic!("Expected Ok result"),
-		}
-	}
-
-	#[test]
-	fn test_error_diagnose_empty_diagnostics() {
-		let result: anyhow::Result<(Vec<i32,>, Vec<Diag,>,),> =
-			Ok((vec![1, 2, 3], vec![],),);
-		let value = result.unwrap_or_emit();
-		assert_eq!(value, vec![1, 2, 3]);
-	}
-
-	// Integration tests for the trait behavior
-	#[test]
-	fn test_error_diagnose_trait_integration() {
-		// Test that the trait works with different types
-		let string_result: anyhow::Result<(String, Vec<Diag,>,),> =
-			Ok(("test".to_string(), vec![],),);
-		assert_eq!(string_result.unwrap_or_emit(), "test");
-
-		let vec_result: anyhow::Result<(Vec<u8,>, Vec<Diag,>,),> =
-			Ok((vec![1, 2, 3], vec![],),);
-		assert_eq!(vec_result.unwrap_or_emit(), vec![1, 2, 3]);
-
-		let option_result: anyhow::Result<(Option<i32,>, Vec<Diag,>,),> =
-			Ok((Some(42,), vec![],),);
-		assert_eq!(option_result.unwrap_or_emit(), Some(42));
-	}
-
-	#[test]
-	fn test_diagnostic_message_content() {
-		// Test that diagnostic messages are properly formatted
-		let diags = vec![
-			Diag::Err("Critical error occurred".to_string(),),
-			Diag::Warn("This is a warning".to_string(),),
-			Diag::Note("Additional information".to_string(),),
-			Diag::Help("Try this solution".to_string(),),
-		];
-
-		// We can't easily test the actual emission without proc_macro context,
-		// but we can test that the diagnostics contain the expected content
-		match &diags[0] {
-			Diag::Err(msg,) => assert_eq!(msg, "Critical error occurred"),
-			_ => panic!("Expected error diagnostic"),
-		}
-
-		match &diags[1] {
-			Diag::Warn(msg,) => assert_eq!(msg, "This is a warning"),
-			_ => panic!("Expected warning diagnostic"),
-		}
-
-		match &diags[2] {
-			Diag::Note(msg,) => assert_eq!(msg, "Additional information"),
-			_ => panic!("Expected note diagnostic"),
-		}
-
-		match &diags[3] {
-			Diag::Help(msg,) => assert_eq!(msg, "Try this solution"),
-			_ => panic!("Expected help diagnostic"),
-		}
-	}
-
-	#[test]
-	fn test_error_diagnose_with_complex_types() {
-		use std::collections::HashMap;
-
-		let mut map = HashMap::new();
-		map.insert("key1".to_string(), 42,);
-		map.insert("key2".to_string(), 84,);
-
-		let result: anyhow::Result<(HashMap<String, i32,>, Vec<Diag,>,),> =
-			Ok((map.clone(), vec![],),);
-		let value = result.unwrap_or_emit();
-		assert_eq!(value, map);
-	}
-
-	#[test]
-	fn test_error_diagnose_trait_bounds() {
-		// Test that the trait works with types that have various bounds
-		#[derive(Debug, PartialEq,)]
-		struct TestStruct {
-			value: i32,
-		}
-
-		let test_struct = TestStruct { value: 100, };
-		let result: anyhow::Result<(TestStruct, Vec<Diag,>,),> =
-			Ok((test_struct, vec![],),);
-		let value = result.unwrap_or_emit();
-		assert_eq!(value.value, 100);
-	}
-}

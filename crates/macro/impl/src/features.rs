@@ -1,29 +1,32 @@
-use crate::RsltP;
-use poison_girl_dev_fs::fs::all_crates;
-use poison_girl_dev_fs::fs::read_toml;
-use poison_girl_dev_fs::util::CaseConvert;
-use quote::ToTokens;
-use quote::format_ident;
+use {
+	poison_girl_dev_error::{ReShape, X},
+	poison_girl_dev_fs::{
+		fs::{all_crates, read_toml},
+		util::CaseConvert,
+	},
+	poison_girl_proc_macro_helper::rslt::Rslt,
+	proc_macro2::TokenStream,
+	quote::{ToTokens, format_ident},
+};
 
 pub fn features(
-	_attr: proc_macro2::TokenStream,
+	_attr: TokenStream,
 	mut item: syn::ItemEnum,
-) -> RsltP {
+) -> Rslt<TokenStream,> {
 	let mut hs = std::collections::HashSet::new();
 	all_crates()?
 		.iter()
 		.filter_map(|e| {
 			let e = e.join(poison_girl_dev_fs::fs::CARGO_MANIFEST,);
-			read_toml(e,)
+			read_toml(e,).reshape((),)
 		},)
-		.try_for_each(|toml| -> Rslt<(),> {
-			if let Some(toml::Value::Table(t,),) = toml?.get("features",) {
+		.for_each(|toml| {
+			if let Some(toml::Value::Table(t,),) = toml.get("features",) {
 				t.into_iter().for_each(|(feature, _,)| {
 					hs.insert(feature.clone(),);
 				},);
 			}
-			Ok((),)
-		},)?;
+		},);
 
 	hs.iter().for_each(|variant| {
 		let variant: String = variant.to_camel();
@@ -32,5 +35,6 @@ pub fn features(
 		item.variants.push(variant,);
 	},);
 
-	Ok((item.to_token_stream(), vec![],),)
+	Rslt::new(item.to_token_stream(),)
+	// Ok((item.to_token_stream(), vec![],),)
 }

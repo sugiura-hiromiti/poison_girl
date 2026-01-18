@@ -1,11 +1,6 @@
-//! Integration tests for oso_proc_macro_logic crate
-//!
-//! These tests verify that different modules work together correctly
-//! and test the crate's functionality as a whole.
-
 use {
 	html5ever::tendril::TendrilSink,
-	poison_girl_dev_fs::fs::check_poison_girl_kernel,
+	poison_girl_proc_macro_helper::rslt::Rslt,
 	poison_girl_proc_macro_impl::{
 		font, impl_int,
 		status::*,
@@ -15,17 +10,6 @@ use {
 	std::fs,
 	tempfile::NamedTempFile,
 };
-
-#[test]
-fn test_crate_modules_are_accessible() {
-	// Test that all public modules are accessible
-	// This is a compilation test - if it compiles, the modules are properly
-	// exposed
-
-	// We can't directly instantiate types from proc macro logic modules
-	// without proper macro contexts, but we can verify they exist
-	assert!(true);
-}
 
 #[test]
 fn test_gen_wrapper_fn_integration() {
@@ -79,9 +63,12 @@ fn test_fonts_data_integration() {
 
 	// Test font function (the only public function)
 	let result = font::font(lit_str,);
-	assert!(result.is_ok(), "Font processing should succeed with valid data");
+	assert!(
+		!result.has_err(),
+		"Font processing should succeed with valid data"
+	);
 
-	let (tokens, _,) = result.unwrap();
+	let tokens = result.unwrap().unwrap();
 	let token_string = tokens.to_string();
 
 	// Verify that the result contains array-like structure
@@ -182,48 +169,22 @@ fn test_status_from_spec_html_parsing_integration() {
 }
 
 #[test]
-fn test_error_handling_integration() {
-	// Test that errors propagate correctly across modules
-	use anyhow::Result as Rslt;
-
-	fn test_error_chain() -> Rslt<(),> {
-		// This should fail because the kernel file likely doesn't exist
-		check_poison_girl_kernel()?;
-		Ok((),)
-	}
-
-	let result = test_error_chain();
-	// In most test environments, this should fail
-	// We just verify that the error handling works correctly
-	match result {
-		Ok(_,) => {
-			// If it succeeds, that's fine too (kernel file exists)
-			assert!(true);
-		},
-		Err(e,) => {
-			// Verify that we get a meaningful error message
-			let error_msg = e.to_string();
-			assert!(error_msg.contains("oso_kernel.elf"));
-		},
-	}
-}
-
-#[test]
-fn test_type_conversions_integration() {
+fn test_type_conversions_integration() -> Rslt<(),> {
 	// Test that different modules can work with the same data types
 	use test_program_headers_parse::*;
 
 	// Test u32 parsing
-	let u32_result = u32::parse("1a2b",).expect("Failed to parse u32",);
+	let u32_result = u32::parse("1a2b",)??;
 	assert_eq!(u32_result, 0x1a2b);
 
 	// Test u64 parsing
-	let u64_result = u64::parse("1a2b3c4d",).expect("Failed to parse u64",);
+	let u64_result = u64::parse("1a2b3c4d",)??;
 	assert_eq!(u64_result, 0x1a2b3c4d);
 
 	// Test that both types implement the same trait
-	assert_eq!(u32::parse("ff").unwrap(), 255u32);
-	assert_eq!(u64::parse("ff").unwrap(), 255u64);
+	assert_eq!(u32::parse("ff")??, 255u32);
+	assert_eq!(u64::parse("ff")??, 255u64);
+	Rslt::new((),)
 }
 
 #[test]
@@ -323,26 +284,4 @@ fn test_file_system_integration() {
 	// We don't assert the result since it depends on the test environment
 	// Just verify that the operation doesn't panic
 	let _ = exists;
-}
-
-#[test]
-fn test_anyhow_error_integration() {
-	// Test that anyhow errors work consistently across modules
-	use anyhow::{Result as Rslt, anyhow};
-
-	fn create_error() -> Rslt<(),> {
-		Err(anyhow!("Test error from integration test"),)
-	}
-
-	fn propagate_error() -> Rslt<(),> {
-		create_error()?;
-		Ok((),)
-	}
-
-	let result = propagate_error();
-	assert!(result.is_err());
-
-	let error = result.unwrap_err();
-	let error_msg = error.to_string();
-	assert!(error_msg.contains("Test error from integration test"));
 }

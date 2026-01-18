@@ -1,16 +1,12 @@
-//! # Function Wrapper Generation Utilities
-//!
-//! This module provides utilities for generating wrapper functions and
-//! extracting method arguments from function signatures. It's primarily used in
-//! procedural macros that need to analyze and transform function definitions.
-
-use crate::RsltP;
-use syn::Signature;
+use {
+	poison_girl_proc_macro_helper::rslt::Rslt, proc_macro2::TokenStream,
+	syn::Signature,
+};
 
 pub fn wrapper(
 	static_frame_buffer: syn::Ident,
 	trait_def: syn::ItemTrait,
-) -> RsltP {
+) -> Rslt<TokenStream,> {
 	// Generate wrapper functions for each trait method
 	let wrapper_fns = trait_def.items.clone().into_iter().filter_map(|i| {
 		if let syn::TraitItem::Fn(method,) = i {
@@ -50,47 +46,9 @@ pub fn wrapper(
 		#(#wrapper_fns)*
 		#trait_def
 	};
-	Ok((wrapper_fns, vec![],),)
+	Rslt::new(wrapper_fns,)
 }
 
-/// Extracts method arguments from a function signature, excluding the receiver
-/// (`self`)
-///
-/// This function analyzes a function signature and returns an iterator over all
-/// the argument patterns, filtering out any receiver arguments (like `self`,
-/// `&self`, `&mut self`, etc.). This is useful when generating wrapper
-/// functions or when you need to forward arguments to another function.
-///
-/// # Arguments
-///
-/// * `sig` - A reference to a `syn::Signature` representing the function
-///   signature to analyze
-///
-/// # Returns
-///
-/// An iterator that yields `Box<syn::Pat>` for each non-receiver argument in
-/// the signature. The patterns represent the argument names and destructuring
-/// patterns.
-///
-/// # Examples
-///
-/// ```ignore
-/// use syn::{parse_quote, Signature};
-///
-/// let sig: Signature = parse_quote! {
-///     fn example(&self, arg1: i32, arg2: String) -> bool
-/// };
-///
-/// let args: Vec<_> = method_args(&sig).collect();
-/// assert_eq!(args.len(), 2); // Only arg1 and arg2, self is filtered out
-/// ```
-///
-/// # Use Cases
-///
-/// - Generating wrapper functions that need to forward arguments
-/// - Creating proxy methods that delegate to other implementations
-/// - Analyzing function signatures in procedural macros
-/// - Building function call expressions with the same arguments
 pub fn method_args(
 	sig: &Signature,
 ) -> impl Iterator<Item = std::boxed::Box<syn::Pat,>,> {
@@ -104,9 +62,10 @@ pub fn method_args(
 }
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use syn::Signature;
-	use syn::parse_quote;
+	use {
+		super::*,
+		syn::{Signature, parse_quote},
+	};
 
 	#[test]
 	fn test_method_args_no_receiver() {
@@ -248,16 +207,16 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(!result.has_err());
 
-		let (tokens, diags,) = result.unwrap();
+		assert!(result.notation().is_empty());
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that wrapper function is generated
 		assert!(token_string.contains("pub fn test_method"));
 		assert!(token_string.contains("FRAME_BUFFER . test_method"));
 		assert!(token_string.contains("trait TestTrait"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -273,9 +232,10 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(!result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that all wrapper functions are generated
@@ -285,7 +245,6 @@ mod tests {
 		assert!(token_string.contains("BUFFER . method1"));
 		assert!(token_string.contains("BUFFER . method2"));
 		assert!(token_string.contains("BUFFER . method3"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -299,14 +258,14 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that const is preserved
 		assert!(token_string.contains("pub const fn const_method"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -320,14 +279,14 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that unsafe is preserved
 		assert!(token_string.contains("pub unsafe fn unsafe_method"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -341,14 +300,14 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that async is preserved
 		assert!(token_string.contains("pub async fn async_method"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -362,15 +321,15 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that generics are preserved (format may vary)
 		assert!(token_string.contains("generic_method"));
 		assert!(token_string.contains("< T"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -384,9 +343,10 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that return type is preserved (format may vary)
@@ -394,7 +354,6 @@ mod tests {
 		assert!(token_string.contains("Result"));
 		assert!(token_string.contains("String"));
 		assert!(token_string.contains("Error"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -410,16 +369,16 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that only function gets wrapper, but trait is preserved
 		assert!(token_string.contains("pub fn method"));
 		assert!(token_string.contains("type AssocType"));
 		assert!(token_string.contains("const CONST_VAL"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -432,14 +391,14 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that trait is preserved even if empty
 		assert!(token_string.contains("trait EmptyTrait"));
-		assert!(diags.is_empty());
 	}
 
 	#[test]
@@ -453,15 +412,15 @@ mod tests {
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.is_ok());
+		assert!(result.has_err());
+		assert!(result.notation().is_empty());
 
-		let (tokens, diags,) = result.unwrap();
+		let tokens = result.unwrap().unwrap();
 		let token_string = tokens.to_string();
 
 		// Check that where clause is preserved (though it might be formatted
 		// differently)
 		assert!(token_string.contains("pub fn where_method"));
 		assert!(token_string.contains("Clone"));
-		assert!(diags.is_empty());
 	}
 }

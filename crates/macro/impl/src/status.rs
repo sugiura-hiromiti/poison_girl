@@ -1,27 +1,11 @@
-//! # UEFI Status Code Specification Parser
-//!
-//! This module provides functionality for parsing UEFI status codes from the
-//! official UEFI specification HTML documents. It can extract success, error,
-//! and warning codes along with their mnemonics, values, and descriptions.
-//!
-//! The parser works by:
-//! 1. Fetching the UEFI specification page via HTTP
-//! 2. Parsing the HTML content to extract status code tables
-//! 3. Converting the table data into structured Rust types
-//!
-//! This is particularly useful for generating constants and enums for UEFI
-//! status codes in operating system development.
-
 use {
-	crate::RsltP,
-	anyhow::{Result as Rslt, anyhow, bail},
 	html5ever::{
 		LocalNameStaticSet, local_name,
 		tendril::{self, TendrilSink},
 	},
 	markup5ever_rcdom::{Node, NodeData, RcDom},
-	poison_girl_proc_macro_helper::Diag,
-	proc_macro2::Span,
+	poison_girl_proc_macro_helper::{diagnostic::Diag, rslt::Rslt},
+	proc_macro2::{Span, TokenStream},
 	std::rc::Rc,
 };
 
@@ -40,33 +24,13 @@ const ERROR_CODE_TABLE_ID: &str =
 const WARN_CODE_TABLE_ID: &str =
 	"efi-status-warning-codes-high-bit-clear-apx-d-status-codes";
 
-/// Trait for converting status code information into token stream parts.
-///
-/// This trait provides a method to convert status code information into
-/// the token stream components needed for generating match arms and
-/// associated constants in the Status implementation.
 trait TokenParts {
-	/// Converts status code information into token stream parts.
-	///
-	/// # Parameters
-	///
-	/// * `is_err` - Whether these status codes represent error conditions
-	///
-	/// # Returns
-	///
-	/// Returns a vector of tuples where each tuple contains:
-	/// - Match arm token stream for the ok_or() method
-	/// - Associated constant token stream for the Status impl
 	fn token_parts(
 		&self,
 		is_err: bool,
 	) -> Vec<(proc_macro2::TokenStream, proc_macro2::TokenStream,),>;
 }
 
-/// Implementation of TokenParts for vectors of StatusCodeInfo.
-///
-/// This implementation processes each status code in the vector and generates
-/// the appropriate token streams for both match arms and associated constants.
 impl TokenParts for Vec<StatusCodeInfo,> {
 	fn token_parts(
 		&self,
@@ -100,10 +64,6 @@ impl TokenParts for Vec<StatusCodeInfo,> {
 	}
 }
 
-/// Container for all UEFI status codes organized by category
-///
-/// This struct holds the complete set of UEFI status codes parsed from the
-/// specification, organized into success, error, and warning categories.
 #[derive(Debug,)]
 pub struct StatusCode {
 	/// Success status codes (high bit clear)
@@ -114,10 +74,6 @@ pub struct StatusCode {
 	pub warn:    Vec<StatusCodeInfo,>,
 }
 
-/// Information about a single UEFI status code
-///
-/// Each status code consists of a mnemonic name (like "EFI_SUCCESS"),
-/// a numeric value, and a human-readable description.
 #[derive(Debug,)]
 pub struct StatusCodeInfo {
 	/// The mnemonic name of the status code (e.g., "EFI_SUCCESS")
@@ -136,9 +92,11 @@ impl StatusCodeInfo {
 	pub const ERROR_BIT: usize = 1 << (usize::BITS - 1);
 }
 
-pub fn status(version: syn::Lit,) -> RsltP {
+pub fn status(version: syn::Lit,) -> Rslt<TokenStream,> {
 	let syn::Lit::Float(version,) = version else {
-		bail!("version is floating point literal. found {version:?}")
+		return Rslt::new_err(format!(
+			"version is floating point literal. found {version:?}"
+		),);
 	};
 
 	// Construct the URL for the UEFI specification page
@@ -147,7 +105,7 @@ pub fn status(version: syn::Lit,) -> RsltP {
 	);
 
 	// Fetch and parse the specification page
-	let spec_page = status_spec_page(&status_spec_url,)?;
+	let spec_page = status_spec_page(&status_spec_url,)??;
 	// Generate the Status struct implementation using the helper
 	let c_enum_impl = impl_status(&spec_page,);
 
@@ -160,40 +118,9 @@ pub fn status(version: syn::Lit,) -> RsltP {
 			#c_enum_impl
 	};
 
-	Ok((enum_def, vec![],),)
+	Rslt::new(enum_def,)
 }
 
-/// Fetches and parses UEFI status codes from the official specification
-///
-/// This function downloads the UEFI specification page, parses the HTML
-/// content, and extracts all status codes (success, error, and warning) into a
-/// structured format. Error codes are automatically marked with the high bit
-/// set as per UEFI specification.
-///
-/// # Arguments
-///
-/// * `status_spec_url` - URL to the UEFI specification status codes page
-///
-/// # Returns
-///
-/// A `Result<StatusCode>` containing all parsed status codes organized by
-/// category, or an error if the page cannot be fetched or parsed.
-///
-/// # Errors
-///
-/// This function will return an error if:
-/// - The HTTP request to fetch the specification fails
-/// - The HTML parsing fails
-/// - Required HTML elements (tables) are not found
-/// - Status code values cannot be parsed as integers
-///
-/// # Examples
-///
-/// ```ignore
-/// let url = "https://uefi.org/specs/UEFI/2.10/Appendix_D_Status_Codes.html";
-/// let status_codes = status_spec_page(url)?;
-/// println!("Found {} success codes", status_codes.success.len());
-/// ```
 pub fn status_spec_page(
 	status_spec_url: impl Into<String,>,
 ) -> Rslt<StatusCode,> {
@@ -214,15 +141,15 @@ pub fn status_spec_page(
 	// Extract the three status code tables
 	let success_code_table =
 		get_element_by_id(main_section.clone(), SUCCESS_CODE_TABLE_ID,).ok_or(
-			anyhow!("ELEMENT WITH ID NOT FOUND: {SUCCESS_CODE_TABLE_ID}"),
+			format!("ELEMENT WITH ID NOT FOUND: {SUCCESS_CODE_TABLE_ID}"),
 		)?;
 	let error_code_table =
 		get_element_by_id(main_section.clone(), ERROR_CODE_TABLE_ID,).ok_or(
-			anyhow!("ELEMENT WITH ID NOT FOUND: {ERROR_CODE_TABLE_ID}"),
+			format!("ELEMENT WITH ID NOT FOUND: {ERROR_CODE_TABLE_ID}"),
 		)?;
 	let warn_code_table =
 		get_element_by_id(main_section.clone(), WARN_CODE_TABLE_ID,).ok_or(
-			anyhow!("ELEMENT WITH ID NOT FOUND: {WARN_CODE_TABLE_ID}"),
+			format!("ELEMENT WITH ID NOT FOUND: {WARN_CODE_TABLE_ID}"),
 		)?;
 
 	// Extract table rows from each table (skip header row)
@@ -250,37 +177,13 @@ pub fn status_spec_page(
 		sci.value |= StatusCodeInfo::ERROR_BIT;
 	},);
 
-	Ok(StatusCode {
+	Rslt::new(StatusCode {
 		success: success_codes,
 		error:   error_codes,
 		warn:    warn_codes,
 	},)
 }
 
-/// Generates the implementation block for the UEFI Status struct.
-///
-/// This function takes parsed status code information from the UEFI
-/// specification and generates a complete implementation block including
-/// associated constants for all status codes and error handling methods.
-///
-/// # Parameters
-///
-/// * `spec_page` - Parsed status code information from the UEFI specification
-///
-/// # Returns
-///
-/// Returns a `proc_macro2::TokenStream` containing the complete implementation
-/// block for the Status struct, including:
-/// - Associated constants for success, warning, and error status codes
-/// - `ok_or()` method for converting status to Result
-/// - `ok_or_with()` method for custom error handling
-///
-/// # Generated Methods
-///
-/// - `ok_or()`: Converts the status to a Result, returning Ok for
-///   success/warning status codes and Err for error status codes
-/// - `ok_or_with()`: Similar to ok_or but allows custom transformation of
-///   success values
 pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 	// Generate token parts for success status codes (non-error)
 	let (success_match, success_assoc,): (Vec<_,>, Vec<_,>,) =
@@ -331,38 +234,12 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Generates a match arm for successful (non-error) status codes.
-///
-/// Creates a match arm that returns `Ok(Self::MNEMONIC)` for the given status
-/// code. This is used for success and warning status codes in the `ok_or()`
-/// method.
-///
-/// # Parameters
-///
-/// * `mnemonic` - The identifier for the status code constant
-///
-/// # Returns
-///
-/// Returns a token stream representing a match arm that returns Ok
 fn ok_match(mnemonic: &syn::Ident,) -> proc_macro2::TokenStream {
 	quote::quote! {
 		Self::#mnemonic => Ok(Self::#mnemonic,),
 	}
 }
 
-/// Generates a match arm for error status codes.
-///
-/// Creates a match arm that returns an error with the status code description.
-/// This is used for error status codes in the `ok_or()` method.
-///
-/// # Parameters
-///
-/// * `mnemonic` - The identifier for the status code constant
-/// * `msg` - The description message for the error
-///
-/// # Returns
-///
-/// Returns a token stream representing a match arm that returns an error
 fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
 	let mnemonic_str = mnemonic.to_string();
 	quote::quote! {
@@ -373,22 +250,6 @@ fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Generates an associated constant for a status code.
-///
-/// Creates an associated constant with documentation derived from the status
-/// code description. The constant has the same name as the mnemonic and
-/// contains the numeric value of the status code.
-///
-/// # Parameters
-///
-/// * `mnemonic` - The identifier for the status code constant
-/// * `value` - The numeric value of the status code
-/// * `msg` - The description to use as documentation
-///
-/// # Returns
-///
-/// Returns a token stream representing an associated constant with
-/// documentation
 fn assoc_const(
 	mnemonic: &syn::Ident,
 	value: &syn::Lit,
@@ -400,20 +261,6 @@ fn assoc_const(
 	}
 }
 
-/// Searches for an HTML element with a specific ID in the DOM tree
-///
-/// This function recursively traverses the HTML DOM tree to find an element
-/// with the specified ID attribute. It performs a depth-first search through
-/// all child nodes.
-///
-/// # Arguments
-///
-/// * `node` - The root node to start searching from
-/// * `id` - The ID attribute value to search for
-///
-/// # Returns
-///
-/// An `Option<Rc<Node>>` containing the found element, or `None` if not found
 pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,> {
 	// Check if current node has the target ID
 	let found = if let NodeData::Element { attrs, .. } = &node.data {
@@ -445,25 +292,6 @@ pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,> {
 	}
 }
 
-/// Searches for HTML elements with a specific attribute value
-///
-/// This function recursively searches the DOM tree for elements that have
-/// an attribute with the specified name containing the specified value.
-///
-/// # Arguments
-///
-/// * `node` - The root node to start searching from
-/// * `attr` - The attribute name to search for
-/// * `value` - The value that the attribute should contain
-///
-/// # Returns
-///
-/// A vector of all matching nodes. Returns an empty vector if no matches are
-/// found.
-///
-/// # Note
-///
-/// This function is currently unused but kept for potential future use.
 #[allow(dead_code)]
 fn get_elements_by_attribute(
 	node: Rc<Node,>,
@@ -496,23 +324,6 @@ fn get_elements_by_attribute(
 	rslt
 }
 
-/// Searches for HTML elements with a specific tag name
-///
-/// This function recursively searches the DOM tree for elements with
-/// the specified tag name (e.g., "div", "table", "tr").
-///
-/// # Arguments
-///
-/// * `node` - The root node to start searching from
-/// * `tag_name` - The HTML tag name to search for
-///
-/// # Returns
-///
-/// A vector of all matching elements
-///
-/// # Caution
-///
-/// clone argument passed to `node` every time
 fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,> {
 	let mut rslt = vec![];
 
@@ -539,43 +350,11 @@ fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,> {
 	rslt
 }
 
-/// Extracts table rows from an HTML table, excluding the header row
-///
-/// This function finds all `<tr>` elements within a table and returns all
-/// rows except the first one (which is assumed to be the header).
-///
-/// # Arguments
-///
-/// * `node` - The table node to extract rows from
-///
-/// # Returns
-///
-/// A vector of table row nodes, excluding the header row
 fn table_rows(node: Rc<Node,>,) -> Vec<Rc<Node,>,> {
 	// Get all <tr> elements and skip the first one (header)
 	get_elements_by_name(node.clone(), "tr",)[1..].to_vec()
 }
 
-/// Extracts text data from table cells in a table row
-///
-/// This function expects a table row with exactly 3 cells containing
-/// paragraph (`<p>`) elements with text content. It extracts the text
-/// from each cell to build the status code information.
-///
-/// # Arguments
-///
-/// * `node` - The table row node to extract data from
-///
-/// # Returns
-///
-/// A vector of 3 strings representing:
-/// 1. Status code mnemonic (e.g., "EFI_SUCCESS")
-/// 2. Status code value (e.g., "0x00000000")
-/// 3. Status code description
-///
-/// # Panics
-///
-/// Panics if the expected paragraph elements or text nodes are not found
 fn table_data(node: Rc<Node,>,) -> Vec<String,> {
 	let mut rslt = vec![];
 
@@ -609,23 +388,6 @@ fn table_data(node: Rc<Node,>,) -> Vec<String,> {
 	rslt
 }
 
-/// Converts raw table data into structured status code information
-///
-/// This function takes the raw string data extracted from HTML tables
-/// and converts it into `StatusCodeInfo` structs with proper type conversion.
-///
-/// # Arguments
-///
-/// * `rows` - A vector of string vectors, where each inner vector contains
-///   [mnemonic, value, description] for one status code
-///
-/// # Returns
-///
-/// A vector of `StatusCodeInfo` structs with parsed data
-///
-/// # Panics
-///
-/// Panics if any status code value cannot be parsed as an integer
 fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
 	rows.into_iter()
 		.map(|row| StatusCodeInfo {
@@ -639,20 +401,6 @@ fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
 		.collect()
 }
 
-/// Debug utility function to inspect the children of an HTML node
-///
-/// This function emits diagnostic messages showing information about all
-/// child nodes of a given HTML element. Useful for debugging HTML parsing
-/// issues.
-///
-/// # Arguments
-///
-/// * `node` - The HTML node whose children should be inspected
-///
-/// # Note
-///
-/// This function is only used for debugging and emits procedural macro
-/// diagnostics.
 #[allow(dead_code)]
 fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,> {
 	// Iterate through all child nodes and emit diagnostic info
@@ -683,27 +431,14 @@ fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,> {
 					todo!("inspect_children/ProcessingInstruction")
 				},
 			};
-			Diag::Note(format!("{i}, {name}"),)
+			Diag::note(format!("{i}, {name}"),)
 		},)
 		.collect()
 }
 
-/// Debug utility function to inspect a single HTML node
-///
-/// This function emits a diagnostic message with the full debug representation
-/// of an HTML node. Useful for debugging HTML parsing and structure issues.
-///
-/// # Arguments
-///
-/// * `node` - The HTML node to inspect
-///
-/// # Note
-///
-/// This function is only used for debugging and emits procedural macro
-/// diagnostics.
 #[allow(dead_code)]
 fn inspect_node(node: Rc<Node,>,) -> Diag {
-	Diag::Note(format!("{node:#?}"),)
+	Diag::note(format!("{node:#?}"),)
 }
 
 #[cfg(test)]
@@ -746,13 +481,13 @@ mod tests {
 	fn test_get_element_by_id() -> Rslt<(),> {
 		let node = parse_text(BASIC_HTML,);
 		get_element_by_id(node.clone(), "identical",)
-			.ok_or(anyhow!("failed to get element with id identical"),)?;
+			.ok_or("failed to get element with id identical",)?;
 		get_element_by_id(node.clone(), "first_header",)
-			.ok_or(anyhow!("failed to get element with id first_header"),)?;
+			.ok_or("failed to get element with id first_header",)?;
 		get_element_by_id(node.clone(), "non_exist_id",)
-			.ok_or(anyhow!("success"),)
+			.ok_or("success",)
 			.unwrap_err();
-		Ok((),)
+		Rslt::new((),)
 	}
 
 	#[test]

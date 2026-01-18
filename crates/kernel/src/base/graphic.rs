@@ -1,58 +1,14 @@
-//! # Graphics and Display Management
-//!
-//! This module provides comprehensive graphics functionality for the OSO
-//! kernel, including framebuffer management, pixel manipulation, and drawing
-//! operations. It supports multiple pixel formats through compile-time feature
-//! flags and provides a safe abstraction over raw framebuffer memory.
-//!
-//! ## Features
-//!
-//! - **Multiple Pixel Formats**: Support for RGB, BGR, Bitmask, and BLT-only
-//!   formats
-//! - **Safe Memory Access**: Memory-safe framebuffer operations with bounds
-//!   checking
-//! - **Drawing Primitives**: Pixel, rectangle, and outline drawing operations
-//! - **Coordinate System**: Flexible coordinate representation and validation
-//! - **Static Framebuffer**: Global framebuffer instance for system-wide
-//!   graphics
-//!
-//! ## Pixel Format Support
-//!
-//! The module supports different pixel formats through feature flags:
-//! - `rgb`: Red-Green-Blue pixel format (24-bit color)
-//! - `bgr`: Blue-Green-Red pixel format (24-bit color)
-//! - `bitmask`: Custom bitmask pixel format
-//! - `bltonly`: Block Transfer Only mode (default)
-//!
-//! ## Usage
-//!
-//! ```rust,ignore
-//! use oso_kernel::base::graphic::{DisplayDraw, FRAME_BUFFER};
-//! use oso_kernel::base::graphic::position::Coord;
-//! use oso_kernel::base::graphic::color::Rgb;
-//!
-//! // Draw a single pixel
-//! let coord = Coord::new(100, 50);
-//! let color = Rgb::new(255, 0, 0); // Red
-//! FRAME_BUFFER.put_pixel(&coord, &color)?;
-//!
-//! // Fill a rectangle
-//! let top_left = Coord::new(10, 10);
-//! let bottom_right = Coord::new(50, 30);
-//! FRAME_BUFFER.fill_rectangle(&top_left, &bottom_right, &color)?;
-//! ```
-
-use crate::base::graphic::color::ColorRpr;
-use crate::base::graphic::color::PixelFormat;
-use crate::base::graphic::position::Coord;
-use crate::base::graphic::position::Coordinal;
 #[cfg(feature = "bgr")] use color::Bgr;
 #[cfg(feature = "bitmask")] use color::Bitmask;
 #[cfg(feature = "bltonly")] use color::BltOnly;
 #[cfg(feature = "rgb")] use color::Rgb;
-use poison_girl_error::Rslt;
-use poison_girl_error::kernel::GraphicError;
-use poison_girl_error::poison_girl_err;
+use {
+	crate::base::graphic::{
+		color::{ColorRpr, PixelFormat},
+		position::{Coord, Coordinal},
+	},
+	poison_girl_no_std_error::{PoisonGirlB, X},
+};
 // use oso_proc_macro::gen_wrapper_fn;
 
 /// Color representation and pixel format implementations
@@ -60,38 +16,6 @@ pub mod color;
 /// Coordinate system and position management
 pub mod position;
 
-/// Global framebuffer instance for RGB pixel format
-///
-/// This static framebuffer is available when the `rgb` feature is enabled.
-/// It provides system-wide access to graphics operations using the RGB color
-/// format. The framebuffer is initialized with default values and must be
-/// properly configured using the `init()` method before use.
-///
-/// # Safety
-///
-/// This static instance uses interior mutability through unsafe operations.
-/// Proper synchronization is required in multi-threaded environments.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// #[cfg(feature = "rgb")]
-/// use oso_kernel::base::graphic::FRAME_BUFFER;
-///
-/// // Initialize the framebuffer (typically done during kernel boot)
-/// unsafe {
-///     FrameBuffer::init(
-///         &FRAME_BUFFER,
-///         framebuffer_base_address,
-///         framebuffer_size,
-///         screen_width,
-///         screen_height,
-///         bytes_per_line
-///     );
-/// }
-/// ```
-//  TODO: use `MaybeUninit`
-//  - support multi thread like using atomic
 #[cfg(feature = "rgb")]
 pub static FRAME_BUFFER: FrameBuffer<Rgb,> = FrameBuffer {
 	drawer: Rgb,
@@ -102,16 +26,6 @@ pub static FRAME_BUFFER: FrameBuffer<Rgb,> = FrameBuffer {
 	stride: 0,
 };
 
-/// Global framebuffer instance for BGR pixel format
-///
-/// This static framebuffer is available when the `bgr` feature is enabled.
-/// It provides system-wide access to graphics operations using the BGR color
-/// format.
-///
-/// # Safety
-///
-/// This static instance uses interior mutability through unsafe operations.
-/// Proper synchronization is required in multi-threaded environments.
 #[cfg(feature = "bgr")]
 pub static FRAME_BUFFER: FrameBuffer<Bgr,> = FrameBuffer {
 	drawer: Bgr,
@@ -122,16 +36,6 @@ pub static FRAME_BUFFER: FrameBuffer<Bgr,> = FrameBuffer {
 	stride: 0,
 };
 
-/// Global framebuffer instance for Bitmask pixel format
-///
-/// This static framebuffer is available when the `bitmask` feature is enabled.
-/// It provides system-wide access to graphics operations using custom bitmask
-/// color format.
-///
-/// # Safety
-///
-/// This static instance uses interior mutability through unsafe operations.
-/// Proper synchronization is required in multi-threaded environments.
 #[cfg(feature = "bitmask")]
 pub static FRAME_BUFFER: FrameBuffer<Bitmask,> = FrameBuffer {
 	drawer: Bitmask,
@@ -142,16 +46,6 @@ pub static FRAME_BUFFER: FrameBuffer<Bitmask,> = FrameBuffer {
 	stride: 0,
 };
 
-/// Global framebuffer instance for BLT-only pixel format
-///
-/// This static framebuffer is available when the `bltonly` feature is enabled
-/// (default). It provides system-wide access to graphics operations using Block
-/// Transfer Only mode.
-///
-/// # Safety
-///
-/// This static instance uses interior mutability through unsafe operations.
-/// Proper synchronization is required in multi-threaded environments.
 #[cfg(feature = "bltonly")]
 pub static FRAME_BUFFER: FrameBuffer<BltOnly,> = FrameBuffer {
 	drawer: BltOnly,
@@ -162,40 +56,9 @@ pub static FRAME_BUFFER: FrameBuffer<BltOnly,> = FrameBuffer {
 	stride: 0,
 };
 
-/// Trait for drawing operations on display devices
-///
-/// This trait defines the core drawing operations that can be performed on a
-/// display, including pixel manipulation and rectangle drawing. It provides a
-/// consistent interface across different pixel formats and display types.
-///
-/// # Associated Types
-///
-/// * `Output` - The result type for drawing operations, typically `Result<(),
-///   GraphicError>`
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// use oso_kernel::base::graphic::{DisplayDraw, FrameBuffer};
-/// use oso_kernel::base::graphic::color::Rgb;
-/// use oso_kernel::base::graphic::position::Coord;
-///
-/// let framebuffer = FrameBuffer::new(Rgb);
-/// let coord = Coord::new(10, 20);
-/// let color = Rgb::new(255, 0, 0);
-///
-/// // Draw a single pixel
-/// framebuffer.put_pixel(&coord, &color)?;
-///
-/// // Fill a rectangle
-/// let top_left = Coord::new(0, 0);
-/// let bottom_right = Coord::new(100, 50);
-/// framebuffer.fill_rectangle(&top_left, &bottom_right, &color)?;
-/// ```
-// #[gen_wrapper_fn(FRAME_BUFFER)]
 pub trait DisplayDraw {
 	/// The result type for drawing operations
-	type Output = Rslt<(), GraphicError,>;
+	type Output = PoisonGirlB<(),>;
 
 	/// Draws a single pixel at the specified coordinate with the given color
 	///
@@ -637,7 +500,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 		pxl[1] = color[1];
 		pxl[2] = color[2];
 
-		Ok((),)
+		X((),)
 	}
 
 	/// Fills a rectangular area with the specified color
@@ -691,7 +554,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 			|| right_bottom.x() > self.width
 			|| right_bottom.y() > self.height
 		{
-			return Err(poison_girl_err!(GraphicError::InvalidCoordinate),);
+			return Y(poison_girl_err!(GraphicError::InvalidCoordinate),);
 		}
 
 		// Convert color once for performance optimization
@@ -713,7 +576,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 			coord.0 = left_top.x();
 		}
 
-		Ok((),)
+		X((),)
 	}
 
 	/// Draws the outline of a rectangle with the specified color
@@ -766,7 +629,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 			|| right_bottom.x() > self.width
 			|| right_bottom.y() > self.height
 		{
-			return Err(poison_girl_err!(GraphicError::InvalidCoordinate),);
+			return Y(poison_girl_err!(GraphicError::InvalidCoordinate),);
 		}
 
 		let width = right_bottom.x() - left_top.x() - 1;
@@ -816,6 +679,6 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 			coord.1 -= 1;
 		}
 
-		Ok((),)
+		X((),)
 	}
 }

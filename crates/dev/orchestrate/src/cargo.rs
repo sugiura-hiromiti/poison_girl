@@ -1,7 +1,7 @@
 use {
-	anyhow::{Context as _, Result as Rslt},
 	clap::Parser,
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
+	poison_girl_dev_error::{HostTupleNotFound, PoisonGirlB, ReShape, X},
 	poison_girl_proc_macro_def::features,
 	std::{path::PathBuf, process::Command, str::FromStr},
 	strum_macros::Display,
@@ -101,11 +101,11 @@ pub enum Runtime {
 }
 
 impl Runtime {
-	pub fn host() -> Rslt<Self,> {
+	pub fn host() -> PoisonGirlB<Self,> {
 		host_tuple()?
 			.split('-',)
 			.next()
-			.context(
+			.reshape(
 				"target tuple for host does not include `-`. that is not \
 				 usual.",
 			)
@@ -131,9 +131,9 @@ pub struct Assets {
 }
 
 impl Assets {
-	pub fn new(arch: Arch,) -> Rslt<Self,> {
+	pub fn new(arch: Arch,) -> PoisonGirlB<Self,> {
 		let firmware = Firmware::new(arch,)?;
-		Ok(Self { firmware, host: Runtime::host()?, },)
+		X(Self { firmware, host: Runtime::host()?, },)
 	}
 }
 
@@ -158,12 +158,12 @@ impl Firmware {
 	/// # Returns
 	///
 	/// A new Firmware instance or an error if initialization fails
-	pub fn new(arch: Arch,) -> Rslt<Self,> {
+	pub fn new(arch: Arch,) -> PoisonGirlB<Self,> {
 		let path = PathBuf::from_str("/tmp/",)?;
 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
 		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
 		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
-		Ok(Self { code, vars, },)
+		X(Self { code, vars, },)
 	}
 
 	/// Gets the path to the OVMF code file
@@ -227,7 +227,7 @@ impl Arch {
 	}
 }
 
-pub fn host_tuple() -> Rslt<String,> {
+pub fn host_tuple() -> PoisonGirlB<String,> {
 	let target = Command::new("rustc",).arg("-vV",).output()?.stdout;
 	let target = String::from_utf8(target,)?;
 	target
@@ -239,12 +239,12 @@ pub fn host_tuple() -> Rslt<String,> {
 				None
 			}
 		},)
-		.context("can't get host target tuple",)
+		.reshape(HostTupleNotFound,)
 }
 
 #[cfg(test)]
 mod tests {
-	use {super::*, std::str::FromStr};
+	use {super::*, poison_girl_dev_error::Container, std::str::FromStr};
 
 	#[test]
 	fn test_build_mode_default() {

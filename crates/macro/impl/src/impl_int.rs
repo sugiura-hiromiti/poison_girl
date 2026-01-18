@@ -1,67 +1,21 @@
-//! # Trait Implementation Generation Module
-//!
-//! This module provides functionality for automatically generating trait
-//! implementations for integer types. It includes parsing utilities for type
-//! lists and code generation for common integer operations like digit counting
-//! and manipulation.
+use {
+	poison_girl_proc_macro_helper::rslt::Rslt,
+	proc_macro2::TokenTree,
+	syn::{TypePath, parse::Parse, spanned::Spanned},
+};
 
-use proc_macro2::TokenTree;
-use syn::TypePath;
-use syn::parse::Parse;
-use syn::spanned::Spanned;
-
-use crate::RsltP;
-
-/// A collection of Rust types parsed from a token stream
-///
-/// This struct holds a list of `syn::Type` objects that can be used for
-/// generating trait implementations or other type-based code generation tasks.
 pub struct Types {
 	/// Internal storage for the parsed types
 	type_list: Vec<syn::Type,>,
 }
 
 impl Types {
-	/// Returns an iterator over the contained types
-	///
-	/// # Returns
-	///
-	/// An iterator that yields references to each `syn::Type` in the collection
-	///
-	/// # Examples
-	///
-	/// ```ignore
-	/// let types = parse_types("u8, u16, u32");
-	/// for ty in types.iter() {
-	///     println!("Type: {}", quote::quote!(#ty));
-	/// }
-	/// ```
 	pub fn iter(&self,) -> std::slice::Iter<'_, syn::Type,> {
 		self.type_list.iter()
 	}
 }
 
 impl Parse for Types {
-	/// Parses a comma-separated list of type identifiers from a token stream
-	///
-	/// This implementation allows parsing type lists like "u8, u16, u32, i64"
-	/// from procedural macro input. It handles identifiers and punctuation,
-	/// converting identifiers to `syn::Type` objects.
-	///
-	/// # Arguments
-	///
-	/// * `input` - The parse stream containing the tokens to parse
-	///
-	/// # Returns
-	///
-	/// A `syn::Result<Types>` containing the parsed types or an error
-	///
-	/// # Errors
-	///
-	/// Returns an error if:
-	/// - Unexpected token types are encountered (not identifiers or
-	///   punctuation)
-	/// - The token stream is malformed
 	fn parse(input: syn::parse::ParseStream,) -> syn::Result<Self,> {
 		let parsed = input.step(|c| {
 			let mut rest = *c;
@@ -93,45 +47,14 @@ impl Parse for Types {
 	}
 }
 
-pub fn impl_int(types: Types,) -> RsltP {
+pub fn impl_int(types: Types,) -> Rslt<proc_macro2::TokenStream,> {
 	let integers = types.iter().map(implement,);
 
-	Ok((
-		quote::quote! {
-			#(#integers)*
-		},
-		vec![],
-	),)
+	Rslt::new(quote::quote! {
+		#(#integers)*
+	},)
 }
 
-/// Generates a trait implementation for the `Integer` trait for a given type
-///
-/// This function creates a complete implementation of the `Integer` trait
-/// for primitive integer types, including methods for digit counting,
-/// digit extraction, and bit shifting operations.
-///
-/// # Arguments
-///
-/// * `ty` - The type for which to generate the implementation
-///
-/// # Returns
-///
-/// A `proc_macro2::TokenStream` containing the generated trait implementation
-///
-/// # Generated Methods
-///
-/// The generated implementation includes:
-/// - `digit_count()`: Counts the number of decimal digits
-/// - `nth_digit(n)`: Extracts the nth digit from the right
-/// - `shift_right()`: Removes the rightmost digit and returns it
-///
-/// # Examples
-///
-/// ```ignore
-/// let ty: syn::Type = syn::parse_quote!(u32);
-/// let impl_tokens = implement(&ty);
-/// // Generates: impl Integer for u32 { ... }
-/// ```
 pub fn implement(ty: &syn::Type,) -> proc_macro2::TokenStream {
 	let idnt = unwrap_primitive(ty,).unwrap();
 	let digit_count = digit_count_impl();
@@ -147,26 +70,6 @@ pub fn implement(ty: &syn::Type,) -> proc_macro2::TokenStream {
 	}
 }
 
-/// Extracts the identifier from a primitive type path
-///
-/// This function unwraps a `syn::Type` to extract the underlying identifier,
-/// ensuring it represents a simple primitive type without generic parameters
-/// or complex path structures.
-///
-/// # Arguments
-///
-/// * `ty` - The type to unwrap
-///
-/// # Returns
-///
-/// A `syn::Result<syn::Ident>` containing the type identifier or an error
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - The type is not a simple path type
-/// - The type has generic parameters
-/// - The type has a complex path structure
 fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,> {
 	// Extract segment as `seg` from `ty`
 	let syn::Type::Path(TypePath {
@@ -202,14 +105,6 @@ fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,> {
 	Ok(idnt.clone(),)
 }
 
-/// Generates the implementation for the `digit_count` method
-///
-/// This method counts the number of decimal digits in an integer by
-/// repeatedly dividing by 10 until the number becomes 0.
-///
-/// # Returns
-///
-/// A `proc_macro2::TokenStream` containing the method implementation
 fn digit_count_impl() -> proc_macro2::TokenStream {
 	quote::quote! {
 		fn digit_count(&self) -> usize {
@@ -227,14 +122,6 @@ fn digit_count_impl() -> proc_macro2::TokenStream {
 	}
 }
 
-/// Generates the implementation for the `nth_digit` method
-///
-/// This method extracts the nth digit from the right (1-indexed).
-/// It shifts the number right n-1 times and then takes modulo 10.
-///
-/// # Returns
-///
-/// A `proc_macro2::TokenStream` containing the method implementation
 fn nth_digit_impl() -> proc_macro2::TokenStream {
 	quote::quote! {
 		/// Extracts the nth digit from the right (1-indexed)
@@ -265,19 +152,6 @@ fn nth_digit_impl() -> proc_macro2::TokenStream {
 	}
 }
 
-/// Generates the implementation for the `shift_right` method
-///
-/// This method removes the rightmost decimal digit and returns it.
-/// The implementation differs for signed and unsigned types to handle
-/// negative numbers correctly.
-///
-/// # Arguments
-///
-/// * `idnt` - The type identifier to determine if it's signed or unsigned
-///
-/// # Returns
-///
-/// A `proc_macro2::TokenStream` containing the method implementation
 fn shift_right_impl(idnt: &syn::Ident,) -> proc_macro2::TokenStream {
 	// Different handling for signed vs unsigned types
 	let return_value = if idnt.to_string().contains("u",) {
@@ -317,12 +191,14 @@ fn shift_right_impl(idnt: &syn::Ident,) -> proc_macro2::TokenStream {
 		}
 	}
 }
+
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use quote::quote;
-	use syn::Type;
-	use syn::parse_quote;
+	use {
+		super::*,
+		quote::quote,
+		syn::{Type, parse_quote},
+	};
 
 	#[test]
 	fn test_types_parse_single_type() {

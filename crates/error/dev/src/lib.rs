@@ -2,7 +2,7 @@
 
 pub use this_is_b::{
 	B::{X, Y},
-	Container,
+	Container, ReShape,
 };
 use {
 	core::{fmt::Debug, panic::Location},
@@ -58,6 +58,23 @@ impl From<toml::de::Error,> for PoisonGirlError {
 	}
 }
 
+impl From<HostTupleNotFound,> for PoisonGirlError {
+	#[track_caller]
+	fn from(value: HostTupleNotFound,) -> Self {
+		Self {
+			loc: Location::caller(),
+			src: DevError::HostTupleNotFound(value,),
+		}
+	}
+}
+
+impl From<String,> for PoisonGirlError {
+	#[track_caller]
+	fn from(value: String,) -> Self {
+		Self { loc: Location::caller(), src: DevError::Todo(value,), }
+	}
+}
+
 #[derive(Debug,)]
 pub enum DevError {
 	Io(std::io::Error,),
@@ -65,7 +82,12 @@ pub enum DevError {
 	FromUtf8(std::string::FromUtf8Error,),
 	TomlError(toml::de::Error,),
 	PathNotFound(PathNotFound,),
+	HostTupleNotFound(HostTupleNotFound,),
+	Todo(String,),
 }
 
 #[derive(Debug,)]
 pub struct PathNotFound(pub String,);
+
+#[derive(Debug,)]
+pub struct HostTupleNotFound;
