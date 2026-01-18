@@ -1,5 +1,4 @@
 use {
-	itertools::Itertools,
 	poison_girl_dev_error::{InvalidManifest, poison_girl_err},
 	poison_girl_dev_fs::{
 		fs::{CARGO_MANIFEST, all_crates, read_toml},
@@ -166,7 +165,8 @@ fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,> {
 	} else {
 		package_name
 	}
-	.to_string();
+	.to_string()
+	.to_camel();
 	Rslt::new(name,)
 }
 

@@ -8,6 +8,7 @@
 //! - Setting up block devices and persistent flash memory
 
 use {
+	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::cargo::Arch,
 	std::path::{Path, PathBuf},
 };
@@ -30,7 +31,7 @@ impl Xtask {
 	/// # Returns
 	///
 	/// A vector of command-line arguments for QEMU or an error if it fails
-	pub fn qemu_args(&self,) -> Rslt<Vec<String,>,> {
+	pub fn qemu_args(&self,) -> PoisonGirlB<Vec<String,>,> {
 		let mut args = basic_args(self.arch(),);
 
 		// configure persistent flash memory
@@ -58,7 +59,7 @@ impl Xtask {
 		args.push("-boot".to_string(),);
 		args.push("menu=on,splash-time=0".to_string(),);
 
-		Ok(args,)
+		X(args,)
 	}
 }
 

@@ -218,7 +218,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 					// Error status codes return Err
 					#(#error_match)*
 					// Unknown status codes return custom error
-					Self(code) => poison_girl_no_std_error::Y(poison_girl_no_std_error::poison_girl_err!(poison_girl_no_std_error::UefiError(code))),
+					Self(code) => poison_girl_no_std_error::Y(poison_girl_no_std_error::poison_girl_err!(poison_girl_no_std_error::UefiError::CustomStatus(code))),
 				}
 			}
 
@@ -227,7 +227,7 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 			/// Similar to ok_or(), but allows applying a transformation function
 			/// to the success value before returning.
 			pub fn x_or_with<T>(self, with: impl FnOnce(Self) -> T) -> poison_girl_no_std_error::PoisonGirlB<T,> {
-				let status = self.ok_or()?;
+				let status = self.x_or()?;
 				poison_girl_no_std_error::X(with(status))
 			}
 		}

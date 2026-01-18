@@ -1,9 +1,16 @@
-use crate::chibi_uefi::table::boot_services;
-use crate::raw::types::Status;
-use crate::raw::types::graphic::GraphicsOutputBltOperation;
-use crate::raw::types::graphic::GraphicsOutputBltPixel;
-use crate::raw::types::graphic::GraphicsOutputModeInfo;
-use crate::raw::types::graphic::GraphicsOutputProtocolMode;
+use {
+	crate::{
+		chibi_uefi::table::boot_services,
+		raw::types::{
+			Status,
+			graphic::{
+				GraphicsOutputBltOperation, GraphicsOutputBltPixel,
+				GraphicsOutputModeInfo, GraphicsOutputProtocolMode,
+			},
+		},
+	},
+	poison_girl_no_std_error::Container,
+};
 
 #[repr(C)]
 pub struct GraphicsOutputProtocol {
@@ -37,7 +44,7 @@ impl GraphicsOutputProtocol {
 		let _ = unsafe {
 			(self.query_mode)(self, index, &mut info_size, &mut info_heap_ptr,)
 		}
-		.ok_or_with(|_| {
+		.x_or_with(|_| {
 			let _info = unsafe { *info_heap_ptr };
 			let info_heap_ptr = unsafe {
 				info_heap_ptr.cast::<u8>().cast_mut().as_mut().unwrap()

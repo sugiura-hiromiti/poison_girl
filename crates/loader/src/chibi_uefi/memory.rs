@@ -55,7 +55,7 @@ impl BootServices {
 		size: usize,
 	) -> PoisonGirlB<NonNull<u8,>,> {
 		let mut buf = core::ptr::null_mut();
-		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,) }.ok_or()?;
+		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,) }.x_or()?;
 		X(unsafe {
 			// "allocate_pool must not return a null pointer if successful
 			NonNull::new_unchecked(buf,)
@@ -63,7 +63,7 @@ impl BootServices {
 	}
 
 	pub fn free_pool(&self, ptr: &mut u8,) -> PoisonGirlB<Status,> {
-		unsafe { (self.free_pool)(ptr,).ok_or() }
+		unsafe { (self.free_pool)(ptr,).x_or() }
 	}
 
 	pub fn allocate_pages(
@@ -81,7 +81,7 @@ impl BootServices {
 				&mut alloc_head,
 			)
 		}
-		.ok_or_with(|_| alloc_head,)
+		.x_or_with(|_| alloc_head,)
 	}
 
 	pub fn memory_map_size(&self,) -> (usize, usize,) {
@@ -144,7 +144,7 @@ impl BootServices {
 				&mut desc_ver,
 			)
 		}
-		.ok_or_with(|_| MemoryMapInfo {
+		.x_or_with(|_| MemoryMapInfo {
 			map_size,
 			desc_size,
 			map_key,
