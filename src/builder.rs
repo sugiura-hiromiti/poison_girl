@@ -16,6 +16,7 @@ use {
 		cargo::{Assets, Opts},
 		fs::project_root,
 	},
+	std::path::PathBuf,
 };
 
 use crate::Xtask;
@@ -81,5 +82,17 @@ impl Xtask {
 		let ws = project_root()?;
 		let assets = Assets::new(opts.arch,)?;
 		X(Self { opts, ws, assets, },)
+	}
+
+	pub(crate) fn disk_img_path(&self,) -> &PathBuf {
+		todo!()
+	}
+
+	pub fn build(&self,) -> PoisonGirlB<(),> {
+		todo!()
+	}
+
+	pub fn run(&self,) -> PoisonGirlB<(),> {
+		todo!()
 	}
 }

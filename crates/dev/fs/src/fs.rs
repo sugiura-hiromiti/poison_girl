@@ -30,9 +30,9 @@ const IGNORE_DIR_LIST: [&str; 5] =
 /// - The current directory cannot be determined
 /// - The `oso_kernel.elf` file doesn't exist in the target directory
 pub fn check_poison_girl_kernel() -> PoisonGirlB<(),> {
-	let path_str = "target/poison_girl_kernel.elf";
+	let path_str = "target/poison_girl_kernel";
 	// Construct the expected path to the kernel ELF file
-	let target_path = current_dir()?.join(path_str,);
+	let target_path = project_root_path()?.join(path_str,);
 
 	// Check if the file exists and return appropriate result
 	let _ = if target_path.exists() {

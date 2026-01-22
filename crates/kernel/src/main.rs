@@ -29,11 +29,13 @@
 // Enable ARM-specific hints when needed
 #![feature(stdarch_arm_hints)]
 
-use core::arch::asm;
-use poison_girl_error::Rslt;
 #[cfg(target_arch = "aarch64")]
 use poison_girl_no_std::bridge::device_tree::DeviceTreeAddress;
-use poison_girl_no_std::wfi;
+use {
+	core::arch::asm,
+	poison_girl_no_std::wfi,
+	poison_girl_no_std_error::{PoisonGirlB, X},
+};
 
 // TODO: Re-enable graphics functionality when implemented
 // use oso_kernel::base::graphic::FrameBuffer;
@@ -255,7 +257,7 @@ pub extern "sysv64" fn kernel_main() {
 /// - Implement cursor rendering system
 /// - Add user interface elements
 /// - Implement application lifecycle management
-fn app() -> Rslt<(),> {
+fn app() -> PoisonGirlB<(),> {
 	// TODO: Implement graphics operations
 	// The following code represents planned graphics functionality:
 
@@ -281,5 +283,5 @@ fn app() -> Rslt<(),> {
 	// cursor_buf.draw_mouse_cursor()?;
 
 	// Return success for now
-	Ok((),)
+	X((),)
 }

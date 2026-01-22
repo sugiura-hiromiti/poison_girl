@@ -36,11 +36,11 @@ impl Xtask {
 
 		// configure persistent flash memory
 		let pflash_code = persistent_flash_memory_args(
-			&self.firmware_code()?,
+			&self.firmware_code(),
 			PflashMode::ReadOnly,
 		);
 		let pflash_var = persistent_flash_memory_args(
-			&self.firmware_vars()?,
+			&self.firmware_vars(),
 			PflashMode::ReadWrite,
 		);
 		args.extend(pflash_code,);
@@ -52,7 +52,7 @@ impl Xtask {
 		// args.push("-drive".to_string(),);
 		// args.push("format=raw,file=fat:rw:",);
 
-		let block_device = block_device(&self.disk_img_path()?,);
+		let block_device = block_device(&self.disk_img_path(),);
 		args.extend(block_device,);
 
 		// setting the boot menu timeout to zero particularly speeds up the boot

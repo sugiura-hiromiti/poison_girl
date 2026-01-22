@@ -26,27 +26,29 @@
 //! - `-86`, `-x86_64`: Build for x86_64 architecture (default is aarch64)
 //! - `--debug`: Enable debug mode with GDB support (listens on port 12345)
 
-use anyhow::Result as Rslt;
-use colored::Colorize;
-use oso_dev_util_helper::cli::Run;
-use std::process::Command;
-use xtask::builder::Builder;
+use {
+	colored::Colorize,
+	poison_girl::Xtask,
+	poison_girl_dev_error::{PoisonGirlB, X, Y},
+	poison_girl_dev_fs::cli::Run,
+	std::process::Command,
+};
 
 /// Entry point for the xtask utility.
 ///
 /// Creates a new Builder instance, builds the OSO loader and kernel,
 /// and runs QEMU with the appropriate configuration.
-fn main() -> Rslt<(),> {
-	let builder = Builder::new()?;
+fn main() -> PoisonGirlB<(),> {
+	let poison_girl = Xtask::new()?;
 
 	let app = || {
-		builder.build()?;
-		builder.run()
+		poison_girl.build()?;
+		poison_girl.run()
 	};
 
 	match app() {
-		Ok(_,) => println!("\n\nprogram run successfully\nexit"),
-		Err(e,) => {
+		X(_,) => println!("\n\nprogram run successfully\nexit"),
+		Y(e,) => {
 			eprintln!(
 				"{} error msg:\n```rust\n{e:#?}\n```",
 				"program panicked".red().bold()
@@ -55,10 +57,10 @@ fn main() -> Rslt<(),> {
 	}
 
 	print_workspace()?;
-	Ok((),)
+	X((),)
 }
 
-fn print_workspace() -> Rslt<(),> {
+fn print_workspace() -> PoisonGirlB<(),> {
 	Command::new("eza",)
 		.args(
 			"-ahlF --icons --group-directories-first --sort=extension \

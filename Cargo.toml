@@ -45,5 +45,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+colored = { workspace = true }
 poison_girl_dev_error = { workspace = true }
+poison_girl_dev_fs = { workspace = true }
 poison_girl_dev_orchestrate = { workspace = true }

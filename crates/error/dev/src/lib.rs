@@ -121,7 +121,7 @@ pub struct PathNotFound(pub String,);
 #[derive(Debug,)]
 pub struct HostTupleNotFound;
 #[derive(Debug,)]
-pub struct InvalidManifest(String,);
+pub struct InvalidManifest(pub String,);
 
 impl InvalidManifest {
 	pub fn new(s: impl Into<String,>,) -> Self {

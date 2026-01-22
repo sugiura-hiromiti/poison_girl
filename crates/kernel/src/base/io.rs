@@ -97,7 +97,7 @@ use {
 		fmt::Write,
 		ops::{Add, Div, Mul, Sub},
 	},
-	poison_girl_no_std_error::{PoisonGirlB, X},
+	poison_girl_no_std_error::{PoisonGirlB, X, Y},
 	poison_girl_proc_macro_def::{font, impl_int},
 };
 
@@ -411,7 +411,9 @@ impl<C: Coordinal,> Write for TextBuf<C,> {
 	/// ```
 	fn write_str(&mut self, s: &str,) -> core::fmt::Result {
 		for c in s.as_bytes() {
-			self.put_char(*c,)?;
+			if let Y(_,) = self.put_char(*c,) {
+				return Err(core::fmt::Error,);
+			}
 		}
 		Ok((),)
 	}
