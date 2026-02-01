@@ -1,95 +1,3 @@
-//! # Input/Output Operations and Text Display
-//!
-//! This module provides the fundamental I/O interface for the OSO kernel,
-//! including text rendering, console output, and character display
-//! functionality. It serves as the primary interface for kernel debugging and
-//! user interaction.
-//!
-//! ## Features
-//!
-//! - **Text Rendering**: Bitmap font rendering with the Sinonome font
-//! - **Console Output**: Print macros for kernel debugging and logging
-//! - **Character Display**: Individual character rendering with positioning
-//! - **Text Buffer Management**: Automatic text wrapping and scrolling
-//! - **Font Integration**: Compile-time font loading and processing
-//!
-//! ## Font System
-//!
-//! The module uses the Sinonome font, a bitmap font designed for Japanese text
-//! but also supporting ASCII characters. The font data is embedded at compile
-//! time using procedural macros for efficiency.
-//!
-//! ### Font Specifications
-//! - **Character Size**: 8x16 pixels per character
-//! - **Format**: 1-bit bitmap (black and white)
-//! - **Encoding**: Each character stored as a 128-bit value
-//! - **Coverage**: 256 characters (full 8-bit character set)
-//!
-//! ## Console System
-//!
-//! The console provides a simple text interface for kernel output:
-//!
-//! ```rust,ignore
-//! use oso_kernel::{print, println};
-//!
-//! // Basic text output
-//! print!("Hello, ");
-//! println!("World!");
-//!
-//! // Formatted output
-//! println!("Value: {}, Address: 0x{:x}", 42, 0x1000);
-//! ```
-//!
-//! ## Text Buffer
-//!
-//! The [`TextBuf`] struct manages text positioning, wrapping, and rendering:
-//!
-//! - **Automatic Wrapping**: Text wraps to the next line when reaching screen
-//!   edge
-//! - **Scrolling**: Screen clears and resets when reaching the bottom
-//! - **Positioning**: Tracks current cursor position for continuous text output
-//!
-//! ## Architecture
-//!
-//! The I/O system is built on several key components:
-//!
-//! - **Font Data**: Compile-time embedded bitmap font
-//! - **Text Buffer**: Manages text layout and positioning
-//! - **Rendering Engine**: Converts characters to pixel operations
-//! - **Console Interface**: High-level print macros for easy use
-//!
-//! ## Usage Examples
-//!
-//! ### Basic Text Output
-//!
-//! ```rust,ignore
-//! println!("Kernel initialized successfully");
-//! print!("Memory available: {} MB", memory_size / 1024 / 1024);
-//! ```
-//!
-//! ### Custom Text Buffer
-//!
-//! ```rust,ignore
-//! let mut text_buf = TextBuf::new((100, 50), 8, 16);
-//! text_buf.put_char(b'A')?;
-//! text_buf.put_char(b'\n')?;
-//! ```
-//!
-//! ## Performance Considerations
-//!
-//! - Font data is embedded at compile time for fast access
-//! - Character rendering is optimized for bitmap operations
-//! - Text buffer operations are designed for minimal memory allocation
-//! - Console output is synchronous and may impact performance in tight loops
-//!
-//! ## Future Enhancements
-//!
-//! - Color text support
-//! - Multiple font sizes
-//! - Unicode character support
-//! - Hardware-accelerated text rendering
-//! - Input handling (keyboard, mouse)
-
 use {
 	super::graphic::FRAME_BUFFER,
 	crate::base::graphic::position::Coordinal,
@@ -101,53 +9,13 @@ use {
 	poison_girl_no_std_error::{PoisonGirlB, X, Y},
 };
 
-// TODO: Implement dynamic font loading
-// const SINONOME: &[u8; 256] = {
-// 	let sinonome_font_txt = include_str!("../resource/sinonome_font.txt");
-// 	let characters = &[0; 0x100];
-//
-// 	characters
-// };
-
-/// Default bitmap font data for text rendering
-///
-/// This constant contains the Sinonome font data, embedded at compile time
-/// using the `font!` procedural macro. The font provides 8x16 pixel characters
-/// for the full 8-bit character set (256 characters).
-///
-/// # Font Format
-///
-/// Each character is represented as a 128-bit value where each bit corresponds
-/// to a pixel in the 8x16 character grid. A bit value of 1 indicates a filled
-/// pixel, while 0 indicates a transparent pixel.
-///
-/// # Character Layout
-///
-/// ```text
-/// Bit positions for an 8x16 character:
-///  0  1  2  3  4  5  6  7
-///  8  9 10 11 12 13 14 15
-/// 16 17 18 19 20 21 22 23
-/// ...
-/// 120 121 122 123 124 125 126 127
-/// ```
-///
-/// # Usage
-///
-/// The font data is accessed by character code:
-///
-/// ```rust,ignore
-/// let char_data = SINONOME[b'A' as usize]; // Get bitmap for 'A'
-/// ```
 pub const SINONOME: &[u128; 256] = font!("resource/sinonome_font.dat");
-
 /// Maximum number of digits that can be represented in a u128
 ///
 /// This constant is used for buffer sizing when converting integers to strings.
 /// A u128 can have at most 39 decimal digits (2^128 - 1 =
 /// 340282366920938463463374607431768211455).
 pub const MAX_DIGIT: usize = 39;
-
 /// Global console text buffer for kernel output
 ///
 /// This static instance provides the primary console interface for the kernel.

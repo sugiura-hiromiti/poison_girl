@@ -43,21 +43,20 @@
 
 extern crate alloc;
 
-use poison_girl_no_std_error::{Container, UefiError, X, Y, poison_girl_err};
-
 use {
+	crate::{chibi_uefi::table::system_table, raw::table::ConfigTable},
 	alloc::vec::Vec,
 	chibi_uefi::{protocol::HandleSearchType, table::boot_services},
 	core::ptr::NonNull,
 	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe, wfi},
-	poison_girl_no_std_error::PoisonGirlB,
+	poison_girl_no_std_error::{
+		Container, PoisonGirlB, UefiError, X, Y, poison_girl_err,
+	},
 	raw::{
 		table::SystemTable,
 		types::{Status, UnsafeHandle},
 	},
 };
-
-use crate::{chibi_uefi::table::system_table, raw::table::ConfigTable};
 
 /// UEFI interface wrapper providing simplified access to UEFI services
 pub mod chibi_uefi;

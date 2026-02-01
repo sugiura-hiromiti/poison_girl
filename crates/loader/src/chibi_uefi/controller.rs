@@ -1,12 +1,12 @@
-use core::ptr;
-
-use crate::raw::{
-	protocol::device_path::DevicePathProtocol,
-	service::BootServices,
-	types::{Boolean, Status, UnsafeHandle},
+use {
+	super::Handle,
+	crate::raw::{
+		protocol::device_path::DevicePathProtocol,
+		service::BootServices,
+		types::{Boolean, Status, UnsafeHandle},
+	},
+	core::ptr,
 };
-
-use super::Handle;
 
 impl BootServices
 {

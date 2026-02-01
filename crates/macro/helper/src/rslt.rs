@@ -1,13 +1,13 @@
-use std::{
-	convert::Infallible,
-	fmt::Debug,
-	ops::{FromResidual, Try},
-	process::Termination,
+use {
+	crate::diagnostic::{Diag, ErrDiag, NotationDiag},
+	poison_girl_dev_error::PoisonGirlB,
+	std::{
+		convert::Infallible,
+		fmt::Debug,
+		ops::{FromResidual, Try},
+		process::Termination,
+	},
 };
-
-use poison_girl_dev_error::PoisonGirlB;
-
-use crate::diagnostic::{Diag, ErrDiag, NotationDiag};
 
 pub struct Rslt<V,>
 {

@@ -1,85 +1,3 @@
-//! # OSO Kernel
-//!
-//! The core kernel implementation for the OSO operating system, designed for
-//! aarch64 architecture with pure Rust implementation and no external
-//! dependencies.
-//!
-//! ## Features
-//!
-//! - **Pure Rust Implementation**: Written entirely in Rust with no external
-//!   dependencies
-//! - **AArch64 Focus**: Primarily targets ARM64 architecture with partial
-//!   x86_64 support
-//! - **No Standard Library**: Operates in a `no_std` environment for bare-metal
-//!   execution
-//! - **Advanced Rust Features**: Leverages cutting-edge Rust language features
-//!   for zero-cost abstractions
-//! - **Modular Architecture**: Organized into distinct modules for
-//!   applications, base functionality, and drivers
-//!
-//! ## Architecture
-//!
-//! The kernel is organized into three main modules:
-//!
-//! - [`app`]: Application execution and management subsystem
-//! - [`base`]: Core kernel functionality and basic data structures
-//! - [`driver`]: Hardware device drivers and low-level hardware abstraction
-//!
-//! ## Graphics Support
-//!
-//! The kernel supports multiple pixel formats through feature flags:
-//!
-//! - `rgb`: Red-Green-Blue pixel format
-//! - `bgr`: Blue-Green-Red pixel format
-//! - `bitmask`: Custom bitmask pixel format
-//! - `bltonly`: Block Transfer Only mode (default)
-//!
-//! ## Usage
-//!
-//! The kernel is designed to be loaded by the OSO bootloader and initialized
-//! through the [`init()`] function:
-//!
-//! ```rust,ignore
-//! use oso_kernel::init;
-//!
-//! // Initialize the kernel (called by bootloader)
-//! init();
-//! ```
-//!
-//! ## Panic Handling
-//!
-//! The kernel implements a custom panic handler that prints debug information
-//! and enters a low-power wait-for-event state rather than terminating the
-//! system.
-//!
-//! ## Dependencies
-//!
-//! - [`oso_error`]: Error handling and result types
-//! - [`oso_no_std_shared`]: Shared utilities for no_std environments
-//! - [`oso_proc_macro`]: Procedural macros for code generation
-//!
-//! ## Examples
-//!
-//! Basic kernel initialization:
-//!
-//! ```rust,ignore
-//! #![no_std]
-//! #![no_main]
-//!
-//! use oso_kernel::init;
-//!
-//! #[no_mangle]
-//! pub extern "C" fn kernel_main() -> ! {
-//!     // Initialize kernel subsystems
-//!     init();
-//!
-//!     // Kernel main loop would go here
-//!     loop {
-//!         // Handle interrupts and system calls
-//!     }
-//! }
-//! ```
-
 #![no_std]
 #![allow(incomplete_features)]
 #![feature(associated_type_defaults)]
@@ -87,6 +5,7 @@
 #![feature(slice_index_methods)]
 #![feature(new_range_api)]
 #![feature(generic_const_exprs)]
+#![feature(const_trait_impl)]
 
 use poison_girl_no_std::wfe;
 

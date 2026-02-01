@@ -1,8 +1,7 @@
-use poison_girl_no_std::bridge::graphic::PixelFormatConf;
-
-use crate::c_style_enum;
-
-use super::PhysicalAddress;
+use {
+	super::PhysicalAddress, crate::c_style_enum,
+	poison_girl_no_std::bridge::graphic::PixelFormatConf,
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, Default,)]

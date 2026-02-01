@@ -1,3 +1,5 @@
+#![no_std]
+
 pub use poison_girl_proc_macro_def::*;
 
 #[macro_export]

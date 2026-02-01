@@ -1,9 +1,13 @@
-pub trait PixelFormat: Default
+pub trait PixelFormat: PixFmtNew
 {
 	fn color_repr(&self, color: &impl ColorRpr,) -> [u8; 3];
 }
 
-#[derive(Default,)]
+pub const trait PixFmtNew
+{
+	fn new_pix() -> Self;
+}
+
 pub struct Rgb;
 impl PixelFormat for Rgb
 {
@@ -13,7 +17,14 @@ impl PixelFormat for Rgb
 	}
 }
 
-#[derive(Default,)]
+impl const PixFmtNew for Rgb
+{
+	fn new_pix() -> Self
+	{
+		Rgb
+	}
+}
+
 pub struct Bgr;
 impl PixelFormat for Bgr
 {
@@ -23,7 +34,14 @@ impl PixelFormat for Bgr
 	}
 }
 
-#[derive(Default,)]
+impl const PixFmtNew for Bgr
+{
+	fn new_pix() -> Self
+	{
+		Bgr
+	}
+}
+
 pub struct Bitmask;
 impl PixelFormat for Bitmask
 {
@@ -34,7 +52,14 @@ impl PixelFormat for Bitmask
 	}
 }
 
-#[derive(Default,)]
+impl const PixFmtNew for Bitmask
+{
+	fn new_pix() -> Self
+	{
+		Bitmask
+	}
+}
+
 pub struct BltOnly;
 impl PixelFormat for BltOnly
 {
@@ -42,6 +67,14 @@ impl PixelFormat for BltOnly
 	{
 		let _ = color;
 		todo!()
+	}
+}
+
+impl const PixFmtNew for BltOnly
+{
+	fn new_pix() -> Self
+	{
+		BltOnly
 	}
 }
 

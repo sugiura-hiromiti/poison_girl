@@ -1,6 +1,6 @@
 use {
 	crate::base::graphic::{
-		color::{ColorRpr, PixelFormat},
+		color::{ColorRpr, PixFmtNew, PixelFormat},
 		position::{Coord, Coordinal},
 	},
 	poison_girl_macro::cfg_if,
@@ -8,8 +8,6 @@ use {
 		GraphicError, PoisonGirlB, X, Y, poison_girl_err,
 	},
 };
-
-// use oso_proc_macro::gen_wrapper_fn;
 
 /// Color representation and pixel format implementations
 pub mod color;
@@ -38,7 +36,7 @@ cfg_if! {
 // type FbDrawer = color::BltOnly;
 
 pub static FRAME_BUFFER: FrameBuffer<FbDrawer,> = FrameBuffer {
-	drawer: FbDrawer::default(),
+	drawer: FbDrawer::new_pix(),
 	buf:    0,
 	size:   0,
 	width:  0,

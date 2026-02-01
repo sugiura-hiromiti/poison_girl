@@ -1,11 +1,12 @@
-use core::ffi::c_void;
-
-use crate::{
-	Status,
-	raw::types::{
-		Char16, Guid,
-		file::{FileAttributes, FileIoToken, OpenMode},
+use {
+	crate::{
+		Status,
+		raw::types::{
+			Char16, Guid,
+			file::{FileAttributes, FileIoToken, OpenMode},
+		},
 	},
+	core::ffi::c_void,
 };
 
 #[repr(C)]

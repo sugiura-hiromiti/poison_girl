@@ -8,12 +8,11 @@
 //! - Setting up block devices and persistent flash memory
 
 use {
+	crate::Xtask,
 	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::cargo::Arch,
 	std::path::{Path, PathBuf},
 };
-
-use crate::Xtask;
 
 impl Xtask
 {

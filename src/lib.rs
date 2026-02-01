@@ -1,11 +1,12 @@
 #![feature(string_from_utf8_lossy_owned)]
 #![feature(exit_status_error)]
 
-use std::path::PathBuf;
-
-use poison_girl_dev_orchestrate::{
-	cargo::{Arch, Assets, Opts},
-	decl_manage::crate_::OsoCrate,
+use {
+	poison_girl_dev_orchestrate::{
+		cargo::{Arch, Assets, Opts},
+		decl_manage::crate_::OsoCrate,
+	},
+	std::path::PathBuf,
 };
 
 pub mod builder;

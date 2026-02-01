@@ -1,6 +1,4 @@
-use crate::c_style_enum;
-
-use super::Boolean;
+use {super::Boolean, crate::c_style_enum};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug,)]

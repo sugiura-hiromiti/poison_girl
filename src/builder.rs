@@ -11,6 +11,7 @@
 //! - Cleanup of temporary files and unmounting disk images
 
 use {
+	crate::Xtask,
 	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::{
 		cargo::{Assets, Opts},
@@ -18,8 +19,6 @@ use {
 	},
 	std::path::PathBuf,
 };
-
-use crate::Xtask;
 
 /// Directory path for EFI boot files
 const BOOT_DIR: &str = "efi/boot";
