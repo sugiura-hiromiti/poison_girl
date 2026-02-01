@@ -31,7 +31,7 @@ pub trait PackageInfo: Sized + CrateInfo
 #[cfg(test)]
 mod tests
 {
-	use {super::*, crate::decl_manage::crate_::OsoCrate, std::path::PathBuf};
+	use {super::*, crate::decl_manage::crate_::PoisonGirlCrate, std::path::PathBuf};
 
 	// Note: Working around FromPathBuf macro validation by using current
 	// directory
@@ -42,11 +42,11 @@ mod tests
 		// Test that Package trait requires both PackageAction and PackageSurvey
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that OsoCrate implements Package (using concrete type since not
 		// object-safe)
-		let _package_ref: &OsoCrate = &crate_obj;
+		let _package_ref: &PoisonGirlCrate = &crate_obj;
 
 		// Test as_action method
 		let _action = crate_obj.as_action();
@@ -61,10 +61,10 @@ mod tests
 		// Test that PackageAction combines PackageInfo and CrateAction
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that OsoCrate implements PackageAction (concrete type only)
-		let _action_ref: &OsoCrate = &crate_obj;
+		let _action_ref: &PoisonGirlCrate = &crate_obj;
 
 		// PackageAction should provide access to CrateAction methods
 		let build_result = crate_obj.build();
@@ -84,10 +84,10 @@ mod tests
 
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that OsoCrate implements PackageSurvey
-		let _survey_ref: &OsoCrate = &crate_obj;
+		let _survey_ref: &PoisonGirlCrate = &crate_obj;
 
 		// Test default_target method
 		let target_result = crate_obj.default_target();
@@ -100,10 +100,10 @@ mod tests
 		// Test that PackageInfo extends CrateInfo
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir.clone(),);
+		let crate_obj = PoisonGirlCrate::from(current_dir.clone(),);
 
 		// Test that OsoCrate implements PackageInfo (concrete type only)
-		let _info_ref: &OsoCrate = &crate_obj;
+		let _info_ref: &PoisonGirlCrate = &crate_obj;
 
 		// PackageInfo should provide access to CrateInfo methods
 		assert_eq!(crate_obj.path(), current_dir);
@@ -141,7 +141,7 @@ mod tests
 
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		test_package(&crate_obj,);
 		test_package_action(&crate_obj,);
@@ -163,7 +163,7 @@ mod tests
 
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		work_with_package(crate_obj,);
 	}

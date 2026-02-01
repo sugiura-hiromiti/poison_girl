@@ -1,5 +1,4 @@
 use {
-	poison_girl_dev_fs::fs::check_poison_girl_kernel,
 	poison_girl_proc_macro_helper::{diagnostic::Diag, rslt::Rslt},
 	proc_macro2::{Span, TokenStream},
 	std::process::Command,
@@ -529,9 +528,6 @@ fn parse_section_header_index_of_section_name_string_table(
 
 pub fn readelf_h() -> Rslt<ReadElfH,>
 {
-	// Ensure the kernel file exists before attempting to parse it
-	check_poison_girl_kernel()?;
-
 	// Execute readelf command to get header information
 	let header_info = Command::new("readelf",)
 		.args(["-h", "target/oso_kernel.elf",],)
@@ -792,7 +788,7 @@ mod tests
 
 				if expected_key != "OS/ABI" {
 					// OS/ABI is special case
-					let first_word = key_value[1].split(' ',).nth(0,).unwrap();
+					let first_word = key_value[1].split(' ',).next().unwrap();
 					assert_eq!(first_word, expected_first_word);
 				}
 			}
@@ -1001,11 +997,26 @@ mod tests
 	#[test]
 	fn test_readelf_h_field_independence()
 	{
-		let mut header = ReadElfH::default();
-
-		// Test that modifying one field doesn't affect others
-		header.file_class = "ELF64 (64-bit)".to_string();
-		header.endianness = "little endian".to_string();
+		let mut header = ReadElfH {
+			file_class: "ELF64 (64-bit)".to_string(),
+			endianness: "little endian".to_string(),
+			elf_version: "".to_string(),
+			target_os_abi: "".to_string(),
+			abi_version: "".to_string(),
+			ty: "".to_string(),
+			machine: "".to_string(),
+			version: "".to_string(),
+			entry: "".to_string(),
+			program_header_offset: "".to_string(),
+			section_header_offset: "".to_string(),
+			flags: "".to_string(),
+			elf_header_size: "".to_string(),
+			program_header_entry_size: "".to_string(),
+			program_header_count: "".to_string(),
+			section_header_entry_size: "".to_string(),
+			section_header_count: "".to_string(),
+			section_header_index_of_section_name_string_table: "".to_string(),
+		};
 
 		// Before fix
 		assert_eq!(header.file_class, "ELF64 (64-bit)");

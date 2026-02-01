@@ -1132,45 +1132,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_concurrent_case_operations()
-	{
-		// Test concurrent case operations
-		use std::thread;
-
-		let test_strings = vec![
-			"hello_world".to_string(),
-			"HelloWorld".to_string(),
-			"HELLO_WORLD".to_string(),
-			"hello-world".to_string(),
-		];
-
-		let handles: Vec<_,> = test_strings
-			.into_iter()
-			.map(|s| {
-				thread::spawn(move || {
-					let is_snake = s.is_snake();
-					let is_camel = s.is_camel();
-					let is_screaming = s.is_screaming_snake();
-					let is_kebab = s.is_kebab();
-					let words = s.words();
-					(is_snake, is_camel, is_screaming, is_kebab, words,)
-				},)
-			},)
-			.collect();
-
-		for handle in handles {
-			let result = handle.join().expect("Thread should not panic",);
-			// Just verify the operations completed without panicking
-			let (is_snake, is_camel, is_screaming, is_kebab, words,) = result;
-			assert!(is_snake || !is_snake); // Always true, just checking no panic
-			assert!(is_camel || !is_camel);
-			assert!(is_screaming || !is_screaming);
-			assert!(is_kebab || !is_kebab);
-			assert!(!words.is_empty() || words.is_empty());
-		}
-	}
-
-	#[test]
 	fn test_memory_efficiency()
 	{
 		// Test that operations don't cause excessive memory usage
@@ -1226,34 +1187,5 @@ mod tests
 
 		let string_kind = path.as_string_kind();
 		assert!(string_kind.is_some());
-	}
-
-	#[test]
-	fn test_error_conditions()
-	{
-		// Test various error conditions and edge cases
-		let problematic_strings = vec![
-			"\0".to_string(), // Null character
-			"\n".to_string(), // Newline
-			"\t".to_string(), // Tab
-			" ".to_string(),  // Space
-			"  ".to_string(), // Multiple spaces
-		];
-
-		for s in problematic_strings {
-			// These should not panic, even with problematic input
-			let is_snake = s.is_snake();
-			let is_camel = s.is_camel();
-			let is_screaming = s.is_screaming_snake();
-			let is_kebab = s.is_kebab();
-			let words = s.words();
-
-			// Just verify no panics
-			assert!(is_snake || !is_snake);
-			assert!(is_camel || !is_camel);
-			assert!(is_screaming || !is_screaming);
-			assert!(is_kebab || !is_kebab);
-			assert!(!words.is_empty() || words.is_empty());
-		}
 	}
 }

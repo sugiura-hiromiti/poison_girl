@@ -191,7 +191,7 @@ mod tests
 {
 	use {
 		super::*,
-		crate::decl_manage::crate_::{CrateInfo, OsoCrate},
+		crate::decl_manage::crate_::{CrateInfo, PoisonGirlCrate},
 		std::path::PathBuf,
 	};
 
@@ -204,8 +204,8 @@ mod tests
 		let parent_dir =
 			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
 
-		let workspace = OsoCrate::from(current_dir,);
-		let target_crate = OsoCrate::from(parent_dir,);
+		let workspace = PoisonGirlCrate::from(current_dir,);
+		let target_crate = PoisonGirlCrate::from(parent_dir,);
 
 		// Test action methods (they will likely fail in test environment)
 		// Note: These methods require WorkspaceSurvey bound, which OsoCrate
@@ -228,8 +228,8 @@ mod tests
 		let parent_dir =
 			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
 
-		let workspace = OsoCrate::from(current_dir,);
-		let target_crate = OsoCrate::from(parent_dir,);
+		let workspace = PoisonGirlCrate::from(current_dir,);
+		let target_crate = PoisonGirlCrate::from(parent_dir,);
 
 		let opts = ["--verbose",];
 
@@ -255,8 +255,8 @@ mod tests
 		let parent_dir =
 			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
 
-		let workspace = OsoCrate::from(current_dir,);
-		let target_crate = OsoCrate::from(parent_dir,);
+		let workspace = PoisonGirlCrate::from(current_dir,);
+		let target_crate = PoisonGirlCrate::from(parent_dir,);
 
 		// Test generic cargo command
 		let _result = workspace.cargo_xxx_at("clippy", target_crate,);
@@ -273,8 +273,8 @@ mod tests
 		let parent_dir =
 			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
 
-		let workspace = OsoCrate::from(current_dir,);
-		let target_crate = OsoCrate::from(parent_dir,);
+		let workspace = PoisonGirlCrate::from(current_dir,);
+		let target_crate = PoisonGirlCrate::from(parent_dir,);
 
 		let opts = ["--all-targets",];
 
@@ -291,7 +291,7 @@ mod tests
 		// Test the as_action and as_survey methods
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test as_action returns something implementing WorkspaceAction
 		let action = crate_obj.as_action();
@@ -308,7 +308,7 @@ mod tests
 		// Test that members method has the correct signature
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test the method signature
 		let members = crate_obj.members();
@@ -326,7 +326,7 @@ mod tests
 		// Test that members_with_target method has the correct signature
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test with string literal
 		let members1 = crate_obj.members_with_target("aarch64-unknown-linux",);
@@ -351,8 +351,8 @@ mod tests
 		let parent_dir =
 			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
 
-		let mut workspace = OsoCrate::from(current_dir,);
-		let target = OsoCrate::from(parent_dir.clone(),);
+		let mut workspace = PoisonGirlCrate::from(current_dir,);
+		let target = PoisonGirlCrate::from(parent_dir.clone(),);
 
 		// Test land_on method
 		workspace.land_on(target,);
@@ -389,7 +389,7 @@ mod tests
 
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		test_workspace(&crate_obj,);
 		test_workspace_action(&crate_obj,);
@@ -406,8 +406,8 @@ mod tests
 		let parent_dir =
 			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
 
-		let workspace = OsoCrate::from(current_dir.clone(),);
-		let target = OsoCrate::from(parent_dir,);
+		let workspace = PoisonGirlCrate::from(current_dir.clone(),);
+		let target = PoisonGirlCrate::from(parent_dir,);
 
 		// Test Workspace functionality directly (not as trait object since not
 		// object-safe)
@@ -442,7 +442,7 @@ mod tests
 
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		work_with_workspace(crate_obj,);
 	}

@@ -1,9 +1,7 @@
 use {
 	poison_girl_dev_error::{InvalidManifest, poison_girl_err},
-	poison_girl_dev_fs::{
-		fs::{CARGO_MANIFEST, all_crates, read_toml},
-		util::CaseConvert,
-	},
+	poison_girl_dev_fs::{CARGO_MANIFEST, all_crates, read_toml},
+	poison_girl_dev_util::CaseConvert,
 	poison_girl_proc_macro_helper::{diagnostic::Diag, rslt::Rslt},
 	proc_macro2::TokenStream,
 	quote::format_ident,
@@ -126,7 +124,7 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 				Rslt::new((variant, attr, path,),)
 			},)
 		},)
-		.fold(Rslt::new(vec![],), |acc, item| acc.add(item,),)
+		.fold(Rslt::new(vec![],), |acc, item| acc.push_elem(item,),)
 		.replace_by(|val| {
 			let len = val.len();
 			let mut variants = Vec::with_capacity(len,);
@@ -199,9 +197,9 @@ fn struct_dump(
 	let syn::Data::Struct(syn::DataStruct { ref mut fields, .. },) =
 		struct_def.data
 	else {
-		return Rslt::new_err(format!(
-			"unexpected derive input. this macro only support struct derive"
-		),);
+		return Rslt::new_err(
+			"unexpected derive input. this macro only support struct derive",
+		);
 	};
 
 	let fields = fields_invest(&enum_name, fields,)??;
@@ -243,7 +241,7 @@ fn fields_invest(
 
 				field_construct(enum_name, f.clone(),)
 			},)
-			.fold(Rslt::new(vec![],), |acc, field| acc.add(field,),),
+			.fold(Rslt::new(vec![],), |acc, field| acc.push_elem(field,),),
 		syn::Fields::Unit => unreachable!(),
 	}
 }
@@ -436,7 +434,7 @@ mod tests
 	fn test_itertools_join_functionality()
 	{
 		// Test that itertools join works as expected
-		let parts = vec!["Hello", "World", "Test"];
+		let parts = ["Hello", "World", "Test",];
 		let joined = parts.iter().map(|s| s.to_string(),).join("",);
 
 		assert_eq!(joined, "HelloWorldTest");
@@ -445,7 +443,7 @@ mod tests
 	#[test]
 	fn test_itertools_join_with_separator()
 	{
-		let parts = vec!["Hello", "World"];
+		let parts = ["Hello", "World",];
 		let joined = parts.iter().map(|s| s.to_string(),).join("_",);
 
 		assert_eq!(joined, "Hello_World");
@@ -469,17 +467,17 @@ mod tests
 
 		// Test pattern matching
 		match enum_item {
-			syn::Item::Enum(_,) => assert!(true),
+			syn::Item::Enum(_,) => (),
 			_ => panic!("Should match enum"),
 		}
 
 		match struct_item {
-			syn::Item::Struct(_,) => assert!(true),
+			syn::Item::Struct(_,) => (),
 			_ => panic!("Should match struct"),
 		}
 
 		match fn_item {
-			syn::Item::Fn(_,) => assert!(true),
+			syn::Item::Fn(_,) => (),
 			_ => panic!("Should match function"),
 		}
 	}

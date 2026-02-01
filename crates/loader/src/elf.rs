@@ -17,8 +17,8 @@ use {
 		},
 	},
 	poison_girl_no_std_error::{
-		Container as _, ElfParseError, ElfParseStage, PoisonGirlB, X, Y,
-		poison_girl_err,
+		Container as _, ElfParseError, ElfParseStage, PoisonGirlB,
+		PoisonGirlError, X, Y, poison_girl_err,
 	},
 	program_header::ProgramHeaderType,
 	section_header::{
@@ -577,8 +577,6 @@ impl ElfHeader
 	pub const EM_NDR1: u16 = 57;
 	/// Andes Tech. compact code emb. RISC
 	pub const EM_NDS32: u16 = 167;
-	/// TODO: use Enum with explicit discriminant and get debug printer for
-	/// free? No machine
 	pub const EM_NONE: u16 = 0;
 	/// Nanoradio Optimized RISC
 	pub const EM_NORC: u16 = 218;
@@ -873,7 +871,7 @@ impl ElfType
 
 impl TryFrom<u16,> for ElfType
 {
-	type Error = ElfParseError;
+	type Error = PoisonGirlError;
 
 	fn try_from(value: u16,) -> Result<Self, Self::Error,>
 	{
@@ -889,7 +887,9 @@ impl TryFrom<u16,> for ElfType
 			0xff00 => Self::ProcessorSpecificRangeStart,
 			0xffff => Self::OsSpecificRangeEnd,
 			_ => {
-				return Err(ElfParseError::UnknownEfiType(value,),);
+				return Err(poison_girl_err!(ElfParseError::UnknownEfiType(
+					value
+				)),);
 			},
 		};
 		Ok(ty,)
@@ -968,14 +968,16 @@ impl FileClass
 
 impl TryFrom<u8,> for FileClass
 {
-	type Error = ElfParseError;
+	type Error = PoisonGirlError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,>
 	{
 		match value {
 			ELF_32_BIT_OBJECT => Ok(Self::Bit32,),
 			ELF_64_BIT_OBJECT => Ok(Self::Bit64,),
-			_ => Err(ElfParseError::InvalidFileClass(value,),),
+			_ => {
+				Err(poison_girl_err!(ElfParseError::InvalidFileClass(value,)),)
+			},
 		}
 	}
 }
@@ -1000,7 +1002,7 @@ pub enum TargetOsAbi
 
 impl TryFrom<u8,> for TargetOsAbi
 {
-	type Error = ElfParseError;
+	type Error = PoisonGirlError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,>
 	{
@@ -1008,7 +1010,9 @@ impl TryFrom<u8,> for TargetOsAbi
 			0x0 => Ok(Self::SysV,),
 			0x53 => Ok(Self::Arm,),
 			0x61 => Ok(Self::Standalone,),
-			_ => Err(ElfParseError::OsAbiOutOfSupport(value,),),
+			_ => {
+				Err(poison_girl_err!(ElfParseError::OsAbiOutOfSupport(value,)),)
+			},
 		}
 	}
 }
@@ -1231,14 +1235,16 @@ impl Endian
 
 impl TryFrom<u8,> for Endian
 {
-	type Error = ElfParseError;
+	type Error = PoisonGirlError;
 
 	fn try_from(value: u8,) -> Result<Self, Self::Error,>
 	{
 		match value {
 			1 => Ok(Self::Little,),
 			2 => Ok(Self::Big,),
-			_ => Err(ElfParseError::InvalidEndianFlag(value,),),
+			_ => {
+				Err(poison_girl_err!(ElfParseError::InvalidEndianFlag(value,)),)
+			},
 		}
 	}
 }

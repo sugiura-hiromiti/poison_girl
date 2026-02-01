@@ -1,20 +1,16 @@
 use {
-	crate::{
-		cargo::host_tuple,
-		decl_manage::{
-			package::{Package, PackageAction, PackageInfo, PackageSurvey},
-			workspace::{
-				Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
-			},
+	crate::decl_manage::{
+		package::{Package, PackageAction, PackageInfo, PackageSurvey},
+		workspace::{
+			Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
 		},
 	},
+	poison_girl_dev_cargo::host_tuple,
+	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{Container, PoisonGirlB, X},
 	poison_girl_dev_fs::{
-		cli::Run,
-		fs::{
-			CARGO_CONFIG, CARGO_MANIFEST, all_crates_in, read_toml,
-			search_upstream_at,
-		},
+		CARGO_CONFIG, CARGO_MANIFEST, all_crates_in, read_toml,
+		search_upstream_at,
 	},
 	poison_girl_macro::FromPathBuf,
 	std::{ffi::OsStr, fmt::Debug, path::PathBuf, process::Command},
@@ -185,14 +181,14 @@ pub trait CrateInfo: CrateCalled
 }
 
 #[derive(FromPathBuf, Default, PartialEq, Eq, Clone,)]
-pub struct OsoCrate
+pub struct PoisonGirlCrate
 {
 	path: PathBuf,
 	#[chart]
-	i_am: OsoCrateChart,
+	i_am: PoisonGirlCrateChart,
 }
 
-impl std::fmt::Debug for OsoCrate
+impl std::fmt::Debug for PoisonGirlCrate
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result
 	{
@@ -203,21 +199,21 @@ impl std::fmt::Debug for OsoCrate
 	}
 }
 
-impl From<OsoCrateChart,> for OsoCrate
+impl From<PoisonGirlCrateChart,> for PoisonGirlCrate
 {
-	fn from(value: OsoCrateChart,) -> Self
+	fn from(value: PoisonGirlCrateChart,) -> Self
 	{
 		Self::from(value.to_path_buf(),)
 	}
 }
 
-impl Crate for OsoCrate
+impl Crate for PoisonGirlCrate
 {
 }
-impl CrateAction for OsoCrate
+impl CrateAction for PoisonGirlCrate
 {
 }
-impl CrateSurvey for OsoCrate
+impl CrateSurvey for PoisonGirlCrate
 {
 	fn land_on(&mut self, on: impl CrateCalled,)
 	{
@@ -230,7 +226,7 @@ impl CrateSurvey for OsoCrate
 		if self.has_parent()? {
 			let parent = self.path();
 			let parent = parent.parent().unwrap();
-			let parent = OsoCrateChart::from(parent.to_path_buf(),);
+			let parent = PoisonGirlCrateChart::from(parent.to_path_buf(),);
 			self.land_on(parent,);
 			X((),)
 		} else {
@@ -239,7 +235,7 @@ impl CrateSurvey for OsoCrate
 	}
 }
 
-impl CrateInfo for OsoCrate
+impl CrateInfo for PoisonGirlCrate
 {
 	fn path(&self,) -> PathBuf
 	{
@@ -247,9 +243,9 @@ impl CrateInfo for OsoCrate
 	}
 }
 
-impl CrateCalled for OsoCrate
+impl CrateCalled for PoisonGirlCrate
 {
-	type F = OsoCrateChart;
+	type F = PoisonGirlCrateChart;
 
 	fn whoami(&self,) -> Self::F
 	{
@@ -262,9 +258,9 @@ impl CrateCalled for OsoCrate
 	}
 }
 
-impl CrateCalled for OsoCrateChart
+impl CrateCalled for PoisonGirlCrateChart
 {
-	type F = OsoCrateChart;
+	type F = PoisonGirlCrateChart;
 
 	fn whoami(&self,) -> Self::F
 	{
@@ -277,26 +273,26 @@ impl CrateCalled for OsoCrateChart
 	}
 }
 
-impl Workspace for OsoCrate
+impl Workspace for PoisonGirlCrate
 {
 }
-impl WorkspaceAction for OsoCrate
-{
-}
-
-impl WorkspaceSurvey for OsoCrate
+impl WorkspaceAction for PoisonGirlCrate
 {
 }
 
-impl WorkspaceInfo for OsoCrate
+impl WorkspaceSurvey for PoisonGirlCrate
+{
+}
+
+impl WorkspaceInfo for PoisonGirlCrate
 {
 	#[allow(refining_impl_trait)]
-	fn members(&self,) -> Vec<OsoCrate,>
+	fn members(&self,) -> Vec<PoisonGirlCrate,>
 	{
 		all_crates_in(&self.path(),)
 			.expect("failed to get some crates within workspace",)
 			.iter()
-			.map(|p| OsoCrate::from(p.clone(),),)
+			.map(|p| PoisonGirlCrate::from(p.clone(),),)
 			.collect()
 	}
 
@@ -304,7 +300,7 @@ impl WorkspaceInfo for OsoCrate
 	fn members_with_target(
 		&self,
 		target: impl Into<String,> + Clone,
-	) -> Vec<OsoCrate,>
+	) -> Vec<PoisonGirlCrate,>
 	{
 		self.members()
 			.into_iter()
@@ -320,13 +316,13 @@ impl WorkspaceInfo for OsoCrate
 	}
 }
 
-impl Package for OsoCrate
+impl Package for PoisonGirlCrate
 {
 }
-impl PackageAction for OsoCrate
+impl PackageAction for PoisonGirlCrate
 {
 }
-impl PackageSurvey for OsoCrate
+impl PackageSurvey for PoisonGirlCrate
 {
 	fn default_target(&self,) -> PoisonGirlB<impl Into<String,>,>
 	{
@@ -348,7 +344,7 @@ impl PackageSurvey for OsoCrate
 	}
 }
 
-impl PackageInfo for OsoCrate
+impl PackageInfo for PoisonGirlCrate
 {
 }
 
@@ -372,7 +368,7 @@ mod tests
 	#[test]
 	fn test_oso_crate_default()
 	{
-		let default_crate = OsoCrate::default();
+		let default_crate = PoisonGirlCrate::default();
 		let default_path = default_crate.path();
 		// Default should create an empty PathBuf
 		assert_eq!(default_path, PathBuf::new());
@@ -384,7 +380,7 @@ mod tests
 		// Use current directory which should exist
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir.clone(),);
+		let crate_obj = PoisonGirlCrate::from(current_dir.clone(),);
 		assert_eq!(crate_obj.path(), current_dir);
 	}
 
@@ -393,7 +389,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let original = OsoCrate::from(current_dir.clone(),);
+		let original = PoisonGirlCrate::from(current_dir.clone(),);
 		let cloned = original.clone();
 
 		assert_eq!(original.path(), cloned.path());
@@ -405,8 +401,8 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate1 = OsoCrate::from(current_dir.clone(),);
-		let crate2 = OsoCrate::from(current_dir.clone(),);
+		let crate1 = PoisonGirlCrate::from(current_dir.clone(),);
+		let crate2 = PoisonGirlCrate::from(current_dir.clone(),);
 
 		assert_eq!(crate1, crate2);
 	}
@@ -416,7 +412,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir.clone(),);
+		let crate_obj = PoisonGirlCrate::from(current_dir.clone(),);
 
 		// Test CrateInfo::path method
 		assert_eq!(crate_obj.path(), current_dir);
@@ -427,7 +423,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir.clone(),);
+		let crate_obj = PoisonGirlCrate::from(current_dir.clone(),);
 
 		// Test CrateCalled::whoami method
 		let whoami_result = crate_obj.whoami();
@@ -439,7 +435,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir.clone(),);
+		let crate_obj = PoisonGirlCrate::from(current_dir.clone(),);
 
 		// Test CrateCalled::path_buf method
 		assert_eq!(crate_obj.path_buf(), current_dir);
@@ -452,11 +448,11 @@ mod tests
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 
 		// Test From<PathBuf> implementation
-		let crate_obj: OsoCrate = current_dir.clone().into();
+		let crate_obj: PoisonGirlCrate = current_dir.clone().into();
 		assert_eq!(crate_obj.path(), current_dir);
 
 		// Test explicit From::from
-		let crate_obj2 = OsoCrate::from(current_dir.clone(),);
+		let crate_obj2 = PoisonGirlCrate::from(current_dir.clone(),);
 		assert_eq!(crate_obj2.path(), current_dir);
 
 		// Both should be equal
@@ -468,7 +464,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir.clone(),);
+		let crate_obj = PoisonGirlCrate::from(current_dir.clone(),);
 
 		// Test that we can get the chart representation
 		let chart = crate_obj.whoami();
@@ -476,8 +472,7 @@ mod tests
 		// Chart should convert back to the same path
 		assert_eq!(chart.path_buf(), current_dir);
 
-		// Test From<OsoCrateChart> for OsoCrate
-		let crate_from_chart = OsoCrate::from(chart,);
+		let crate_from_chart = PoisonGirlCrate::from(chart,);
 		assert_eq!(crate_from_chart.path(), current_dir);
 	}
 
@@ -486,7 +481,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that Debug is implemented
 		let debug_string = format!("{:?}", crate_obj);
@@ -501,7 +496,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that action methods exist (they will likely fail in test
 		// environment) ignore `test` method because running it in test cause
@@ -519,7 +514,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that action methods with options exist
 		// ignore `test_with` method because running it in test cause infinity
@@ -536,7 +531,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that CrateInfo methods exist and return Results
 		let _is_package_result = crate_obj.is_package();
@@ -551,13 +546,13 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test PackageSurvey methods
 		let _target_result = crate_obj.default_target();
 
 		// Test build_artifact with proper CompileOpt
-		use crate::cargo::{Arch, BuildMode, Feature, Opts};
+		use poison_girl_dev_cargo::{Arch, BuildMode, Feature, Opts};
 		let _opts = Opts {
 			build_mode:    BuildMode::Debug,
 			feature_flags: Vec::<Feature,>::new(),
@@ -570,7 +565,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test WorkspaceInfo methods
 		let _members = crate_obj.members();
@@ -586,8 +581,8 @@ mod tests
 		let parent_dir =
 			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
 
-		let mut crate_obj = OsoCrate::from(current_dir,);
-		let target_crate = OsoCrate::from(parent_dir.clone(),);
+		let mut crate_obj = PoisonGirlCrate::from(current_dir,);
+		let target_crate = PoisonGirlCrate::from(parent_dir.clone(),);
 
 		// Test that land_on method exists and works
 		crate_obj.land_on(target_crate,);
@@ -601,16 +596,16 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that all required traits are implemented
 		// These are compile-time checks using concrete types since traits are
 		// not object-safe
 
 		// Test that we can use the crate as different trait implementors
-		let _crate_ref: &OsoCrate = &crate_obj;
-		let _package_ref: &OsoCrate = &crate_obj;
-		let _workspace_ref: &OsoCrate = &crate_obj;
+		let _crate_ref: &PoisonGirlCrate = &crate_obj;
+		let _package_ref: &PoisonGirlCrate = &crate_obj;
+		let _workspace_ref: &PoisonGirlCrate = &crate_obj;
 
 		// If we get here, all traits are implemented
 	}
@@ -621,7 +616,7 @@ mod tests
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = OsoCrate::from(current_dir,);
+		let crate_obj = PoisonGirlCrate::from(current_dir,);
 
 		// Test that survey methods exist (they contain todo!() so will panic)
 		let has_parent_result =

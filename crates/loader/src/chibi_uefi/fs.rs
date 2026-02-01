@@ -11,7 +11,7 @@ use {
 	},
 	alloc::vec::Vec,
 	core::ptr::{self, NonNull},
-	poison_girl_no_std_error::{PoisonGirlB, UefiError, X},
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, poison_girl_err},
 };
 
 impl SimpleFileSystemProtocol
@@ -51,8 +51,6 @@ impl FileProtocolV1
 	/// # Return
 	///
 	/// returns bytes amount of read data
-	/// # Safety
-	/// TODO: fill doc comment
 	pub unsafe fn read(&mut self, buf: &mut [u8],) -> PoisonGirlB<usize,>
 	{
 		let mut len = buf.len();
@@ -81,7 +79,9 @@ impl FileProtocolV1
 		.x_or()?;
 
 		let file = NonNull::new(buf,)
-			.ok_or(UefiError::Custom("file information is null",),)
+			.ok_or(poison_girl_err!(UefiError::Custom(
+				"file information is null",
+			)),)
 			.map(|s| s.as_ptr().cast(),)?;
 		X(file,)
 	}

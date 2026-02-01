@@ -48,7 +48,8 @@ use {
 	alloc::vec::Vec,
 	chibi_uefi::{protocol::HandleSearchType, table::boot_services},
 	core::ptr::NonNull,
-	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe, wfi},
+	poison_girl_macro::cfg_if,
+	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfi},
 	poison_girl_no_std_error::{
 		Container, PoisonGirlB, UefiError, X, Y, poison_girl_err,
 	},
@@ -67,18 +68,6 @@ pub mod load;
 /// Raw UEFI types and protocol definitions
 pub mod raw;
 
-/// Custom panic handler for the UEFI environment
-///
-/// This panic handler prints debug information and enters a wait-for-event loop
-/// instead of terminating the program, which is appropriate for a UEFI
-/// application.
-#[panic_handler]
-fn panic(panic: &core::panic::PanicInfo,) -> !
-{
-	println!("{panic:#?}");
-	wfe()
-}
-
 /// Macro for handling errors that cannot be processed with the `?` operator
 ///
 /// This macro logs error information when an unrecoverable error occurs.
@@ -94,7 +83,7 @@ fn panic(panic: &core::panic::PanicInfo,) -> !
 /// ```rust,ignore
 /// let result = some_operation();
 /// if let Err(e,) = result {
-/// 	on_error!(e, "during kernel loading");
+///    on_error!(e, "during kernel loading");
 /// }
 /// ```
 #[macro_export]
@@ -252,12 +241,13 @@ pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,)
 	let kernel_entry = kernel_entry as *const ();
 
 	// Define kernel entry point signature based on architecture
-	#[cfg(target_arch = "riscv64")]
-	type KernelEntry = extern "C" fn(DeviceTreeAddress,);
-	#[cfg(target_arch = "aarch64")]
-	type KernelEntry = extern "C" fn(DeviceTreeAddress,);
-	#[cfg(target_arch = "x86_64")]
-	type KernelEntry = extern "sysv64" fn(DeviceTreeAddress,);
+	cfg_if! {
+		if #[cfg(target_arch = "aarch64")] {
+			type KernelEntry = extern "C" fn(DeviceTreeAddress,);
+		} else if #[cfg(target_arch = "x86_64")] {
+			type KernelEntry = extern "sysv64" fn(DeviceTreeAddress,);
+		}
+	}
 
 	let entry_point = unsafe {
 		core::mem::transmute::<*const (), KernelEntry,>(kernel_entry,)

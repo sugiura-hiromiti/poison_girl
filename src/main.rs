@@ -30,8 +30,6 @@ use {
 	colored::Colorize,
 	poison_girl::Xtask,
 	poison_girl_dev_error::{PoisonGirlB, X, Y},
-	poison_girl_dev_fs::cli::Run,
-	std::process::Command,
 };
 
 /// Entry point for the xtask utility.
@@ -57,17 +55,5 @@ fn main() -> PoisonGirlB<(),>
 		},
 	}
 
-	print_workspace()?;
 	X((),)
-}
-
-fn print_workspace() -> PoisonGirlB<(),>
-{
-	Command::new("eza",)
-		.args(
-			"-ahlF --icons --group-directories-first --sort=extension \
-			 --time-style=iso --git --no-user --no-time -T target/xtask"
-				.split_whitespace(),
-		)
-		.run()
 }

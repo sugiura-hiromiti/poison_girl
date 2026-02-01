@@ -32,11 +32,10 @@
 //! maintaining type safety and ease of use.
 
 use {
-	super::raw::types::Status,
 	crate::raw::{
 		service::{BootServices, RuntimeServices},
 		types::{
-			UnsafeHandle,
+			Status, UnsafeHandle,
 			memory::{MemoryMapBackingMemory, MemoryType, PAGE_SIZE},
 			misc::ResetType,
 		},
@@ -46,6 +45,7 @@ use {
 		ptr::NonNull,
 		sync::atomic::{AtomicPtr, Ordering},
 	},
+	poison_girl_no_std_error::Container,
 };
 
 /// Console input/output operations

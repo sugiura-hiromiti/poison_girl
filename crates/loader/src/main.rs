@@ -14,14 +14,27 @@ use {
 		chibi_uefi::service::exit_boot_services,
 		exec_kernel, get_device_tree, init,
 		load::kernel,
+		println,
 		raw::{
 			table::SystemTable,
 			types::{Status, UnsafeHandle},
 		},
 	},
-	poison_girl_no_std::bridge::device_tree::DeviceTreeAddress,
+	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe},
 	poison_girl_no_std_error::{PoisonGirlB, X},
 };
+
+/// Custom panic handler for the UEFI environment
+///
+/// This panic handler prints debug information and enters a wait-for-event loop
+/// instead of terminating the program, which is appropriate for a UEFI
+/// application.
+#[panic_handler]
+fn panic(panic: &core::panic::PanicInfo,) -> !
+{
+	println!("{panic:#?}");
+	wfe()
+}
 
 /// UEFI application entry point
 ///

@@ -10,6 +10,7 @@ itertools = { workspace = true }
 markup5ever_rcdom = { workspace = true }
 poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
+poison_girl_dev_util = { workspace = true }
 poison_girl_proc_macro_helper = { path = "../helper/" }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }

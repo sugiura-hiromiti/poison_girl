@@ -7,8 +7,6 @@
 #![feature(generic_const_exprs)]
 #![feature(const_trait_impl)]
 
-use poison_girl_no_std::wfe;
-
 /// Application execution and management subsystem
 ///
 /// This module provides functionality for running user applications and
@@ -26,37 +24,6 @@ pub mod base;
 /// This module provides device drivers for various hardware components and
 /// abstractions for hardware-specific operations.
 pub mod driver;
-
-/// Custom panic handler for the kernel environment
-///
-/// This panic handler is called when the kernel encounters an unrecoverable
-/// error. It prints diagnostic information and enters a low-power
-/// wait-for-event state to preserve system stability.
-///
-/// # Arguments
-///
-/// * `info` - Panic information including location and message
-///
-/// # Behavior
-///
-/// 1. Prints the panic information to the console
-/// 2. Enters an infinite wait-for-event loop to conserve power
-/// 3. Never returns, maintaining system in a stable state
-///
-/// # Examples
-///
-/// The panic handler is automatically invoked by the Rust runtime:
-///
-/// ```rust,ignore
-/// // This will trigger the panic handler
-/// panic!("Critical kernel error occurred");
-/// ```
-#[panic_handler]
-fn panic(info: &core::panic::PanicInfo,) -> !
-{
-	println!("{}", info);
-	wfe()
-}
 
 /// Initializes the kernel and all its subsystems
 ///

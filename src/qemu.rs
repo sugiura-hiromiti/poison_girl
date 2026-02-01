@@ -9,8 +9,8 @@
 
 use {
 	crate::Xtask,
+	poison_girl_dev_cargo::Arch,
 	poison_girl_dev_error::{PoisonGirlB, X},
-	poison_girl_dev_orchestrate::cargo::Arch,
 	std::path::{Path, PathBuf},
 };
 
@@ -23,7 +23,7 @@ impl Xtask
 	/// The name of the QEMU executable (e.g., "qemu-system-aarch64")
 	pub fn qemu(&self,) -> String
 	{
-		format!("qemu-system-{}", self.arch().to_string())
+		format!("qemu-system-{}", self.arch())
 	}
 
 	/// Generates QEMU command-line arguments based on the target architecture
@@ -38,11 +38,11 @@ impl Xtask
 
 		// configure persistent flash memory
 		let pflash_code = persistent_flash_memory_args(
-			&self.firmware_code(),
+			self.firmware_code(),
 			PflashMode::ReadOnly,
 		);
 		let pflash_var = persistent_flash_memory_args(
-			&self.firmware_vars(),
+			self.firmware_vars(),
 			PflashMode::ReadWrite,
 		);
 		args.extend(pflash_code,);
@@ -54,7 +54,7 @@ impl Xtask
 		// args.push("-drive".to_string(),);
 		// args.push("format=raw,file=fat:rw:",);
 
-		let block_device = block_device(&self.disk_img_path(),);
+		let block_device = block_device(self.disk_img_path(),);
 		args.extend(block_device,);
 
 		// setting the boot menu timeout to zero particularly speeds up the boot
@@ -139,7 +139,7 @@ fn basic_args(arch: Arch,) -> Vec<String,>
 ///
 /// A vector of QEMU command-line arguments for persistent flash memory
 fn persistent_flash_memory_args(
-	pflash_file: &PathBuf,
+	pflash_file: &Path,
 	mode: PflashMode,
 ) -> Vec<String,>
 {

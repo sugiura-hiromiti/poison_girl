@@ -6,7 +6,6 @@ use {
 	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
-// TODO: modularize project structure to remove pub keyword
 const MOUSE_CURSOR_WIDTH: usize = 15;
 const MOUSE_CURSOR_HEIGHT: usize = 24;
 //const MOUSE_CURSOR: [[char; MOUSE_CURSOR_WIDTH]; MOUSE_CURSOR_HEIGHT] = [
@@ -75,15 +74,15 @@ impl MouseCursorDraw for CursorBuf
 	{
 		let mut coord = self.pos.clone();
 		(0..self.height).for_each(|y| {
-			for x in 0..self.width {
-				match MOUSE_CURSOR[y][x] {
+			MOUSE_CURSOR[y].iter().take(self.width,).for_each(|c| {
+				match c {
 					'@' => todo!(), //put_pixel(&coord,
 					// &self.outline_color,)?,
 					'.' => todo!(), //put_pixel(&coord, &self.body_color,)?,
 					_ => (),
 				}
 				*coord.x_mut() += 1;
-			}
+			},);
 			*coord.x_mut() = self.pos.x();
 			*coord.y_mut() += 1;
 		},);

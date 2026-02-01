@@ -452,13 +452,12 @@ mod tests
 		let input = quote! { u8, i16, u32 };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
 
-		let implementations: Vec<_,> =
-			types.iter().map(|ty| implement(ty,),).collect();
+		let implementations: Vec<_,> = types.iter().map(implement,).collect();
 
 		assert_eq!(implementations.len(), 3);
 
 		// Check that each implementation is valid
-		for (_i, impl_tokens,) in implementations.iter().enumerate() {
+		for impl_tokens in implementations.iter() {
 			let code_str = impl_tokens.to_string();
 			assert!(code_str.contains("impl Integer for"));
 			assert!(code_str.contains("fn digit_count"));

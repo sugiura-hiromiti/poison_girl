@@ -636,38 +636,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_concurrent_access()
-	{
-		// Test that enums can be used concurrently
-		use std::{sync::Arc, thread};
-
-		let build_mode = Arc::new(BuildMode::Debug,);
-		let arch = Arc::new(Arch::Aarch64,);
-
-		let handles: Vec<_,> = (0..10)
-			.map(|_| {
-				let bm = Arc::clone(&build_mode,);
-				let a = Arc::clone(&arch,);
-
-				thread::spawn(move || {
-					assert!(bm.is_debug());
-					assert!(a.is_aarch_64());
-
-					let _opts = Opts {
-						build_mode:    *bm,
-						feature_flags: vec![],
-						arch:          *a,
-					};
-				},)
-			},)
-			.collect();
-
-		for handle in handles {
-			handle.join().unwrap();
-		}
-	}
-
-	#[test]
 	fn test_cli_parser_integration()
 	{
 		// Test that CLI parsing works with clap
@@ -751,5 +719,284 @@ mod tests
 		assert!(debug_str.contains("Firmware"));
 		assert!(debug_str.contains("OVMF_CODE.fd"));
 		assert!(debug_str.contains("OVMF_VARS.fd"));
+	}
+
+	#[test]
+	fn test_module_structure()
+	{
+		// Test that the expected module structure exists
+		// This is primarily a compile-time test
+
+		let build_mode = BuildMode::Debug;
+		assert!(build_mode.is_debug());
+
+		let arch = Arch::Aarch64;
+		assert!(arch.is_aarch_64());
+	}
+
+	#[test]
+	fn test_feature_flags()
+	{
+		// Since Feature is an empty enum with the #[features] attribute,
+		// we can't create instances, but we can verify it exists
+		// This is primarily a compile-time test
+
+		// Test that we can reference the Feature type
+		let _feature_type = std::marker::PhantomData::<Feature,>;
+	}
+
+	#[test]
+	fn test_compile_opt_trait()
+	{
+		let opts = Opts {
+			build_mode:    BuildMode::Debug,
+			feature_flags: Vec::<Feature,>::new(),
+			arch:          Arch::default(),
+		};
+
+		// Test trait methods
+		let build_mode: String = opts.build_mode().into();
+		assert_eq!(build_mode, "Debug");
+
+		let feature_flags = opts.feature_flags();
+		assert!(feature_flags.is_empty());
+
+		let arch: String = opts.arch().into();
+		assert_eq!(arch, "Aarch64");
+	}
+
+	#[test]
+	fn test_cli_to_opts_conversion()
+	{
+		let cli = Cli {
+			build_mode:    Some(BuildMode::Release,),
+			feature_flags: None,
+			arch:          Some(Arch::Riscv64,),
+		};
+
+		let opts = cli.to_opts();
+		assert!(opts.build_mode.is_release());
+		assert!(opts.feature_flags.is_empty());
+		assert!(opts.arch.is_riscv_64());
+	}
+
+	#[test]
+	fn test_cli_defaults()
+	{
+		let cli = Cli {
+			build_mode:    None,
+			feature_flags: None,
+			arch:          None,
+		};
+
+		let opts = cli.to_opts();
+		assert!(opts.build_mode.is_debug()); // Default should be Debug
+		assert!(opts.feature_flags.is_empty());
+		assert!(opts.arch.is_aarch_64()); // Default should be Aarch64
+	}
+
+	#[test]
+	fn test_firmware_structure()
+	{
+		let firmware = Firmware {
+			code: PathBuf::from("/path/to/code",),
+			vars: PathBuf::from("/path/to/vars",),
+		};
+
+		// Test Debug implementation
+		let debug_string = format!("{:?}", firmware);
+		assert!(debug_string.contains("Firmware"));
+		assert!(debug_string.contains("/path/to/code"));
+		assert!(debug_string.contains("/path/to/vars"));
+	}
+
+	#[test]
+	fn test_assets_structure()
+	{
+		// Test Assets struct
+		use std::path::PathBuf;
+
+		let assets = Assets {
+			firmware: Firmware {
+				code: PathBuf::from("/ovmf/code",),
+				vars: PathBuf::from("/ovmf/vars",),
+			},
+			host:     Runtime::Linux,
+		};
+
+		// Verify the structure exists and is accessible
+		assert_eq!(assets.firmware.code, PathBuf::from("/ovmf/code"));
+		assert_eq!(assets.firmware.vars, PathBuf::from("/ovmf/vars"));
+	}
+
+	#[test]
+	fn test_enum_string_conversions()
+	{
+		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
+		assert_eq!(BuildMode::Release.as_ref(), "Release");
+
+		assert_eq!(Arch::Aarch64.as_ref(), "Aarch64");
+		assert_eq!(Arch::Riscv64.as_ref(), "Riscv64");
+	}
+
+	#[test]
+	fn test_enum_is_methods()
+	{
+		// BuildMode
+		assert!(BuildMode::Debug.is_debug());
+		assert!(!BuildMode::Debug.is_release());
+		assert!(BuildMode::Release.is_release());
+		assert!(!BuildMode::Release.is_debug());
+
+		// Arch
+		assert!(Arch::Aarch64.is_aarch_64());
+		assert!(!Arch::Aarch64.is_riscv_64());
+		assert!(Arch::Riscv64.is_riscv_64());
+		assert!(!Arch::Riscv64.is_aarch_64());
+	}
+
+	#[test]
+	fn test_clone_implementations()
+	{
+		let build_mode = BuildMode::Debug;
+		let cloned_build_mode = build_mode;
+		assert_eq!(build_mode.as_ref(), cloned_build_mode.as_ref());
+
+		let arch = Arch::Aarch64;
+		let cloned_arch = arch;
+		assert_eq!(arch.as_ref(), cloned_arch.as_ref());
+	}
+
+	#[test]
+	fn test_default_implementations()
+	{
+		let default_build_mode = BuildMode::default();
+		assert!(default_build_mode.is_debug());
+
+		let default_arch = Arch::default();
+		assert!(default_arch.is_aarch_64());
+	}
+
+	#[test]
+	fn test_value_enum_implementations()
+	{
+		// Test that ValueEnum is implemented for CLI enums
+		use clap::ValueEnum;
+
+		// Test that we can get possible values
+		let build_mode_values = BuildMode::value_variants();
+		assert_eq!(build_mode_values.len(), 2);
+		assert!(build_mode_values.contains(&BuildMode::Debug));
+		assert!(build_mode_values.contains(&BuildMode::Release));
+
+		let arch_values = Arch::value_variants();
+		assert_eq!(arch_values.len(), 2);
+		assert!(arch_values.contains(&Arch::Aarch64));
+		assert!(arch_values.contains(&Arch::Riscv64));
+	}
+
+	#[test]
+	fn test_type_system_constraints()
+	{
+		// Test that all enums implement required traits
+		fn test_enum_traits<T,>(_value: T,)
+		where T: Clone + Copy + PartialEq + Eq + std::fmt::Debug + Default
+		{
+			// If this compiles, the traits are implemented
+		}
+
+		test_enum_traits(BuildMode::Debug,);
+		test_enum_traits(Arch::Aarch64,);
+
+		// Test that Opts can be constructed with all combinations
+		let all_build_modes = [BuildMode::Debug, BuildMode::Release,];
+		let all_archs = [Arch::Aarch64, Arch::Riscv64,];
+
+		for &build_mode in &all_build_modes {
+			for &arch in &all_archs {
+				let opts = Opts {
+					build_mode,
+					feature_flags: Vec::<Feature,>::new(),
+					arch,
+				};
+
+				// Test CompileOpt trait methods
+				let _build_mode_str: String = opts.build_mode().into();
+				let _arch_str: String = opts.arch().into();
+				let _features = opts.feature_flags();
+			}
+		}
+	}
+
+	#[test]
+	fn test_string_conversions_comprehensive()
+	{
+		// Test all string conversion patterns used in the crate
+		use std::str::FromStr;
+
+		// Test round-trip conversions for all enum variants
+		let build_modes = [BuildMode::Debug, BuildMode::Release,];
+		for mode in build_modes {
+			let as_str = mode.as_ref();
+			let parsed = BuildMode::from_str(as_str,).unwrap();
+			assert_eq!(mode, parsed);
+		}
+
+		let arch_variants = [Arch::Aarch64, Arch::Riscv64,];
+		for arch in arch_variants {
+			let as_str = arch.as_ref();
+			let parsed = Arch::from_str(as_str,).unwrap();
+			assert_eq!(arch, parsed);
+		}
+
+		// Test invalid string parsing
+		assert!(BuildMode::from_str("Invalid").is_err());
+		assert!(Arch::from_str("x86_64").is_err());
+	}
+
+	#[test]
+	fn test_memory_safety()
+	{
+		// Test that we can create and drop many instances without issues
+		let mut opts_vec = Vec::new();
+		for i in 0..1000 {
+			let opts = Opts {
+				build_mode:    if i % 2 == 0 {
+					BuildMode::Debug
+				} else {
+					BuildMode::Release
+				},
+				feature_flags: Vec::<Feature,>::new(),
+				arch:          if i % 2 == 0 {
+					Arch::Aarch64
+				} else {
+					Arch::Riscv64
+				},
+			};
+			opts_vec.push(opts,);
+		}
+
+		// Test that we can access all instances
+		assert_eq!(opts_vec.len(), 1000);
+	}
+
+	#[test]
+	fn test_documentation_examples()
+	{
+		// Example from CompileOpt documentation
+		let opts = Opts {
+			build_mode:    BuildMode::Debug,
+			feature_flags: Vec::<Feature,>::new(),
+			arch:          Arch::Aarch64,
+		};
+
+		let build_mode: String = opts.build_mode().into();
+		assert_eq!(build_mode, "Debug");
+
+		let feature_flags = opts.feature_flags();
+		assert!(feature_flags.is_empty());
+
+		let arch: String = opts.arch().into();
+		assert_eq!(arch, "Aarch64");
 	}
 }

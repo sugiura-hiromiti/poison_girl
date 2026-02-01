@@ -156,7 +156,7 @@ impl<V,> Rslt<V,>
 
 impl<V,> Rslt<Vec<V,>,>
 {
-	pub fn add(self, one: Rslt<V,>,) -> Self
+	pub fn push_elem(self, one: Rslt<V,>,) -> Self
 	{
 		let Rslt { val, notation, err, } = one;
 		let Rslt { val: val2, notation, err, } =
@@ -313,7 +313,7 @@ mod tests
 		// Test itertools features used in the crate
 		use itertools::Itertools;
 
-		let items = vec!["a", "b", "c"];
+		let items = ["a", "b", "c",];
 		let joined = items.iter().join(", ",);
 		assert_eq!(joined, "a, b, c");
 
@@ -381,9 +381,6 @@ mod tests
 		let results: Vec<Result<i32, &str,>,> = vec![Ok(1,), Ok(2,), Ok(3,)];
 		let _collected: Result<Vec<i32,>, &str,> =
 			results.into_iter().try_collect();
-
-		// If this compiles, the features are working
-		assert!(true);
 	}
 
 	#[test]
@@ -491,7 +488,7 @@ mod tests
 		assert!(parsed.sig.asyncness.is_some());
 		assert!(parsed.sig.unsafety.is_some());
 		assert_eq!(parsed.sig.inputs.len(), 3);
-		assert!(parsed.sig.generics.params.len() > 0);
+		assert!(!parsed.sig.generics.params.is_empty());
 
 		// Test parsing complex types
 		let complex_type = "Result<Box<dyn Iterator<Item = T>>, Box<dyn \
@@ -500,7 +497,7 @@ mod tests
 			.expect("Failed to parse complex type",);
 
 		match parsed_type {
-			syn::Type::Path(_,) => assert!(true),
+			syn::Type::Path(_,) => (),
 			_ => panic!("Expected path type"),
 		}
 	}

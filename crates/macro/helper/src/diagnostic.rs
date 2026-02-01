@@ -349,7 +349,7 @@ mod tests
 		let help = Diag::help("msg",);
 
 		// Test that variants are distinguishable even with same message
-		let variants = vec![
+		let variants = [
 			std::mem::discriminant(&err,),
 			std::mem::discriminant(&warn,),
 			std::mem::discriminant(&note,),
@@ -407,18 +407,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_macro_definitions_exist()
-	{
-		// This test verifies that the macros are defined and accessible
-		// We can't easily test macro expansion in unit tests, but we can
-		// verify they exist by checking they compile
-
-		// The macros fnl!, atr!, drv!, and def! should be available
-		// If this test compiles, the macros are properly defined
-		assert!(true);
-	}
-
-	#[test]
 	fn test_string_operations_used_in_diag()
 	{
 		// Test various string operations that might be used with Diag
@@ -445,19 +433,6 @@ mod tests
 			FlatDiag::Warn(msg,) => assert_eq!(msg, "Start base message end"),
 			_ => panic!("Should be Warn variant"),
 		}
-	}
-
-	#[test]
-	fn test_macro_syntax_validation()
-	{
-		// Test that macro syntax is valid by checking compilation
-		// This is more of a compilation test - if it compiles, the macros are
-		// syntactically correct
-
-		// We can't easily test macro expansion in unit tests without actually
-		// using them, but we can verify the macro definitions don't cause
-		// compilation errors
-		assert!(true);
 	}
 
 	#[test]
@@ -537,7 +512,7 @@ mod tests
 	fn test_diag_variant_ordering()
 	{
 		// Test that we can create all variants in any order
-		let variants = vec![
+		let variants = [
 			Diag::help("Help first",),
 			Diag::err("Error second",),
 			Diag::note("Note third",),
@@ -597,8 +572,5 @@ mod tests
 		let _test_ident = "test_identifier";
 		let _test_camel_case = "TestCamelCase";
 		let _screaming_snake_case = "SCREAMING_SNAKE_CASE";
-
-		// If this compiles, the macro token handling is working
-		assert!(true);
 	}
 }

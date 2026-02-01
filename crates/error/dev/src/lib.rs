@@ -124,8 +124,9 @@ impl From<InvalidManifest,> for PoisonGirlError
 	}
 }
 
+#[allow(dead_code)]
 #[derive(Debug,)]
-pub enum DevError
+enum DevError
 {
 	Io(std::io::Error,),
 	ExitStatus(std::process::ExitStatusError,),

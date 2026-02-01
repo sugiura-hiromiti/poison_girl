@@ -5,9 +5,9 @@
 
 use {
 	core::arch::asm,
-	poison_girl_kernel::init,
+	poison_girl_kernel::{init, println},
 	poison_girl_macro::cfg_if,
-	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfi},
+	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe, wfi},
 	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
@@ -51,6 +51,37 @@ cfg_if! {
 			}
 		}
 	}
+}
+
+/// Custom panic handler for the kernel environment
+///
+/// This panic handler is called when the kernel encounters an unrecoverable
+/// error. It prints diagnostic information and enters a low-power
+/// wait-for-event state to preserve system stability.
+///
+/// # Arguments
+///
+/// * `info` - Panic information including location and message
+///
+/// # Behavior
+///
+/// 1. Prints the panic information to the console
+/// 2. Enters an infinite wait-for-event loop to conserve power
+/// 3. Never returns, maintaining system in a stable state
+///
+/// # Examples
+///
+/// The panic handler is automatically invoked by the Rust runtime:
+///
+/// ```rust,ignore
+/// // This will trigger the panic handler
+/// panic!("Critical kernel error occurred");
+/// ```
+#[panic_handler]
+fn panic(info: &core::panic::PanicInfo,) -> !
+{
+	println!("{}", info);
+	wfe()
 }
 
 fn app() -> PoisonGirlB<(),>

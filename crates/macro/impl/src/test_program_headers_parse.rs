@@ -1,5 +1,4 @@
 use {
-	poison_girl_dev_fs::fs::check_poison_girl_kernel,
 	poison_girl_proc_macro_helper::rslt::Rslt,
 	proc_macro2::{Span, TokenStream},
 	std::process::Command,
@@ -121,8 +120,6 @@ fn parse_program_header_type(
 
 pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,>
 {
-	check_poison_girl_kernel()?;
-
 	readelf_l_out()
 		.replace_by(|program_headers_info| {
 			program_headers_count(&program_headers_info[0],)
@@ -155,7 +152,7 @@ pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,>
 						align,
 					},)
 				},)
-				.fold(Rslt::new(vec![],), |acc, field| acc.add(field,),)
+				.fold(Rslt::new(vec![],), |acc, field| acc.push_elem(field,),)
 		},)
 }
 
@@ -577,7 +574,7 @@ mod tests
 	#[test]
 	fn test_program_headers_fields_iterator()
 	{
-		let test_lines = vec![
+		let test_lines = [
 			"Program Headers:".to_string(),
 			"  Type           Offset             VirtAddr           PhysAddr"
 				.to_string(),

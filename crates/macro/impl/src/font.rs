@@ -636,15 +636,9 @@ mod tests
 		let _ = fs::remove_file(test_file_path,);
 
 		// Should either return an error or panic due to insufficient characters
-		match result {
-			Ok(inner_result,) => {
-				// If it doesn't panic, it should return an error
-				assert!(inner_result.has_err());
-			},
-			Err(_,) => {
-				// Panicking is also acceptable for this test case
-				assert!(true);
-			},
+		if let Ok(inner_result,) = result {
+			// If it doesn't panic, it should return an error
+			assert!(inner_result.has_err());
 		}
 
 		Rslt::new((),)

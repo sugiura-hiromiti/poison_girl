@@ -12,11 +12,9 @@
 
 use {
 	crate::Xtask,
+	poison_girl_dev_cargo::{Assets, Opts},
 	poison_girl_dev_error::{PoisonGirlB, X},
-	poison_girl_dev_orchestrate::{
-		cargo::{Assets, Opts},
-		fs::project_root,
-	},
+	poison_girl_dev_orchestrate::decl_manage::project_root,
 	std::path::PathBuf,
 };
 

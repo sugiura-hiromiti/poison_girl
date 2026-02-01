@@ -1,3 +1,4 @@
+#![feature(exit_status_error)]
 use {
 	colored::Colorize,
 	poison_girl_dev_error::{PoisonGirlB, X},
@@ -79,7 +80,7 @@ mod tests
 	fn test_run_trait_with_args()
 	{
 		let mut cmd = Command::new("echo",);
-		cmd.args(&["hello", "world",],);
+		cmd.args(["hello", "world",],);
 
 		let result = cmd.run();
 		assert!(result.is_x(), "Echo with args should succeed");
@@ -173,7 +174,7 @@ mod tests
 	{
 		// Test commands that write to stderr
 		let mut cmd = Command::new("sh",);
-		cmd.args(&["-c", "echo 'error message' >&2",],);
+		cmd.args(["-c", "echo 'error message' >&2",],);
 
 		let result = cmd.run();
 		assert!(
@@ -187,7 +188,7 @@ mod tests
 	{
 		// Test that non-zero exit codes are treated as errors
 		let mut cmd = Command::new("sh",);
-		cmd.args(&["-c", "exit 1",],);
+		cmd.args(["-c", "exit 1",],);
 
 		let result = cmd.run();
 		assert!(result.is_y(), "Non-zero exit code should be treated as error");
@@ -198,7 +199,7 @@ mod tests
 	{
 		// Test that zero exit code is treated as success
 		let mut cmd = Command::new("sh",);
-		cmd.args(&["-c", "exit 0",],);
+		cmd.args(["-c", "exit 0",],);
 
 		let result = cmd.run();
 		assert!(result.is_x(), "Zero exit code should be treated as success");
@@ -238,7 +239,7 @@ mod tests
 	{
 		// Test with complex argument patterns
 		let mut cmd = Command::new("echo",);
-		cmd.args(&["--flag", "value", "-x", "test with spaces",],);
+		cmd.args(["--flag", "value", "-x", "test with spaces",],);
 
 		let result = cmd.run();
 		assert!(result.is_x(), "Echo with complex args should succeed");
@@ -259,7 +260,7 @@ mod tests
 	{
 		// Test with special characters in arguments
 		let mut cmd = Command::new("echo",);
-		cmd.args(&["hello", "world!", "@#$%", "test",],);
+		cmd.args(["hello", "world!", "@#$%", "test",],);
 
 		let result = cmd.run();
 		assert!(result.is_x(), "Echo with special characters should succeed");
@@ -270,7 +271,7 @@ mod tests
 	{
 		// Test with unicode characters in arguments
 		let mut cmd = Command::new("echo",);
-		cmd.args(&["hello", "世界", "🦀", "test",],);
+		cmd.args(["hello", "世界", "🦀", "test",],);
 
 		let result = cmd.run();
 		assert!(result.is_x(), "Echo with unicode should succeed");
@@ -338,7 +339,7 @@ mod tests
 		// This is harder to test directly since the output goes to stdout
 		// But we can at least verify the command runs without panicking
 		let mut cmd = Command::new("echo",);
-		cmd.args(&["test", "display", "formatting",],);
+		cmd.args(["test", "display", "formatting",],);
 
 		let result = cmd.run();
 		assert!(result.is_x(), "Command display formatting should work");
@@ -370,7 +371,7 @@ mod tests
 	{
 		// Test that errors are properly propagated
 		let mut cmd = Command::new("sh",);
-		cmd.args(&["-c", "exit 42",],); // Exit with specific code
+		cmd.args(["-c", "exit 42",],); // Exit with specific code
 
 		let result = cmd.run();
 		assert!(result.is_y(), "Non-zero exit should be error");
@@ -381,7 +382,7 @@ mod tests
 	{
 		// Test commands that might read from stdin
 		let mut cmd = Command::new("cat",);
-		cmd.args(&["/dev/null",],); // Read from /dev/null instead of stdin
+		cmd.args(["/dev/null",],); // Read from /dev/null instead of stdin
 
 		let result = cmd.run();
 		// This might fail on some systems, so just check it doesn't panic
@@ -403,7 +404,7 @@ mod tests
 				continue;
 			}
 
-			let mut cmd = Command::new(&args[0],);
+			let mut cmd = Command::new(args[0],);
 			if args.len() > 1 {
 				cmd.args(&args[1..],);
 			}
@@ -480,7 +481,7 @@ mod tests
 		];
 
 		for args in commands {
-			let mut cmd = Command::new(&args[0],);
+			let mut cmd = Command::new(args[0],);
 			if args.len() > 1 {
 				cmd.args(&args[1..],);
 			}
@@ -495,7 +496,7 @@ mod tests
 	{
 		// Test with numeric arguments
 		let mut cmd = Command::new("echo",);
-		cmd.args(&["123", "456.789", "-42", "0",],);
+		cmd.args(["123", "456.789", "-42", "0",],);
 
 		let result = cmd.run();
 		assert!(result.is_x(), "Echo with numeric args should succeed");
@@ -506,7 +507,7 @@ mod tests
 	{
 		// Test with boolean-like arguments
 		let mut cmd = Command::new("echo",);
-		cmd.args(&["true", "false", "yes", "no", "on", "off",],);
+		cmd.args(["true", "false", "yes", "no", "on", "off",],);
 
 		let result = cmd.run();
 		assert!(result.is_x(), "Echo with boolean-like args should succeed");

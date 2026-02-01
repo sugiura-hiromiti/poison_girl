@@ -825,7 +825,7 @@ mod tests
 
 		// HTML5 parser should handle malformed HTML gracefully
 		let divs = get_elements_by_name(node, "div",);
-		assert!(divs.len() > 0);
+		assert!(!divs.is_empty());
 	}
 
 	#[test]

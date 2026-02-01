@@ -2,10 +2,8 @@
 #![feature(exit_status_error)]
 
 use {
-	poison_girl_dev_orchestrate::{
-		cargo::{Arch, Assets, Opts},
-		decl_manage::crate_::OsoCrate,
-	},
+	poison_girl_dev_cargo::{Arch, Assets, Opts},
+	poison_girl_dev_orchestrate::decl_manage::crate_::PoisonGirlCrate,
 	std::path::PathBuf,
 };
 
@@ -15,7 +13,7 @@ pub mod qemu;
 pub struct Xtask
 {
 	opts:   Opts,
-	ws:     OsoCrate,
+	ws:     PoisonGirlCrate,
 	assets: Assets,
 }
 

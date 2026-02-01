@@ -1,9 +1,7 @@
 use {
 	poison_girl_dev_error::ReShape,
-	poison_girl_dev_fs::{
-		fs::{all_crates, read_toml},
-		util::CaseConvert,
-	},
+	poison_girl_dev_fs::{all_crates, read_toml},
+	poison_girl_dev_util::CaseConvert,
 	poison_girl_proc_macro_helper::rslt::Rslt,
 	proc_macro2::TokenStream,
 	quote::{ToTokens, format_ident},
@@ -18,7 +16,7 @@ pub fn features(
 	all_crates()?
 		.iter()
 		.filter_map(|e| {
-			let e = e.join(poison_girl_dev_fs::fs::CARGO_MANIFEST,);
+			let e = e.join(poison_girl_dev_fs::CARGO_MANIFEST,);
 			read_toml(e,).reshape((),)
 		},)
 		.for_each(|toml| {

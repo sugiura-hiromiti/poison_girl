@@ -89,7 +89,7 @@ fn test_impl_init_integration()
 		syn::parse2(input,).expect("Failed to parse types",);
 
 	let implementations: Vec<_,> =
-		types.iter().map(|ty| impl_int::implement(ty,),).collect();
+		types.iter().map(impl_int::implement,).collect();
 
 	assert_eq!(implementations.len(), 8);
 

@@ -1,6 +1,9 @@
 #![no_std]
 
-use core::{fmt::Debug, panic::Location};
+use core::{
+	fmt::{Debug, Display},
+	panic::Location,
+};
 pub use this_is_b::{
 	B::{X, Y},
 	Container,
@@ -13,6 +16,18 @@ pub struct PoisonGirlError
 {
 	_loc: &'static Location<'static,>,
 	_src: PoisonGirlErrorKind,
+}
+
+impl core::error::Error for PoisonGirlError
+{
+}
+
+impl Display for PoisonGirlError
+{
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result
+	{
+		f.write_fmt(format_args!("{self:?}"),)
+	}
 }
 
 impl From<ElfParseError,> for PoisonGirlError

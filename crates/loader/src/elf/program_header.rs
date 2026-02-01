@@ -1,7 +1,9 @@
 use {
 	crate::elf::read_le_bytes,
 	alloc::{format, vec::Vec},
-	poison_girl_no_std_error::{ElfParseError, PoisonGirlB, X},
+	poison_girl_no_std_error::{
+		ElfParseError, PoisonGirlB, PoisonGirlError, X, poison_girl_err,
+	},
 };
 
 #[derive(PartialEq, Eq,)]
@@ -129,7 +131,7 @@ pub enum ProgramHeaderType
 
 impl TryFrom<u32,> for ProgramHeaderType
 {
-	type Error = ElfParseError;
+	type Error = PoisonGirlError;
 
 	fn try_from(value: u32,) -> Result<Self, Self::Error,>
 	{
@@ -155,7 +157,9 @@ impl TryFrom<u32,> for ProgramHeaderType
 			0x6fff_fffb => Self::Sunwstack,
 			7 => Self::Tls,
 			_ => {
-				return Err(ElfParseError::InvalidProgramHeaderType(value,),);
+				return Err(poison_girl_err!(
+					ElfParseError::InvalidProgramHeaderType(value,)
+				),);
 			},
 		};
 		Ok(ty,)

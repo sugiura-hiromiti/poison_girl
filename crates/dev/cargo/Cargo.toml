@@ -1,22 +1,16 @@
 [package]
-name = "poison_girl_dev_orchestrate"
+name = "poison_girl_dev_cargo"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-aquamarine = { workspace = true }
 clap = { workspace = true }
-clap_derive = { workspace = true }
-colored = { workspace = true }
 ovmf-prebuilt = { workspace = true }
-poison_girl_dev_cargo = { workspace = true }
-poison_girl_dev_cli = { workspace = true }
 poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
 poison_girl_macro = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
-toml = { workspace = true }
 
-[dev-dependencies]
-quickcheck = { workspace = true }
+[lints]
+workspace = true

@@ -1,5 +1,7 @@
 use {
-	super::table::system_table, crate::raw::protocol::text::TextOutputProtocol,
+	super::table::system_table,
+	crate::raw::protocol::text::TextOutputProtocol,
+	poison_girl_no_std_error::{X, Y},
 };
 
 #[macro_export]
@@ -30,7 +32,10 @@ impl core::fmt::Write for TextOutputProtocol
 {
 	fn write_str(&mut self, s: &str,) -> core::fmt::Result
 	{
-		self.output(s,)?;
+		match self.output(s,) {
+			X(_s,) => (),
+			Y(e,) => panic!("{e:?}"),
+		}
 		Ok((),)
 	}
 }

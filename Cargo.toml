@@ -11,9 +11,12 @@ html5ever = "0.36"
 itertools = "*"
 markup5ever_rcdom = "*"
 ovmf-prebuilt = "*"
+poison_girl_dev_cargo = { path = "./crates/dev/cargo/" }
+poison_girl_dev_cli = { path = "./crates/dev/cli/" }
 poison_girl_dev_error = { path = "./crates/error/dev/" }
 poison_girl_dev_fs = { path = "./crates/dev/fs/" }
 poison_girl_dev_orchestrate = { path = "./crates/dev/orchestrate/" }
+poison_girl_dev_util = { path = "./crates/dev/util/" }
 poison_girl_kernel = { path = "./crates/kernel/" }
 poison_girl_macro = { path = "./crates/macro/macro/" }
 poison_girl_no_std = { path = "./crates/no_std/" }
@@ -26,7 +29,7 @@ strum = "*"
 strum_macros = "*"
 syn = { version = "*", features = ["full", "extra-traits"] }
 tempfile = "*"
-this_is_b = "*"
+this_is_b = { version = "*", default-features = false }
 toml = { version = "*", features = ["parse"] }
 ureq = { version = "*", features = ["cookies"] }
 
@@ -44,6 +47,7 @@ edition = "2024"
 
 [dependencies]
 colored = { workspace = true }
+poison_girl_dev_cargo = { workspace = true }
 poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
 poison_girl_dev_orchestrate = { workspace = true }
