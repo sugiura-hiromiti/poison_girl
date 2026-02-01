@@ -1,29 +1,27 @@
-use super::protocol::OpenProtocolInformationEntry;
-use super::types::Boolean;
-use super::types::Char16;
-use super::types::Event;
-use super::types::Guid;
-use super::types::Header;
-use super::types::PhysicalAddress;
-use super::types::Status;
-use super::types::Tpl;
-use super::types::UnsafeHandle;
-use super::types::capsule::CapsuleHeader;
-use super::types::event::EventType;
-use super::types::memory::AllocateType;
-use super::types::memory::MemoryDescriptor;
-use super::types::memory::MemoryType;
-use super::types::misc::ResetType;
-use super::types::time::Time;
-use super::types::time::TimeCapabilities;
-use super::types::time::TimerDelay;
-use super::types::variable::VariableAttributes;
-use crate::raw::protocol::device_path::DevicePathProtocol;
-use crate::raw::types::protocol::InterfaceType;
-use core::ffi::c_void;
+use {
+	super::{
+		protocol::OpenProtocolInformationEntry,
+		types::{
+			Boolean, Char16, Event, Guid, Header, PhysicalAddress, Status, Tpl,
+			UnsafeHandle,
+			capsule::CapsuleHeader,
+			event::EventType,
+			memory::{AllocateType, MemoryDescriptor, MemoryType},
+			misc::ResetType,
+			time::{Time, TimeCapabilities, TimerDelay},
+			variable::VariableAttributes,
+		},
+	},
+	crate::raw::{
+		protocol::device_path::DevicePathProtocol,
+		types::protocol::InterfaceType,
+	},
+	core::ffi::c_void,
+};
 
 #[repr(C)]
-pub struct RuntimeServices {
+pub struct RuntimeServices
+{
 	header: Header,
 
 	// time services
@@ -106,7 +104,8 @@ pub struct RuntimeServices {
 }
 
 #[repr(C)]
-pub struct BootServices {
+pub struct BootServices
+{
 	pub header: Header,
 
 	// task priority services

@@ -1,14 +1,16 @@
 use core::ffi::c_void;
 
-use crate::Status;
-use crate::raw::types::Char16;
-use crate::raw::types::Guid;
-use crate::raw::types::file::FileAttributes;
-use crate::raw::types::file::FileIoToken;
-use crate::raw::types::file::OpenMode;
+use crate::{
+	Status,
+	raw::types::{
+		Char16, Guid,
+		file::{FileAttributes, FileIoToken, OpenMode},
+	},
+};
 
 #[repr(C)]
-pub struct SimpleFileSystemProtocol {
+pub struct SimpleFileSystemProtocol
+{
 	pub revision:    u64,
 	pub open_volume: unsafe extern "efiapi" fn(
 		this: *mut Self,
@@ -681,7 +683,8 @@ type FileFlushEx = unsafe extern "efiapi" fn(
 ) -> Status;
 
 #[repr(C)]
-pub struct FileProtocolV1 {
+pub struct FileProtocolV1
+{
 	pub revision:     u64,
 	pub open:         FileOpen,
 	pub close:        FileClose,
@@ -696,7 +699,8 @@ pub struct FileProtocolV1 {
 }
 
 #[repr(C)]
-pub struct FileProtocolV2 {
+pub struct FileProtocolV2
+{
 	pub v1:    FileProtocolV1,
 	pub open:  FileOpenEx,
 	pub read:  FileReadEx,

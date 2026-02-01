@@ -9,15 +9,18 @@ use {
 	proc_macro::{Diagnostic, Level},
 };
 
-trait ErrorDiagnose {
+trait ErrorDiagnose
+{
 	type T;
 	fn unwrap_or_emit(self,) -> Self::T;
 }
 
-impl<V,> ErrorDiagnose for Rslt<V,> {
+impl<V,> ErrorDiagnose for Rslt<V,>
+{
 	type T = V;
 
-	fn unwrap_or_emit(self,) -> Self::T {
+	fn unwrap_or_emit(self,) -> Self::T
+	{
 		if self.has_err() {
 			panic!("{:?}", self.into_err());
 		}

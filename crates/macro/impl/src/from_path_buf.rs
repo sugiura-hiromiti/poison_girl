@@ -10,14 +10,16 @@ use {
 	std::path::Path,
 };
 
-pub fn from_path_buf(item: syn::DeriveInput,) -> Rslt<TokenStream,> {
+pub fn from_path_buf(item: syn::DeriveInput,) -> Rslt<TokenStream,>
+{
 	match item.data {
 		syn::Data::Struct(_,) => struct_impl(item,),
 		_ => Rslt::new_err(format!("expected struct, found {item:?}"),),
 	}
 }
 
-fn struct_impl(mut struct_def: syn::DeriveInput,) -> Rslt<TokenStream,> {
+fn struct_impl(mut struct_def: syn::DeriveInput,) -> Rslt<TokenStream,>
+{
 	trim_name(&mut struct_def,);
 
 	// let enum_parts = enum_parts(&struct_def,)??;
@@ -42,21 +44,25 @@ fn struct_impl(mut struct_def: syn::DeriveInput,) -> Rslt<TokenStream,> {
 	},)
 }
 
-fn trim_name(struct_def: &mut syn::DeriveInput,) {
+fn trim_name(struct_def: &mut syn::DeriveInput,)
+{
 	let mut name = struct_def.ident.to_string();
 	name.remove_matches('_',);
 	struct_def.ident = format_ident!("{name}");
 }
 
-struct EnumParts {
+struct EnumParts
+{
 	name:          Option<syn::Type,>,
 	variants:      Vec<proc_macro2::TokenStream,>,
 	variants_attr: Vec<Option<proc_macro2::TokenStream,>,>,
 	paths:         Vec<proc_macro2::TokenStream,>,
 }
 
-impl EnumParts {
-	pub fn dump(&self,) -> proc_macro2::TokenStream {
+impl EnumParts
+{
+	pub fn dump(&self,) -> proc_macro2::TokenStream
+	{
 		let name = &self.name;
 		let variants = &self.variants;
 		let variants_attr = &self.variants_attr;
@@ -93,7 +99,8 @@ impl EnumParts {
 	}
 }
 
-fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,> {
+fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
+{
 	let name = detect_chart_type(struct_def,);
 
 	let crate_list = all_crates()?;
@@ -145,7 +152,8 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,> {
 		},)
 }
 
-fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,> {
+fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,>
+{
 	let manifest = p.as_ref().join(CARGO_MANIFEST,);
 	let manifest = read_toml(manifest,)?;
 	let toml::Value::String(package_name,) = manifest
@@ -170,7 +178,8 @@ fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,> {
 	Rslt::new(name,)
 }
 
-fn detect_chart_type(struct_def: &syn::DeriveInput,) -> Option<syn::Type,> {
+fn detect_chart_type(struct_def: &syn::DeriveInput,) -> Option<syn::Type,>
+{
 	let syn::Data::Struct(syn::DataStruct { fields, .. },) = &struct_def.data
 	else {
 		panic!("expected struct, found {struct_def:?}")
@@ -185,7 +194,8 @@ fn detect_chart_type(struct_def: &syn::DeriveInput,) -> Option<syn::Type,> {
 fn struct_dump(
 	mut struct_def: syn::DeriveInput,
 	enum_name: Option<syn::Type,>,
-) -> Rslt<proc_macro2::TokenStream,> {
+) -> Rslt<proc_macro2::TokenStream,>
+{
 	let syn::Data::Struct(syn::DataStruct { ref mut fields, .. },) =
 		struct_def.data
 	else {
@@ -216,7 +226,8 @@ fn struct_dump(
 fn fields_invest(
 	enum_name: &Option<syn::Type,>,
 	fields: &mut syn::Fields,
-) -> Rslt<Vec<proc_macro2::TokenStream,>,> {
+) -> Rslt<Vec<proc_macro2::TokenStream,>,>
+{
 	match fields {
 		syn::Fields::Named(syn::FieldsNamed { named: f, .. },)
 		| syn::Fields::Unnamed(syn::FieldsUnnamed { unnamed: f, .. },) => f
@@ -240,7 +251,8 @@ fn fields_invest(
 fn field_construct(
 	enum_name: &Option<syn::Type,>,
 	f: syn::Field,
-) -> Rslt<proc_macro2::TokenStream,> {
+) -> Rslt<proc_macro2::TokenStream,>
+{
 	let construct = match f.ty {
 		syn::Type::Path(syn::TypePath {
 			path: syn::Path { segments, .. },
@@ -288,18 +300,21 @@ fn field_construct(
 	Rslt::new(construct,)
 }
 
-fn is_attred(f: &mut syn::Field,) -> bool {
+fn is_attred(f: &mut syn::Field,) -> bool
+{
 	f.attrs
 		.iter()
 		.any(|a| matches!(&a.meta, syn::Meta::Path(p) if p.is_ident("chart")),)
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {super::*, itertools::Itertools, quote::quote, syn::parse_quote};
 
 	#[test]
-	fn test_from_path_buf_with_enum() {
+	fn test_from_path_buf_with_enum()
+	{
 		// Create a test enum as DeriveInput
 		let test_enum: syn::DeriveInput = parse_quote! {
 			pub enum TestCrate {
@@ -316,7 +331,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_camel_case_conversion_logic() {
+	fn test_camel_case_conversion_logic()
+	{
 		// Test the camel case conversion logic used in enum_impl
 		let test_name = "oso_kernel_test";
 		let camel_cased = test_name
@@ -328,7 +344,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_camel_case_single_word() {
+	fn test_camel_case_single_word()
+	{
 		let test_name = "kernel";
 		let camel_cased = test_name
 			.split('_',)
@@ -339,7 +356,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_camel_case_empty_parts() {
+	fn test_camel_case_empty_parts()
+	{
 		let test_name = "oso__kernel"; // Double underscore
 		let camel_cased = test_name
 			.split('_',)
@@ -356,7 +374,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_path_string_conversion() {
+	fn test_path_string_conversion()
+	{
 		use std::path::PathBuf;
 
 		// Test that PathBuf can be converted to string
@@ -368,7 +387,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_path_with_non_utf8_handling() {
+	fn test_path_with_non_utf8_handling()
+	{
 		use std::path::PathBuf;
 
 		// Create a path that might have UTF-8 issues
@@ -380,7 +400,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_quote_format_ident_functionality() {
+	fn test_quote_format_ident_functionality()
+	{
 		// Test that quote::format_ident works as expected
 		let ident_name = "TestVariant";
 		let ident = quote::format_ident!("{}", ident_name);
@@ -390,7 +411,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_token_stream_generation() {
+	fn test_token_stream_generation()
+	{
 		// Test that we can generate basic token streams
 		let test_tokens = quote! {
 			impl From<PathBuf> for TestEnum {
@@ -411,7 +433,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_itertools_join_functionality() {
+	fn test_itertools_join_functionality()
+	{
 		// Test that itertools join works as expected
 		let parts = vec!["Hello", "World", "Test"];
 		let joined = parts.iter().map(|s| s.to_string(),).join("",);
@@ -420,7 +443,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_itertools_join_with_separator() {
+	fn test_itertools_join_with_separator()
+	{
 		let parts = vec!["Hello", "World"];
 		let joined = parts.iter().map(|s| s.to_string(),).join("_",);
 
@@ -428,7 +452,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_syn_item_matching() {
+	fn test_syn_item_matching()
+	{
 		// Test that syn::Item matching works correctly
 		let enum_item: syn::Item = syn::parse_quote! {
 			enum TestEnum { A, B }

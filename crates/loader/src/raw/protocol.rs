@@ -7,7 +7,8 @@ pub mod text;
 
 #[derive(Debug,)]
 #[repr(C)]
-pub struct OpenProtocolInformationEntry {
+pub struct OpenProtocolInformationEntry
+{
 	pub agent_handle:      UnsafeHandle,
 	pub controller_handle: UnsafeHandle,
 	pub attributes:        u32,

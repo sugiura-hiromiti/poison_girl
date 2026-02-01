@@ -20,9 +20,10 @@
 //! kernel or bootloader code:
 //!
 //! ```rust,no_run
-//! use oso_no_std_shared::bridge::graphic::FrameBufConf;
-//! use oso_no_std_shared::bridge::graphic::PixelFormatConf;
-//! use oso_no_std_shared::wfi;
+//! use oso_no_std_shared::{
+//! 	bridge::graphic::{FrameBufConf, PixelFormatConf},
+//! 	wfi,
+//! };
 //!
 //! // Configure a framebuffer
 //! let framebuf = FrameBufConf::new(

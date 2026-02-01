@@ -6,14 +6,16 @@ use {
 /// Number of ASCII characters supported (0-255)
 const CHARACTER_COUNT: usize = 256;
 
-pub fn font(path: syn::LitStr,) -> Rslt<TokenStream,> {
+pub fn font(path: syn::LitStr,) -> Rslt<TokenStream,>
+{
 	let fonts = convert_bitfield(&font_data(path,)??,);
 	Rslt::new(quote::quote! {
 		&[#(#fonts),*]
 	},)
 }
 
-fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,> {
+fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,>
+{
 	// Get the project root directory, falling back to compile-time directory if
 	// needed
 	let project_root = std::env::var("CARGO_MANIFEST_DIR",)?;
@@ -45,7 +47,8 @@ fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,> {
 	Rslt::new(fonts,)
 }
 
-fn convert_bitfield(fonts: &[String],) -> Vec<u128,> {
+fn convert_bitfield(fonts: &[String],) -> Vec<u128,>
+{
 	let fonts: Vec<u128,> = fonts
 		.iter()
 		.map(|s| {
@@ -78,11 +81,13 @@ fn convert_bitfield(fonts: &[String],) -> Vec<u128,> {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {super::*, std::fs};
 
 	#[test]
-	fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),> {
+	fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),>
+	{
 		// Create a test font file in the project directory
 		use std::env;
 
@@ -116,7 +121,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_fonts_each_character_has_correct_length() -> Rslt<(),> {
+	fn test_fonts_each_character_has_correct_length() -> Rslt<(),>
+	{
 		// Create a test font file in the project directory
 		use std::env;
 
@@ -159,7 +165,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_returns_correct_count() {
+	fn test_convert_bitfield_returns_correct_count()
+	{
 		let test_fonts = vec!["........".repeat(16); 256];
 		let bitfields = convert_bitfield(&test_fonts,);
 
@@ -167,7 +174,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_empty_pattern() {
+	fn test_convert_bitfield_empty_pattern()
+	{
 		// Test with all empty pixels (all dots)
 		let empty_pattern = "........".repeat(16,);
 		let test_fonts = vec![empty_pattern; 1];
@@ -178,7 +186,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_full_pattern() {
+	fn test_convert_bitfield_full_pattern()
+	{
 		// Test with all filled pixels (all @)
 		let full_pattern = "@@@@@@@@".repeat(16,);
 		let test_fonts = vec![full_pattern; 1];
@@ -189,7 +198,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_specific_pattern() {
+	fn test_convert_bitfield_specific_pattern()
+	{
 		// Test a specific pattern: single pixel in top-left corner
 		let mut pattern = String::new();
 		pattern.push_str("@.......",); // First line with one pixel
@@ -205,7 +215,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_line_positioning() {
+	fn test_convert_bitfield_line_positioning()
+	{
 		// Test that different lines result in different bit positions
 		let mut patterns = Vec::new();
 
@@ -237,7 +248,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_fonts_nonexistent_file() {
+	fn test_fonts_nonexistent_file()
+	{
 		let lit_str = syn::LitStr::new(
 			"/nonexistent/path/font.txt",
 			proc_macro2::Span::call_site(),
@@ -247,7 +259,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_fonts_with_hex_values_filtered() -> Rslt<(),> {
+	fn test_fonts_with_hex_values_filtered() -> Rslt<(),>
+	{
 		// Create a test font file in the project directory
 		use std::env;
 
@@ -411,7 +424,8 @@ mod tests {
 	// }
 
 	#[test]
-	fn test_font_function_integration() -> Rslt<(),> {
+	fn test_font_function_integration() -> Rslt<(),>
+	{
 		use std::env;
 
 		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
@@ -451,7 +465,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_font_data_with_mixed_line_endings() -> Rslt<(),> {
+	fn test_font_data_with_mixed_line_endings() -> Rslt<(),>
+	{
 		use std::env;
 
 		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
@@ -492,7 +507,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_line_by_line() {
+	fn test_convert_bitfield_line_by_line()
+	{
 		// Test that each line contributes to the correct bit position
 		let mut test_patterns = Vec::new();
 
@@ -527,7 +543,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_bit_reversal() {
+	fn test_convert_bitfield_bit_reversal()
+	{
 		// Test that bit reversal works correctly
 		let patterns = vec![
 			"@.......".repeat(16,), // Leftmost bit
@@ -544,7 +561,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_font_data_error_conditions() {
+	fn test_font_data_error_conditions()
+	{
 		// Test various error conditions
 
 		// Non-existent file
@@ -574,7 +592,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_character_count_constant() {
+	fn test_character_count_constant()
+	{
 		// Test that CHARACTER_COUNT is correct
 		assert_eq!(CHARACTER_COUNT, 256);
 
@@ -583,7 +602,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_font_data_with_insufficient_characters() -> Rslt<(),> {
+	fn test_font_data_with_insufficient_characters() -> Rslt<(),>
+	{
 		use std::env;
 
 		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
@@ -631,7 +651,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_font_data_with_wrong_character_length() -> Rslt<(),> {
+	fn test_font_data_with_wrong_character_length() -> Rslt<(),>
+	{
 		use std::env;
 
 		let project_root = env::var("CARGO_MANIFEST_DIR",)?;
@@ -663,7 +684,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_preserves_count() {
+	fn test_convert_bitfield_preserves_count()
+	{
 		// Test that convert_bitfield preserves the number of characters
 		let input_fonts = vec!["........".repeat(16); 256]; // 256 characters, each 128 chars long
 		let result = convert_bitfield(&input_fonts,);
@@ -672,7 +694,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_deterministic() {
+	fn test_convert_bitfield_deterministic()
+	{
 		// Test that convert_bitfield produces deterministic results
 		let input_fonts = vec!["@.......".repeat(16); 10]; // 10 characters for faster test
 
@@ -683,7 +706,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_edge_cases() {
+	fn test_convert_bitfield_edge_cases()
+	{
 		// Test edge cases: single character, empty input
 		let single_char = vec!["@.......".repeat(16,)]; // Single character
 		let result = convert_bitfield(&single_char,);
@@ -704,7 +728,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_bit_positions() {
+	fn test_convert_bitfield_bit_positions()
+	{
 		// Test specific bit positions
 		let mut pattern = ".".repeat(128,);
 		pattern.replace_range(0..1, "@",); // Set first bit
@@ -721,7 +746,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_convert_bitfield_mixed_patterns() {
+	fn test_convert_bitfield_mixed_patterns()
+	{
 		// Test with mixed patterns
 		let patterns = vec![
 			"@.......".repeat(16,), // Pattern with @ at start
@@ -739,7 +765,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_font_data_error_handling() {
+	fn test_font_data_error_handling()
+	{
 		// Test error handling for various invalid inputs
 		use std::env;
 

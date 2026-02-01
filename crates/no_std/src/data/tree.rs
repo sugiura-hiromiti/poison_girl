@@ -29,7 +29,8 @@ pub mod walker;
 //  TODO: -implement TreePart for Tree
 // - refactor codebase to use `TreePart` object as an atomic unit in `TreeWalk`
 //   and `TreeWindow`
-pub trait TreePart {
+pub trait TreePart
+{
 	type N: NodeValue;
 
 	fn node(&self,) -> Self::N;
@@ -59,7 +60,8 @@ pub trait TreePart {
 ///     parent: None,
 /// };
 /// ```
-pub struct Tree<'a, N: NodeValue,> {
+pub struct Tree<'a, N: NodeValue,>
+{
 	/// The value stored in this node
 	value:    N,
 	/// Array of child trees (slice to avoid heap allocation)

@@ -21,8 +21,10 @@ static LOADER_ALLOCATOR: LoaderAllocator = LoaderAllocator;
 
 pub struct LoaderAllocator;
 
-unsafe impl GlobalAlloc for LoaderAllocator {
-	unsafe fn alloc(&self, layout: core::alloc::Layout,) -> *mut u8 {
+unsafe impl GlobalAlloc for LoaderAllocator
+{
+	unsafe fn alloc(&self, layout: core::alloc::Layout,) -> *mut u8
+	{
 		if layout.align() > 8 {
 			panic!()
 		}
@@ -33,7 +35,8 @@ unsafe impl GlobalAlloc for LoaderAllocator {
 			.as_ptr()
 	}
 
-	unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout,) {
+	unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout,)
+	{
 		if layout.align() > 8 {
 			panic!()
 		}
@@ -44,16 +47,19 @@ unsafe impl GlobalAlloc for LoaderAllocator {
 }
 
 #[alloc_error_handler]
-fn alloc_error(layout: Layout,) -> ! {
+fn alloc_error(layout: Layout,) -> !
+{
 	panic!("system run out of memory: {layout:#?}")
 }
 
-impl BootServices {
+impl BootServices
+{
 	pub fn allocate_pool(
 		&self,
 		mem_ty: MemoryType,
 		size: usize,
-	) -> PoisonGirlB<NonNull<u8,>,> {
+	) -> PoisonGirlB<NonNull<u8,>,>
+	{
 		let mut buf = core::ptr::null_mut();
 		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,) }.x_or()?;
 		X(unsafe {
@@ -62,7 +68,8 @@ impl BootServices {
 		},)
 	}
 
-	pub fn free_pool(&self, ptr: &mut u8,) -> PoisonGirlB<Status,> {
+	pub fn free_pool(&self, ptr: &mut u8,) -> PoisonGirlB<Status,>
+	{
 		unsafe { (self.free_pool)(ptr,).x_or() }
 	}
 
@@ -72,7 +79,8 @@ impl BootServices {
 		mem_ty: MemoryType,
 		page_count: usize,
 		mut alloc_head: PhysicalAddress,
-	) -> PoisonGirlB<PhysicalAddress,> {
+	) -> PoisonGirlB<PhysicalAddress,>
+	{
 		unsafe {
 			(self.allocate_pages)(
 				allocation_type,
@@ -84,7 +92,8 @@ impl BootServices {
 		.x_or_with(|_| alloc_head,)
 	}
 
-	pub fn memory_map_size(&self,) -> (usize, usize,) {
+	pub fn memory_map_size(&self,) -> (usize, usize,)
+	{
 		let mut map_size = 0;
 		let mut map_key = 0;
 		let mut descriptor_size = 0;
@@ -119,10 +128,9 @@ impl BootServices {
 		(map_size, descriptor_size,)
 	}
 
-	pub fn get_memory_map(
-		&self,
-		buf: &mut [u8],
-	) -> PoisonGirlB<MemoryMapInfo,> {
+	pub fn get_memory_map(&self, buf: &mut [u8],)
+	-> PoisonGirlB<MemoryMapInfo,>
+	{
 		let mut map_size = buf.len();
 		let map_buf = buf.as_mut_ptr().cast::<MemoryDescriptor>();
 		let mut map_key = 0;

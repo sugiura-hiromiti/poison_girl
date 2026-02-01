@@ -11,9 +11,9 @@ macro_rules! fnl {
 	($name:ident => $ty:ty, $doc:literal) => {
 		#[proc_macro]
 		#[doc = $doc]
-		pub fn $name(
-			item: proc_macro::TokenStream,
-		) -> proc_macro::TokenStream {
+		pub fn $name(item: proc_macro::TokenStream,)
+		-> proc_macro::TokenStream
+		{
 			$crate::def! { $name, item => $ty, }
 		}
 	};
@@ -27,7 +27,8 @@ macro_rules! atr {
 		pub fn $name(
 			attr: proc_macro::TokenStream,
 			item: proc_macro::TokenStream,
-		) -> proc_macro::TokenStream {
+		) -> proc_macro::TokenStream
+		{
 			$crate::def! { $name, attr => $ty, item => $ty2, }
 		}
 	};

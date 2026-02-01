@@ -1,16 +1,14 @@
-#[cfg(feature = "bgr")] use color::Bgr;
-#[cfg(feature = "bitmask")] use color::Bitmask;
-#[cfg(feature = "bltonly")] use color::BltOnly;
-#[cfg(feature = "rgb")] use color::Rgb;
 use {
 	crate::base::graphic::{
 		color::{ColorRpr, PixelFormat},
 		position::{Coord, Coordinal},
 	},
+	poison_girl_macro::cfg_if,
 	poison_girl_no_std_error::{
 		GraphicError, PoisonGirlB, X, Y, poison_girl_err,
 	},
 };
+
 // use oso_proc_macro::gen_wrapper_fn;
 
 /// Color representation and pixel format implementations
@@ -18,9 +16,29 @@ pub mod color;
 /// Coordinate system and position management
 pub mod position;
 
-#[cfg(feature = "rgb")]
-pub static FRAME_BUFFER: FrameBuffer<Rgb,> = FrameBuffer {
-	drawer: Rgb,
+cfg_if! {
+	if #[cfg(feature = "rgb")] {
+		type FbDrawer = color::Rgb;
+	} else if #[cfg(feature = "bgr")] {
+		type FbDrawer = color::Bgr;
+	} else if #[cfg(feature = "bitmask")] {
+		type FbDrawer = color::Bitmask;
+	} else if #[cfg(feature = "bltonly")] {
+		type FbDrawer = color::BltOnly;
+	}
+}
+
+// #[cfg(feature = "rgb")]
+// type FbDrawer = color::Rgb;
+// #[cfg(feature = "bgr")]
+// type FbDrawer = color::Bgr;
+// #[cfg(feature = "bitmask")]
+// type FbDrawer = color::Bitmask;
+// #[cfg(feature = "bltonly")]
+// type FbDrawer = color::BltOnly;
+
+pub static FRAME_BUFFER: FrameBuffer<FbDrawer,> = FrameBuffer {
+	drawer: FbDrawer::default(),
 	buf:    0,
 	size:   0,
 	width:  0,
@@ -28,37 +46,38 @@ pub static FRAME_BUFFER: FrameBuffer<Rgb,> = FrameBuffer {
 	stride: 0,
 };
 
-#[cfg(feature = "bgr")]
-pub static FRAME_BUFFER: FrameBuffer<Bgr,> = FrameBuffer {
-	drawer: Bgr,
-	buf:    0,
-	size:   0,
-	width:  0,
-	height: 0,
-	stride: 0,
-};
+// #[cfg(feature = "bgr")]
+// pub static FRAME_BUFFER: FrameBuffer<Bgr,> = FrameBuffer {
+// 	drawer: Bgr,
+// 	buf:    0,
+// 	size:   0,
+// 	width:  0,
+// 	height: 0,
+// 	stride: 0,
+// };
+//
+// #[cfg(feature = "bitmask")]
+// pub static FRAME_BUFFER: FrameBuffer<Bitmask,> = FrameBuffer {
+// 	drawer: Bitmask,
+// 	buf:    0,
+// 	size:   0,
+// 	width:  0,
+// 	height: 0,
+// 	stride: 0,
+// };
+//
+// #[cfg(feature = "bltonly")]
+// pub static FRAME_BUFFER: FrameBuffer<BltOnly,> = FrameBuffer {
+// 	drawer: BltOnly,
+// 	buf:    0,
+// 	size:   0,
+// 	width:  0,
+// 	height: 0,
+// 	stride: 0,
+// };
 
-#[cfg(feature = "bitmask")]
-pub static FRAME_BUFFER: FrameBuffer<Bitmask,> = FrameBuffer {
-	drawer: Bitmask,
-	buf:    0,
-	size:   0,
-	width:  0,
-	height: 0,
-	stride: 0,
-};
-
-#[cfg(feature = "bltonly")]
-pub static FRAME_BUFFER: FrameBuffer<BltOnly,> = FrameBuffer {
-	drawer: BltOnly,
-	buf:    0,
-	size:   0,
-	width:  0,
-	height: 0,
-	stride: 0,
-};
-
-pub trait DisplayDraw {
+pub trait DisplayDraw
+{
 	/// The result type for drawing operations
 	type Output = PoisonGirlB<(),>;
 
@@ -211,7 +230,8 @@ pub trait DisplayDraw {
 ///     );
 /// }
 /// ```
-pub struct FrameBuffer<P: PixelFormat,> {
+pub struct FrameBuffer<P: PixelFormat,>
+{
 	/// The pixel format handler for color operations
 	pub drawer: P,
 	/// Base address of the framebuffer memory (as usize for arithmetic)
@@ -226,7 +246,8 @@ pub struct FrameBuffer<P: PixelFormat,> {
 	pub stride: usize,
 }
 
-impl<P: PixelFormat,> FrameBuffer<P,> {
+impl<P: PixelFormat,> FrameBuffer<P,>
+{
 	/// Creates a new framebuffer instance with the specified pixel format
 	///
 	/// This constructor creates a framebuffer with default (zero) values for
@@ -255,9 +276,11 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 	///
 	/// - Replace hardcoded configuration with actual hardware detection
 	/// - Implement proper configuration structure
-	pub fn new(/* conf: FrameBufConf, */ pxl_fmt: P,) -> Self {
+	pub fn new(/* conf: FrameBufConf, */ pxl_fmt: P,) -> Self
+	{
 		// TODO: Replace this placeholder with actual configuration
-		struct A {
+		struct A
+		{
 			base:   usize,
 			width:  usize,
 			height: usize,
@@ -329,7 +352,8 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 		width: usize,
 		height: usize,
 		stride: usize,
-	) {
+	)
+	{
 		unsafe {
 			let this = this as *mut Self;
 			(*this).buf = buf;
@@ -372,7 +396,8 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 	/// let offset = framebuffer.pos(&coord);
 	/// // offset = (stride * 50 + 100) * 4
 	/// ```
-	fn pos(&self, coord: &impl Coordinal,) -> usize {
+	fn pos(&self, coord: &impl Coordinal,) -> usize
+	{
 		// Each pixel is 4 bytes (32 bits), so multiply by 4
 		(self.stride * coord.y() + coord.x()) * 4
 	}
@@ -404,7 +429,8 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 	///     // Coordinate is within bounds
 	/// }
 	/// ```
-	pub fn right_bottom(&self,) -> Coord {
+	pub fn right_bottom(&self,) -> Coord
+	{
 		Coord { x: self.width - 1, y: self.height - 1, }
 	}
 
@@ -447,7 +473,8 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 	/// pixel_data[1] = green_value;
 	/// pixel_data[2] = blue_value;
 	/// ```
-	pub fn slice_mut(&self, pos: usize, len: usize,) -> &mut [u8] {
+	pub fn slice_mut(&self, pos: usize, len: usize,) -> &mut [u8]
+	{
 		let pos = pos * size_of::<u8,>();
 		assert!(self.size - pos > 0);
 
@@ -456,7 +483,8 @@ impl<P: PixelFormat,> FrameBuffer<P,> {
 	}
 }
 
-impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
+impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
+{
 	/// Draws a single pixel at the specified coordinate
 	///
 	/// This implementation writes the color data directly to the framebuffer
@@ -494,7 +522,8 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 		&self,
 		coord: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Self::Output {
+	) -> Self::Output
+	{
 		let pos = self.pos(coord,);
 		let pxl = self.slice_mut(pos, 3,);
 		let color = self.drawer.color_repr(color,);
@@ -549,7 +578,8 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Self::Output {
+	) -> Self::Output
+	{
 		// Validate coordinate bounds
 		if left_top.x() > right_bottom.x()
 			|| left_top.y() > right_bottom.y()
@@ -624,7 +654,8 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,> {
 		left_top: &impl Coordinal,
 		right_bottom: &impl Coordinal,
 		color: &impl ColorRpr,
-	) -> Self::Output {
+	) -> Self::Output
+	{
 		// Validate coordinate bounds
 		if left_top.x() > right_bottom.x()
 			|| left_top.y() > right_bottom.y()

@@ -133,7 +133,8 @@ pub mod driver;
 /// panic!("Critical kernel error occurred");
 /// ```
 #[panic_handler]
-fn panic(info: &core::panic::PanicInfo,) -> ! {
+fn panic(info: &core::panic::PanicInfo,) -> !
+{
 	println!("{}", info);
 	wfe()
 }
@@ -187,7 +188,8 @@ fn panic(info: &core::panic::PanicInfo,) -> ! {
 /// - Initialize device drivers
 /// - Configure system services
 /// - Set up application execution environment
-pub fn init() {
+pub fn init()
+{
 	// TODO: Implement hardware initialization
 	// TODO: Set up memory management
 	// TODO: Initialize interrupt controllers

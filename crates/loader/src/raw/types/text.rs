@@ -1,13 +1,15 @@
 use super::Boolean;
 
 #[repr(C)]
-pub struct InputKey {
+pub struct InputKey
+{
 	scan_code:    u16,
 	unicode_char: u16,
 }
 
 #[repr(C)]
-pub struct TextOutputMode {
+pub struct TextOutputMode
+{
 	max_mode:       i32,
 	mode:           i32,
 	attribute:      i32,
@@ -17,8 +19,11 @@ pub struct TextOutputMode {
 }
 
 #[repr(transparent)]
-pub struct TextOutputModePtr {
+pub struct TextOutputModePtr
+{
 	tom: *mut TextOutputMode,
 }
 
-unsafe impl Sync for TextOutputModePtr {}
+unsafe impl Sync for TextOutputModePtr
+{
+}

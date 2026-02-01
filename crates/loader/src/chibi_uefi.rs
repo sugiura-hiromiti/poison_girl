@@ -31,18 +31,22 @@
 //! only the essential UEFI functionality needed for bootloader operations while
 //! maintaining type safety and ease of use.
 
-use super::raw::types::Status;
-use crate::raw::service::BootServices;
-use crate::raw::service::RuntimeServices;
-use crate::raw::types::UnsafeHandle;
-use crate::raw::types::memory::MemoryMapBackingMemory;
-use crate::raw::types::memory::MemoryType;
-use crate::raw::types::memory::PAGE_SIZE;
-use crate::raw::types::misc::ResetType;
-use core::ffi::c_void;
-use core::ptr::NonNull;
-use core::sync::atomic::AtomicPtr;
-use core::sync::atomic::Ordering;
+use {
+	super::raw::types::Status,
+	crate::raw::{
+		service::{BootServices, RuntimeServices},
+		types::{
+			UnsafeHandle,
+			memory::{MemoryMapBackingMemory, MemoryType, PAGE_SIZE},
+			misc::ResetType,
+		},
+	},
+	core::{
+		ffi::c_void,
+		ptr::NonNull,
+		sync::atomic::{AtomicPtr, Ordering},
+	},
+};
 
 /// Console input/output operations
 pub mod console;
@@ -84,7 +88,8 @@ static IMAGE_HANDLE: AtomicPtr<c_void,> =
 #[repr(transparent)]
 pub struct Handle(NonNull<c_void,>,);
 
-impl Handle {
+impl Handle
+{
 	/// Creates a new Handle from a non-null pointer
 	///
 	/// # Arguments
@@ -96,7 +101,8 @@ impl Handle {
 	/// The caller must ensure that the pointer is valid and will remain
 	/// valid for the lifetime of the Handle.
 	#[must_use]
-	pub const unsafe fn new(ptr: NonNull<c_void,>,) -> Self {
+	pub const unsafe fn new(ptr: NonNull<c_void,>,) -> Self
+	{
 		Self(ptr,)
 	}
 
@@ -115,7 +121,8 @@ impl Handle {
 	///
 	/// The caller must ensure that if the pointer is non-null, it points
 	/// to a valid UEFI handle.
-	pub unsafe fn from_ptr(ptr: UnsafeHandle,) -> Option<Self,> {
+	pub unsafe fn from_ptr(ptr: UnsafeHandle,) -> Option<Self,>
+	{
 		NonNull::new(ptr,).map(Self,)
 	}
 
@@ -124,7 +131,8 @@ impl Handle {
 	/// # Returns
 	///
 	/// The raw UEFI handle pointer
-	pub const fn as_ptr(&self,) -> UnsafeHandle {
+	pub const fn as_ptr(&self,) -> UnsafeHandle
+	{
 		self.0.as_ptr()
 	}
 
@@ -140,23 +148,27 @@ impl Handle {
 	/// # Returns
 	///
 	/// Raw UEFI handle pointer, or null if the input was None
-	pub fn opt_to_ptr(handle: Option<Handle,>,) -> UnsafeHandle {
+	pub fn opt_to_ptr(handle: Option<Handle,>,) -> UnsafeHandle
+	{
 		handle.map(|h| h.as_ptr(),).unwrap_or(core::ptr::null_mut(),)
 	}
 }
 
-impl Status {
+impl Status
+{
 	/// Checks if this status represents a successful operation
 	///
 	/// # Returns
 	///
 	/// `true` if the status is `EFI_SUCCESS`, `false` otherwise
-	pub fn is_success(&self,) -> bool {
+	pub fn is_success(&self,) -> bool
+	{
 		self.clone() == Self::EFI_SUCCESS
 	}
 }
 
-impl BootServices {
+impl BootServices
+{
 	/// Exits UEFI boot services and transitions to runtime environment
 	///
 	/// This method terminates all boot-time services and prepares the system
@@ -168,7 +180,8 @@ impl BootServices {
 	/// This is a one-way transition - once boot services are exited, they
 	/// cannot be re-entered. This should only be called when ready to
 	/// transfer control to the kernel.
-	pub fn exit_boot_services(&self,) {
+	pub fn exit_boot_services(&self,)
+	{
 		let mem_ty = MemoryType::BOOT_SERVICES_DATA;
 
 		let mut buf = MemoryMapBackingMemory::new(mem_ty,)
@@ -181,7 +194,8 @@ impl BootServices {
 		}
 	}
 
-	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Status {
+	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Status
+	{
 		let mem_map = self.get_memory_map(buf,).expect("failed to get memmap",);
 		// core::mem::forget(mem_map,);
 		unsafe {
@@ -190,7 +204,8 @@ impl BootServices {
 	}
 }
 
-impl RuntimeServices {
+impl RuntimeServices
+{
 	/// Resets the system
 	///
 	/// This method would reset the entire system with the specified reset type.
@@ -210,7 +225,8 @@ impl RuntimeServices {
 		_reset_type: ResetType,
 		_status: Status,
 		_data: Option<&[u8],>,
-	) -> ! {
+	) -> !
+	{
 		todo!()
 	}
 }
@@ -229,7 +245,8 @@ impl RuntimeServices {
 ///
 /// Panics if `set_image_handle_panicking` has not been called to initialize the
 /// handle.
-pub fn image_handle() -> Handle {
+pub fn image_handle() -> Handle
+{
 	let p = IMAGE_HANDLE.load(Ordering::Acquire,);
 	unsafe {
 		Handle::from_ptr(p,).expect("set_image_handle has not been called",)
@@ -245,7 +262,8 @@ pub fn image_handle() -> Handle {
 ///
 /// This function is unsafe because it modifies global state. The caller
 /// must ensure this is only called during initialization.
-unsafe fn set_image_handle(image_handle: Handle,) {
+unsafe fn set_image_handle(image_handle: Handle,)
+{
 	IMAGE_HANDLE.store(image_handle.as_ptr(), Ordering::Release,);
 }
 
@@ -263,7 +281,8 @@ unsafe fn set_image_handle(image_handle: Handle,) {
 ///
 /// This is the panicking version that should be used during initialization
 /// where failure is not recoverable.
-pub(crate) fn set_image_handle_panicking(image_handle: UnsafeHandle,) {
+pub(crate) fn set_image_handle_panicking(image_handle: UnsafeHandle,)
+{
 	assert!(!image_handle.is_null());
 
 	let image_handle = unsafe { Handle::from_ptr(image_handle,).unwrap() };
@@ -289,6 +308,7 @@ pub(crate) fn set_image_handle_panicking(image_handle: UnsafeHandle,) {
 ///
 /// This function adds 1 to ensure sufficient space, which may result in
 /// slight over-allocation but guarantees adequate memory.
-pub fn required_pages(size: usize,) -> usize {
+pub fn required_pages(size: usize,) -> usize
+{
 	size / PAGE_SIZE + 1
 }

@@ -2,12 +2,13 @@ use {
 	clap::Parser,
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{HostTupleNotFound, PoisonGirlB, ReShape, X},
-	poison_girl_proc_macro_def::features,
+	poison_girl_macro::features,
 	std::{path::PathBuf, process::Command, str::FromStr},
 	strum_macros::Display,
 };
 
-pub trait CompileOpt {
+pub trait CompileOpt
+{
 	fn build_mode(&self,) -> impl Into<String,>;
 	fn feature_flags(&self,) -> Vec<impl Into<String,>,>;
 	fn arch(&self,) -> impl Into<String,>;
@@ -22,40 +23,50 @@ pub trait CompileOpt {
 )]
 pub enum Feature {}
 
-pub struct Opts {
+pub struct Opts
+{
 	pub build_mode:    BuildMode,
 	pub feature_flags: Vec<Feature,>,
 	pub arch:          Arch,
 }
 
-impl Default for Opts {
-	fn default() -> Self {
+impl Default for Opts
+{
+	fn default() -> Self
+	{
 		Self::new()
 	}
 }
 
-impl Opts {
-	pub fn new() -> Self {
+impl Opts
+{
+	pub fn new() -> Self
+	{
 		Cli::parse().to_opts()
 	}
 }
 
-impl CompileOpt for Opts {
-	fn build_mode(&self,) -> impl Into<String,> {
+impl CompileOpt for Opts
+{
+	fn build_mode(&self,) -> impl Into<String,>
+	{
 		self.build_mode.as_ref()
 	}
 
-	fn feature_flags(&self,) -> Vec<impl Into<String,>,> {
+	fn feature_flags(&self,) -> Vec<impl Into<String,>,>
+	{
 		self.feature_flags.iter().map(|f| f.as_ref(),).collect()
 	}
 
-	fn arch(&self,) -> impl Into<String,> {
+	fn arch(&self,) -> impl Into<String,>
+	{
 		self.arch.as_ref().replace("_", "",)
 	}
 }
 
 #[derive(clap::Parser,)]
-pub struct Cli {
+pub struct Cli
+{
 	#[arg(value_enum, short)]
 	pub build_mode:    Option<BuildMode,>,
 	#[arg(short)]
@@ -64,8 +75,10 @@ pub struct Cli {
 	pub arch:          Option<Arch,>,
 }
 
-impl Cli {
-	pub fn to_opts(self,) -> Opts {
+impl Cli
+{
+	pub fn to_opts(self,) -> Opts
+	{
 		Opts {
 			build_mode:    self.build_mode.unwrap_or_default(),
 			feature_flags: self.feature_flags.unwrap_or_default(),
@@ -87,21 +100,25 @@ impl Cli {
 	Debug,
 	Display,
 )]
-pub enum BuildMode {
+pub enum BuildMode
+{
 	Release,
 	#[default]
 	Debug,
 }
 
-pub enum Runtime {
+pub enum Runtime
+{
 	Mac,
 	Linux,
 	Efi,
 	Oso,
 }
 
-impl Runtime {
-	pub fn host() -> PoisonGirlB<Self,> {
+impl Runtime
+{
+	pub fn host() -> PoisonGirlB<Self,>
+	{
 		host_tuple()?
 			.split('-',)
 			.next()
@@ -113,8 +130,10 @@ impl Runtime {
 	}
 }
 
-impl Runtime {
-	fn from_str(value: &str,) -> Self {
+impl Runtime
+{
+	fn from_str(value: &str,) -> Self
+	{
 		match value {
 			"mac" | "darwin" => Self::Mac,
 			"linux" => Self::Linux,
@@ -125,13 +144,16 @@ impl Runtime {
 	}
 }
 
-pub struct Assets {
+pub struct Assets
+{
 	pub firmware: Firmware,
 	pub host:     Runtime,
 }
 
-impl Assets {
-	pub fn new(arch: Arch,) -> PoisonGirlB<Self,> {
+impl Assets
+{
+	pub fn new(arch: Arch,) -> PoisonGirlB<Self,>
+	{
 		let firmware = Firmware::new(arch,)?;
 		X(Self { firmware, host: Runtime::host()?, },)
 	}
@@ -139,14 +161,16 @@ impl Assets {
 
 /// Manages OVMF firmware files for UEFI boot
 #[derive(Debug,)]
-pub struct Firmware {
+pub struct Firmware
+{
 	/// Path to the OVMF code file
 	pub code: PathBuf,
 	/// Path to the OVMF variables file
 	pub vars: PathBuf,
 }
 
-impl Firmware {
+impl Firmware
+{
 	/// Creates a new Firmware instance for the specified architecture
 	///
 	/// Downloads the latest OVMF firmware files if they don't exist.
@@ -158,7 +182,8 @@ impl Firmware {
 	/// # Returns
 	///
 	/// A new Firmware instance or an error if initialization fails
-	pub fn new(arch: Arch,) -> PoisonGirlB<Self,> {
+	pub fn new(arch: Arch,) -> PoisonGirlB<Self,>
+	{
 		let path = PathBuf::from_str("/tmp/",).unwrap();
 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
 		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
@@ -171,7 +196,8 @@ impl Firmware {
 	/// # Returns
 	///
 	/// A reference to the path to the OVMF code file
-	pub fn code(&self,) -> &PathBuf {
+	pub fn code(&self,) -> &PathBuf
+	{
 		&self.code
 	}
 
@@ -180,13 +206,16 @@ impl Firmware {
 	/// # Returns
 	///
 	/// A reference to the path to the OVMF variables file
-	pub fn vars(&self,) -> &PathBuf {
+	pub fn vars(&self,) -> &PathBuf
+	{
 		&self.vars
 	}
 }
 
-impl From<Arch,> for ovmf_prebuilt::Arch {
-	fn from(value: Arch,) -> Self {
+impl From<Arch,> for ovmf_prebuilt::Arch
+{
+	fn from(value: Arch,) -> Self
+	{
 		match value {
 			Arch::Aarch64 => ovmf_prebuilt::Arch::Aarch64,
 			Arch::Riscv64 => ovmf_prebuilt::Arch::Riscv64,
@@ -207,19 +236,22 @@ impl From<Arch,> for ovmf_prebuilt::Arch {
 	Debug,
 	Display,
 )]
-pub enum Arch {
+pub enum Arch
+{
 	#[default]
 	Aarch64,
 	Riscv64,
 }
 
-impl Arch {
+impl Arch
+{
 	/// Gets the boot file name for the architecture
 	///
 	/// # Returns
 	///
 	/// The boot file name (e.g., "bootaa64.efi" for aarch64)
-	pub fn boot_file_name(&self,) -> &str {
+	pub fn boot_file_name(&self,) -> &str
+	{
 		match self {
 			Self::Aarch64 => "bootaa64.efi",
 			Self::Riscv64 => "bootriscv64.efi",
@@ -227,7 +259,8 @@ impl Arch {
 	}
 }
 
-pub fn host_tuple() -> PoisonGirlB<String,> {
+pub fn host_tuple() -> PoisonGirlB<String,>
+{
 	let target = Command::new("rustc",).arg("-vV",).output()?.stdout;
 	let target = String::from_utf8(target,)?;
 	target
@@ -243,18 +276,21 @@ pub fn host_tuple() -> PoisonGirlB<String,> {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {super::*, poison_girl_dev_error::Container, std::str::FromStr};
 
 	#[test]
-	fn test_build_mode_default() {
+	fn test_build_mode_default()
+	{
 		let default_mode = BuildMode::default();
 		assert!(default_mode.is_debug());
 		assert_eq!(default_mode.as_ref(), "Debug");
 	}
 
 	#[test]
-	fn test_build_mode_variants() {
+	fn test_build_mode_variants()
+	{
 		assert!(BuildMode::Debug.is_debug());
 		assert!(!BuildMode::Debug.is_release());
 		assert!(BuildMode::Release.is_release());
@@ -262,27 +298,31 @@ mod tests {
 	}
 
 	#[test]
-	fn test_build_mode_string_conversion() {
+	fn test_build_mode_string_conversion()
+	{
 		assert_eq!(BuildMode::Debug.as_ref(), "Debug");
 		assert_eq!(BuildMode::Release.as_ref(), "Release");
 	}
 
 	#[test]
-	fn test_build_mode_from_string() {
+	fn test_build_mode_from_string()
+	{
 		assert_eq!(BuildMode::from_str("Debug").unwrap(), BuildMode::Debug);
 		assert_eq!(BuildMode::from_str("Release").unwrap(), BuildMode::Release);
 		assert!(BuildMode::from_str("Invalid").is_err());
 	}
 
 	#[test]
-	fn test_arch_default() {
+	fn test_arch_default()
+	{
 		let default_arch = Arch::default();
 		assert!(default_arch.is_aarch_64());
 		assert_eq!(default_arch.as_ref(), "Aarch64");
 	}
 
 	#[test]
-	fn test_arch_variants() {
+	fn test_arch_variants()
+	{
 		assert!(Arch::Aarch64.is_aarch_64());
 		assert!(Arch::Riscv64.is_riscv_64());
 
@@ -291,20 +331,23 @@ mod tests {
 	}
 
 	#[test]
-	fn test_arch_string_conversion() {
+	fn test_arch_string_conversion()
+	{
 		assert_eq!(Arch::Aarch64.as_ref(), "Aarch64");
 		assert_eq!(Arch::Riscv64.as_ref(), "Riscv64");
 	}
 
 	#[test]
-	fn test_arch_from_string() {
+	fn test_arch_from_string()
+	{
 		assert_eq!(Arch::from_str("Aarch64").unwrap(), Arch::Aarch64);
 		assert_eq!(Arch::from_str("Riscv64").unwrap(), Arch::Riscv64);
 		assert!(Arch::from_str("x86_64").is_err());
 	}
 
 	#[test]
-	fn test_cli_to_opts_with_values() {
+	fn test_cli_to_opts_with_values()
+	{
 		let cli = Cli {
 			build_mode:    Some(BuildMode::Release,),
 			feature_flags: Some(vec![],),
@@ -317,7 +360,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_cli_to_opts_with_defaults() {
+	fn test_cli_to_opts_with_defaults()
+	{
 		let cli = Cli {
 			build_mode:    None,
 			feature_flags: None,
@@ -330,7 +374,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_compile_opt_implementation() {
+	fn test_compile_opt_implementation()
+	{
 		let opts = Opts {
 			build_mode:    BuildMode::Release,
 			feature_flags: vec![],
@@ -348,7 +393,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_firmware_creation() {
+	fn test_firmware_creation()
+	{
 		let firmware = Firmware {
 			code: PathBuf::from("/path/to/ovmf_code.fd",),
 			vars: PathBuf::from("/path/to/ovmf_vars.fd",),
@@ -359,7 +405,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_firmware_debug() {
+	fn test_firmware_debug()
+	{
 		let firmware = Firmware {
 			code: PathBuf::from("/code",),
 			vars: PathBuf::from("/vars",),
@@ -372,7 +419,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_assets_creation() {
+	fn test_assets_creation()
+	{
 		let assets = Assets {
 			firmware: Firmware {
 				code: PathBuf::from("/ovmf/code",),
@@ -386,7 +434,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_feature_enum_exists() {
+	fn test_feature_enum_exists()
+	{
 		// Test that Feature enum exists and can be used in collections
 		let features: Vec<Feature,> = vec![];
 		assert!(features.is_empty());
@@ -443,7 +492,8 @@ mod tests {
 	// }
 
 	#[test]
-	fn test_enum_value_variants() {
+	fn test_enum_value_variants()
+	{
 		use clap::ValueEnum;
 
 		// Test BuildMode variants
@@ -460,7 +510,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_partial_eq_implementations() {
+	fn test_partial_eq_implementations()
+	{
 		// Test that enums implement PartialEq correctly
 		assert_eq!(BuildMode::Debug, BuildMode::Debug);
 		assert_ne!(BuildMode::Debug, BuildMode::Release);
@@ -470,7 +521,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_edge_cases() {
+	fn test_edge_cases()
+	{
 		// Test empty feature flags
 		let opts = Opts {
 			build_mode:    BuildMode::Debug,
@@ -483,7 +535,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_struct_field_access() {
+	fn test_struct_field_access()
+	{
 		// Test that all struct fields are accessible
 		let cli = Cli {
 			build_mode:    Some(BuildMode::Debug,),
@@ -507,7 +560,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_enum_exhaustiveness() {
+	fn test_enum_exhaustiveness()
+	{
 		// Test that we handle all enum variants
 		use clap::ValueEnum;
 
@@ -529,7 +583,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_debug_implementations() {
+	fn test_debug_implementations()
+	{
 		// Test that Debug is implemented for all types
 		let build_mode = BuildMode::Debug;
 		let debug_str = format!("{:?}", build_mode);
@@ -552,7 +607,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_memory_layout() {
+	fn test_memory_layout()
+	{
 		// Test that enums have expected memory layout
 		use std::mem;
 
@@ -565,7 +621,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_serialization_compatibility() {
+	fn test_serialization_compatibility()
+	{
 		// Test that string representations are stable
 		// This is important for CLI compatibility
 
@@ -579,7 +636,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_concurrent_access() {
+	fn test_concurrent_access()
+	{
 		// Test that enums can be used concurrently
 		use std::{sync::Arc, thread};
 
@@ -610,7 +668,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_cli_parser_integration() {
+	fn test_cli_parser_integration()
+	{
 		// Test that CLI parsing works with clap
 		use clap::CommandFactory;
 
@@ -630,7 +689,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_error_handling() {
+	fn test_error_handling()
+	{
 		// Test error handling in string parsing
 		use std::str::FromStr;
 
@@ -651,7 +711,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_feature_flags_empty() {
+	fn test_feature_flags_empty()
+	{
 		// Test that Feature enum is empty as expected
 		// Note: Feature enum doesn't implement ValueEnum since it's empty
 
@@ -671,7 +732,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_assets_and_firmware() {
+	fn test_assets_and_firmware()
+	{
 		// Test Assets and Firmware structs
 		let firmware = Firmware {
 			code: PathBuf::from("/ovmf/OVMF_CODE.fd",),

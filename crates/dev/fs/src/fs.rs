@@ -29,7 +29,8 @@ const IGNORE_DIR_LIST: [&str; 5] =
 /// This function will return an error if:
 /// - The current directory cannot be determined
 /// - The `oso_kernel.elf` file doesn't exist in the target directory
-pub fn check_poison_girl_kernel() -> PoisonGirlB<(),> {
+pub fn check_poison_girl_kernel() -> PoisonGirlB<(),>
+{
 	let path_str = "target/poison_girl_kernel";
 	// Construct the expected path to the kernel ELF file
 	let target_path = project_root_path()?.join(path_str,);
@@ -44,14 +45,16 @@ pub fn check_poison_girl_kernel() -> PoisonGirlB<(),> {
 }
 
 //  TODO: workspaceのCargo.tomlを読んでworkspace memberを取得
-pub fn all_crates() -> PoisonGirlB<Vec<PathBuf,>,> {
+pub fn all_crates() -> PoisonGirlB<Vec<PathBuf,>,>
+{
 	let proot = project_root_path()?;
 	let mut crates = all_crates_in(&proot,)?;
 	crates.push(proot.to_path_buf(),);
 	X(crates,)
 }
 
-pub fn all_crates_in(path: &Path,) -> PoisonGirlB<Vec<PathBuf,>,> {
+pub fn all_crates_in(path: &Path,) -> PoisonGirlB<Vec<PathBuf,>,>
+{
 	X(path
 		.read_dir()
 		.unwrap_or_else(|_| panic!("failed to read {}", path.display()),)
@@ -81,7 +84,8 @@ pub fn all_crates_in(path: &Path,) -> PoisonGirlB<Vec<PathBuf,>,> {
 		.collect(),)
 }
 
-pub fn project_root_path() -> PoisonGirlB<PathBuf,> {
+pub fn project_root_path() -> PoisonGirlB<PathBuf,>
+{
 	let mut p = PathBuf::from_str(CWD,).unwrap();
 	let mut last_cargo_toml = None;
 
@@ -94,7 +98,8 @@ pub fn project_root_path() -> PoisonGirlB<PathBuf,> {
 	X(last_cargo_toml.unwrap().parent().unwrap().to_path_buf(),)
 }
 
-pub fn current_crate_path() -> PoisonGirlB<PathBuf,> {
+pub fn current_crate_path() -> PoisonGirlB<PathBuf,>
+{
 	match search_upstream(CARGO_MANIFEST,) {
 		X(Some(p,),) => {
 			X(p.parent().expect("should have parent directory",).to_path_buf(),)
@@ -106,14 +111,16 @@ pub fn current_crate_path() -> PoisonGirlB<PathBuf,> {
 /// depth 1 file search
 pub fn search_cargo_toml(
 	path: impl AsRef<Path,>,
-) -> PoisonGirlB<Option<PathBuf,>,> {
+) -> PoisonGirlB<Option<PathBuf,>,>
+{
 	search_in(&path, CARGO_MANIFEST,)
 }
 
 pub fn search_in(
 	place: &impl AsRef<Path,>,
 	file_name: impl Into<String,> + Clone,
-) -> PoisonGirlB<Option<PathBuf,>,> {
+) -> PoisonGirlB<Option<PathBuf,>,>
+{
 	let search_strategy = |entry: &Result<DirEntry, std::io::Error,>| {
 		entry
 			.as_ref()
@@ -128,7 +135,8 @@ pub fn search_in(
 pub fn search_in_with(
 	place: &impl AsRef<Path,>,
 	search_strategy: impl FnMut(&Result<DirEntry, std::io::Error,>,) -> bool,
-) -> PoisonGirlB<Option<PathBuf,>,> {
+) -> PoisonGirlB<Option<PathBuf,>,>
+{
 	let rslt = std::fs::read_dir(place,)?
 		.find(search_strategy,)
 		.map(|entry| entry.map(|entry| entry.path(),),)
@@ -139,14 +147,16 @@ pub fn search_in_with(
 /// not recursively
 pub fn search_in_cwd(
 	file_name: impl Into<String,> + Clone,
-) -> PoisonGirlB<Option<PathBuf,>,> {
+) -> PoisonGirlB<Option<PathBuf,>,>
+{
 	let cwd = current_dir()?;
 	search_in(&cwd, file_name,)
 }
 
 pub fn get_upstream(
 	file_name: impl Into<String,> + Clone,
-) -> PoisonGirlB<PathBuf,> {
+) -> PoisonGirlB<PathBuf,>
+{
 	let p = match search_upstream(file_name.clone(),)? {
 		None => Y(PathNotFound(file_name.into(),),),
 		Some(p,) => X(p,),
@@ -156,7 +166,8 @@ pub fn get_upstream(
 
 pub fn search_upstream(
 	file_name: impl Into<String,> + Clone,
-) -> PoisonGirlB<Option<PathBuf,>,> {
+) -> PoisonGirlB<Option<PathBuf,>,>
+{
 	let place = current_dir()?;
 	search_upstream_at(&place, file_name,)
 }
@@ -164,7 +175,8 @@ pub fn search_upstream(
 pub fn search_upstream_at(
 	path: &Path,
 	file_name: impl Into<String,> + Clone,
-) -> PoisonGirlB<Option<PathBuf,>,> {
+) -> PoisonGirlB<Option<PathBuf,>,>
+{
 	let mut place = path.to_path_buf();
 	loop {
 		if place.pop() {
@@ -177,7 +189,8 @@ pub fn search_upstream_at(
 	}
 }
 
-pub fn read_toml(path: impl AsRef<Path,>,) -> PoisonGirlB<toml::Table,> {
+pub fn read_toml(path: impl AsRef<Path,>,) -> PoisonGirlB<toml::Table,>
+{
 	if !path.as_ref().exists() {
 		return Y(PathNotFound(
 			path.as_ref().to_str().unwrap_or_default().to_string(),
@@ -197,11 +210,13 @@ pub fn read_toml(path: impl AsRef<Path,>,) -> PoisonGirlB<toml::Table,> {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use super::*;
 
 	#[test]
-	fn test_search_cargo_toml() -> PoisonGirlB<(),> {
+	fn test_search_cargo_toml() -> PoisonGirlB<(),>
+	{
 		let cargo_toml =
 			search_cargo_toml(CWD,)?.expect("failed to find Cargo.toml",);
 		assert_eq!(
@@ -212,7 +227,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_found() -> PoisonGirlB<(),> {
+	fn test_search_in_found() -> PoisonGirlB<(),>
+	{
 		// Use the current project directory and search for Cargo.toml
 		let current_dir = std::path::PathBuf::from(CWD,);
 		let result = search_in(&current_dir, "Cargo.toml",)?;
@@ -224,7 +240,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_not_found() -> PoisonGirlB<(),> {
+	fn test_search_in_not_found() -> PoisonGirlB<(),>
+	{
 		// Search for a non-existent file in the current directory
 		let current_dir = std::path::PathBuf::from(CWD,);
 		let result =
@@ -234,7 +251,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_upstream_found() -> PoisonGirlB<(),> {
+	fn test_get_upstream_found() -> PoisonGirlB<(),>
+	{
 		// This should find Cargo.toml in the project structure
 		let result = get_upstream("Cargo.toml",);
 		assert!(result.is_x());
@@ -245,7 +263,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_upstream_not_found() {
+	fn test_get_upstream_not_found()
+	{
 		// This should fail to find a non-existent file
 		let result = get_upstream("definitely_nonexistent_file_12345.xyz",);
 		assert!(result.is_y());
@@ -256,7 +275,8 @@ mod tests {
 
 	#[test]
 	#[ignore = "unknown bug"]
-	fn test_search_upstream_found() -> PoisonGirlB<(),> {
+	fn test_search_upstream_found() -> PoisonGirlB<(),>
+	{
 		// This should find Cargo.toml in the project structure
 		let result = search_upstream("Cargo.toml",)?;
 		assert!(result.is_some());
@@ -267,7 +287,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_upstream_not_found() -> PoisonGirlB<(),> {
+	fn test_search_upstream_not_found() -> PoisonGirlB<(),>
+	{
 		// This should not find a non-existent file
 		let result = search_upstream("definitely_nonexistent_file_12345.xyz",)?;
 		assert!(result.is_none());
@@ -275,7 +296,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_check_oso_kernel_file_not_exists() {
+	fn test_check_oso_kernel_file_not_exists()
+	{
 		// In most test environments, oso_kernel.elf won't exist
 		let result = check_poison_girl_kernel();
 		// We expect this to fail in test environment
@@ -285,7 +307,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_cargo_toml_with_different_cwd() -> PoisonGirlB<(),> {
+	fn test_search_cargo_toml_with_different_cwd() -> PoisonGirlB<(),>
+	{
 		// Test with the root directory
 		let root_path = std::path::PathBuf::from("/",);
 		let result = search_cargo_toml(&root_path,);
@@ -301,7 +324,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_constants() {
+	fn test_constants()
+	{
 		// Test that constants are defined correctly
 		assert_eq!(CARGO_MANIFEST, "Cargo.toml");
 		assert_eq!(CARGO_CONFIG, ".cargo/config.toml");
@@ -313,7 +337,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_with_subdirectories() -> PoisonGirlB<(),> {
+	fn test_search_in_with_subdirectories() -> PoisonGirlB<(),>
+	{
 		// Use the current project directory which should have subdirectories
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -331,7 +356,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_file_name_matching() -> PoisonGirlB<(),> {
+	fn test_file_name_matching() -> PoisonGirlB<(),>
+	{
 		// Use the current project directory
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -348,7 +374,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_ignore_dir_list() {
+	fn test_ignore_dir_list()
+	{
 		// Test that the ignore directory list is properly defined
 		assert!(IGNORE_DIR_LIST.contains(&"target"));
 		assert!(IGNORE_DIR_LIST.contains(&".git"));
@@ -359,7 +386,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_ignores_directories() -> PoisonGirlB<(),> {
+	fn test_search_in_ignores_directories() -> PoisonGirlB<(),>
+	{
 		// This test verifies that search_in only looks at files, not
 		// directories
 		let current_dir = std::path::PathBuf::from(CWD,);
@@ -378,7 +406,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_path_operations() -> PoisonGirlB<(),> {
+	fn test_path_operations() -> PoisonGirlB<(),>
+	{
 		// Test basic path operations used in the module
 		let current_dir = std::path::PathBuf::from(CWD,);
 		assert!(current_dir.is_absolute() || current_dir.is_relative());
@@ -390,7 +419,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_all_crates_functionality() -> PoisonGirlB<(),> {
+	fn test_all_crates_functionality() -> PoisonGirlB<(),>
+	{
 		// Test that all_crates returns a result
 		let result = all_crates();
 		// We can't make strong assertions about the result since it depends on
@@ -400,7 +430,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_project_root_path_functionality() -> PoisonGirlB<(),> {
+	fn test_project_root_path_functionality() -> PoisonGirlB<(),>
+	{
 		// Test that project_root_path returns a result
 		let result = project_root_path()?;
 		eprintln!("{result:?}");
@@ -414,7 +445,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_current_crate_path_functionality() -> PoisonGirlB<(),> {
+	fn test_current_crate_path_functionality() -> PoisonGirlB<(),>
+	{
 		// Test that current_crate_path returns a result
 		let result = current_crate_path();
 		// We can't make strong assertions about the result since it depends on
@@ -424,7 +456,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_cwd_functionality() -> PoisonGirlB<(),> {
+	fn test_search_in_cwd_functionality() -> PoisonGirlB<(),>
+	{
 		// Test searching for Cargo.toml in current working directory
 		let result = search_in_cwd("Cargo.toml",)?;
 		// This might or might not find Cargo.toml depending on where the test
@@ -438,7 +471,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_error_handling_with_invalid_paths() {
+	fn test_error_handling_with_invalid_paths()
+	{
 		// Test with a path that doesn't exist
 		let invalid_path =
 			std::path::PathBuf::from("/definitely/nonexistent/path/12345",);
@@ -447,7 +481,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_constants_values() {
+	fn test_constants_values()
+	{
 		// Test that constants have expected values
 		assert_eq!(CARGO_MANIFEST, "Cargo.toml");
 		assert_eq!(CARGO_CONFIG, ".cargo/config.toml");
@@ -465,7 +500,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_check_oso_kernel_with_different_working_directories() {
+	fn test_check_oso_kernel_with_different_working_directories()
+	{
 		// Test check_oso_kernel from different contexts
 		let original_dir = std::env::current_dir().unwrap();
 
@@ -483,7 +519,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_cargo_toml_edge_cases() -> PoisonGirlB<(),> {
+	fn test_search_cargo_toml_edge_cases() -> PoisonGirlB<(),>
+	{
 		// Test with root directory
 		let root_path = std::path::PathBuf::from("/",);
 		let result = search_cargo_toml(&root_path,);
@@ -501,7 +538,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_upstream_error_cases() {
+	fn test_get_upstream_error_cases()
+	{
 		// Test get_upstream with a file that definitely doesn't exist
 		let result = get_upstream(
 			"definitely_nonexistent_file_with_very_unique_name_12345.xyz",
@@ -517,7 +555,8 @@ mod tests {
 
 	#[test]
 	#[ignore = "unknown bug"]
-	fn test_search_upstream_from_deep_directory() -> PoisonGirlB<(),> {
+	fn test_search_upstream_from_deep_directory() -> PoisonGirlB<(),>
+	{
 		// Test search_upstream from a deeper directory structure
 		let original_dir = std::env::current_dir()?;
 
@@ -542,7 +581,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_file_system_edge_cases() -> PoisonGirlB<(),> {
+	fn test_file_system_edge_cases() -> PoisonGirlB<(),>
+	{
 		// Test various edge cases with file system operations
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -565,7 +605,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_with_unicode_filenames() -> PoisonGirlB<(),> {
+	fn test_search_in_with_unicode_filenames() -> PoisonGirlB<(),>
+	{
 		// Test searching for files with unicode names (if they exist)
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -580,7 +621,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_with_special_characters() -> PoisonGirlB<(),> {
+	fn test_search_in_with_special_characters() -> PoisonGirlB<(),>
+	{
 		// Test searching for files with special characters
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -602,7 +644,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_with_very_long_filenames() -> PoisonGirlB<(),> {
+	fn test_search_in_with_very_long_filenames() -> PoisonGirlB<(),>
+	{
 		// Test with very long filenames
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -613,7 +656,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_with_empty_filename() -> PoisonGirlB<(),> {
+	fn test_search_in_with_empty_filename() -> PoisonGirlB<(),>
+	{
 		// Test with empty filename
 		let current_dir = std::path::PathBuf::from(CWD,);
 		let result = search_in(&current_dir, "",)?;
@@ -622,7 +666,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_with_dot_files() -> PoisonGirlB<(),> {
+	fn test_search_in_with_dot_files() -> PoisonGirlB<(),>
+	{
 		// Test searching for hidden files (dot files)
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -637,7 +682,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_upstream_from_root() -> PoisonGirlB<(),> {
+	fn test_search_upstream_from_root() -> PoisonGirlB<(),>
+	{
 		// Test search_upstream when starting from root directory
 		let original_dir = std::env::current_dir()?;
 
@@ -654,7 +700,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_upstream_with_symlinks() -> PoisonGirlB<(),> {
+	fn test_search_upstream_with_symlinks() -> PoisonGirlB<(),>
+	{
 		// Test behavior with symbolic links (if any exist)
 		// This is system-dependent, so we'll just test that it doesn't panic
 		let result = search_upstream("Cargo.toml",)?;
@@ -667,7 +714,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_upstream_with_case_sensitivity() {
+	fn test_get_upstream_with_case_sensitivity()
+	{
 		// Test case sensitivity in file search
 		let result1 = get_upstream("Cargo.toml",);
 		let result2 = get_upstream("cargo.toml",); // Different case
@@ -684,7 +732,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_check_oso_kernel_with_custom_target_dir() {
+	fn test_check_oso_kernel_with_custom_target_dir()
+	{
 		// Test check_oso_kernel with different target directory structures
 		let original_dir = std::env::current_dir().unwrap();
 
@@ -702,7 +751,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_constants_immutability() {
+	fn test_constants_immutability()
+	{
 		// Test that constants have expected values and are immutable
 		let manifest = CARGO_MANIFEST;
 		let config = CARGO_CONFIG;
@@ -719,7 +769,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_ignore_dir_list_completeness() {
+	fn test_ignore_dir_list_completeness()
+	{
 		// Test that IGNORE_DIR_LIST contains expected directories
 		assert!(IGNORE_DIR_LIST.contains(&"target"));
 		assert!(IGNORE_DIR_LIST.contains(&".git"));
@@ -737,7 +788,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_with_permission_denied() -> PoisonGirlB<(),> {
+	fn test_search_in_with_permission_denied() -> PoisonGirlB<(),>
+	{
 		// Test behavior when encountering permission denied errors
 		// This is system-dependent and might not trigger on all systems
 		let restricted_paths = vec![
@@ -761,7 +813,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_cargo_toml_in_nested_structure() -> PoisonGirlB<(),> {
+	fn test_search_cargo_toml_in_nested_structure() -> PoisonGirlB<(),>
+	{
 		// Test searching for Cargo.toml in nested directory structures
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -779,7 +832,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_path_traversal_security() -> PoisonGirlB<(),> {
+	fn test_path_traversal_security() -> PoisonGirlB<(),>
+	{
 		// Test that path traversal attempts are handled safely
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -801,7 +855,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_concurrent_file_operations() -> PoisonGirlB<(),> {
+	fn test_concurrent_file_operations() -> PoisonGirlB<(),>
+	{
 		// Test concurrent file system operations
 		use std::thread;
 
@@ -825,7 +880,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_file_system_edge_cases_extended() -> PoisonGirlB<(),> {
+	fn test_file_system_edge_cases_extended() -> PoisonGirlB<(),>
+	{
 		// Extended test for various file system edge cases
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -851,7 +907,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_search_in_with_binary_files() -> PoisonGirlB<(),> {
+	fn test_search_in_with_binary_files() -> PoisonGirlB<(),>
+	{
 		// Test searching for binary files
 		let current_dir = std::path::PathBuf::from(CWD,);
 
@@ -875,7 +932,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_error_message_quality() {
+	fn test_error_message_quality()
+	{
 		// Test that error messages are informative
 		let result = get_upstream(
 			"definitely_nonexistent_file_with_very_unique_name_12345.xyz",
@@ -891,7 +949,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_all_crates_with_complex_directory_structure() -> PoisonGirlB<(),> {
+	fn test_all_crates_with_complex_directory_structure() -> PoisonGirlB<(),>
+	{
 		// Test all_crates function with complex directory structures
 		let result = all_crates();
 
@@ -913,7 +972,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_project_root_path_consistency() -> PoisonGirlB<(),> {
+	fn test_project_root_path_consistency() -> PoisonGirlB<(),>
+	{
 		// Test that project_root_path returns consistent results
 		let result1 = project_root_path();
 		let result2 = project_root_path();
@@ -940,7 +1000,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_current_crate_path_validity() -> PoisonGirlB<(),> {
+	fn test_current_crate_path_validity() -> PoisonGirlB<(),>
+	{
 		// Test that current_crate_path returns a valid path when successful
 		let result = current_crate_path();
 

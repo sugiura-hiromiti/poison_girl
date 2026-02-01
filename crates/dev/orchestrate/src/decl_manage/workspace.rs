@@ -6,37 +6,46 @@ use {
 	std::ffi::OsStr,
 };
 
-pub trait Workspace: WorkspaceAction + WorkspaceSurvey {
-	fn as_action(&self,) -> &impl WorkspaceAction {
+pub trait Workspace: WorkspaceAction + WorkspaceSurvey
+{
+	fn as_action(&self,) -> &impl WorkspaceAction
+	{
 		self
 	}
 
-	fn as_survey(&self,) -> &impl WorkspaceSurvey {
+	fn as_survey(&self,) -> &impl WorkspaceSurvey
+	{
 		self
 	}
 }
 
-pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
+pub trait WorkspaceAction: WorkspaceInfo + CrateAction
+{
 	// actions for specific package
 
 	fn build_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
-	where Self: WorkspaceSurvey {
+	where Self: WorkspaceSurvey
+	{
 		self.cargo_xxx_at("build", at,)
 	}
 	fn test_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
-	where Self: WorkspaceSurvey {
+	where Self: WorkspaceSurvey
+	{
 		self.cargo_xxx_at("test", at,)
 	}
 	fn run_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
-	where Self: WorkspaceSurvey {
+	where Self: WorkspaceSurvey
+	{
 		self.cargo_xxx_at("run", at,)
 	}
 	fn check_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
-	where Self: WorkspaceSurvey {
+	where Self: WorkspaceSurvey
+	{
 		self.cargo_xxx_at("check", at,)
 	}
 	fn fmt_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
-	where Self: WorkspaceSurvey {
+	where Self: WorkspaceSurvey
+	{
 		self.cargo_xxx_at("fmt", at,)
 	}
 	fn cargo_xxx_at(
@@ -122,7 +131,9 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction {
 	}
 }
 
-pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey {}
+pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey
+{
+}
 
 /// Trait for managing OSO workspace operations
 ///
@@ -149,7 +160,8 @@ pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey {}
 ///     }
 /// }
 /// ```
-pub trait WorkspaceInfo: Sized + CrateInfo {
+pub trait WorkspaceInfo: Sized + CrateInfo
+{
 	/// Returns a slice of paths to all crates in the workspace
 	///
 	/// # Returns
@@ -175,7 +187,8 @@ pub trait WorkspaceInfo: Sized + CrateInfo {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {
 		super::*,
 		crate::decl_manage::crate_::{CrateInfo, OsoCrate},
@@ -183,7 +196,8 @@ mod tests {
 	};
 
 	#[test]
-	fn test_workspace_action_at_methods() {
+	fn test_workspace_action_at_methods()
+	{
 		// Test workspace action methods that operate on specific crates
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -206,7 +220,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_action_at_with_methods() {
+	fn test_workspace_action_at_with_methods()
+	{
 		// Test workspace action methods with options
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -232,7 +247,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_action_cargo_xxx_at() {
+	fn test_workspace_action_cargo_xxx_at()
+	{
 		// Test the generic cargo_xxx_at method
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -249,7 +265,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_action_cargo_xxx_at_with() {
+	fn test_workspace_action_cargo_xxx_at_with()
+	{
 		// Test the generic cargo_xxx_at_with method
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -269,7 +286,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_trait_as_methods() {
+	fn test_workspace_trait_as_methods()
+	{
 		// Test the as_action and as_survey methods
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -285,7 +303,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_info_members_signature() {
+	fn test_workspace_info_members_signature()
+	{
 		// Test that members method has the correct signature
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -302,7 +321,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_info_members_with_target_signature() {
+	fn test_workspace_info_members_with_target_signature()
+	{
 		// Test that members_with_target method has the correct signature
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -323,7 +343,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_survey_land_on_signature() {
+	fn test_workspace_survey_land_on_signature()
+	{
 		// Test that land_on method has the correct signature
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -341,22 +362,27 @@ mod tests {
 	}
 
 	#[test]
-	fn test_trait_bounds_compilation() {
+	fn test_trait_bounds_compilation()
+	{
 		// Test that all trait bounds compile correctly
-		fn test_workspace<W: Workspace,>(workspace: &W,) {
+		fn test_workspace<W: Workspace,>(workspace: &W,)
+		{
 			let _action = workspace.as_action();
 			let _survey = workspace.as_survey();
 		}
 
-		fn test_workspace_action<WA: WorkspaceAction,>(action: &WA,) {
+		fn test_workspace_action<WA: WorkspaceAction,>(action: &WA,)
+		{
 			let _build_result = action.build();
 		}
 
-		fn test_workspace_survey<WS: WorkspaceSurvey,>(survey: &WS,) {
+		fn test_workspace_survey<WS: WorkspaceSurvey,>(survey: &WS,)
+		{
 			let _members = survey.members();
 		}
 
-		fn test_workspace_info<WI: WorkspaceInfo,>(info: &WI,) {
+		fn test_workspace_info<WI: WorkspaceInfo,>(info: &WI,)
+		{
 			let _path = info.path();
 			let _members = info.members();
 		}
@@ -372,7 +398,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_integration() {
+	fn test_workspace_integration()
+	{
 		// Test that Workspace trait integrates all functionality
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -402,10 +429,12 @@ mod tests {
 	}
 
 	#[test]
-	fn test_generic_constraints() {
+	fn test_generic_constraints()
+	{
 		// Test that generic constraints work correctly
 		fn work_with_workspace<W,>(workspace: W,)
-		where W: Workspace + Clone {
+		where W: Workspace + Clone
+		{
 			let _cloned = workspace.clone();
 			let _action = workspace.as_action();
 			let _survey = workspace.as_survey();

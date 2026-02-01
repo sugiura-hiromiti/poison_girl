@@ -15,13 +15,15 @@ use {
 
 use crate::Xtask;
 
-impl Xtask {
+impl Xtask
+{
 	/// Gets the QEMU executable name based on the target architecture
 	///
 	/// # Returns
 	///
 	/// The name of the QEMU executable (e.g., "qemu-system-aarch64")
-	pub fn qemu(&self,) -> String {
+	pub fn qemu(&self,) -> String
+	{
 		format!("qemu-system-{}", self.arch().to_string())
 	}
 
@@ -31,7 +33,8 @@ impl Xtask {
 	/// # Returns
 	///
 	/// A vector of command-line arguments for QEMU or an error if it fails
-	pub fn qemu_args(&self,) -> PoisonGirlB<Vec<String,>,> {
+	pub fn qemu_args(&self,) -> PoisonGirlB<Vec<String,>,>
+	{
 		let mut args = basic_args(self.arch(),);
 
 		// configure persistent flash memory
@@ -65,7 +68,8 @@ impl Xtask {
 
 /// Manages OVMF firmware files for UEFI boot
 #[derive(Debug,)]
-pub struct Firmware {
+pub struct Firmware
+{
 	/// Path to the OVMF code file
 	code: PathBuf,
 	/// Path to the OVMF variables file
@@ -73,7 +77,8 @@ pub struct Firmware {
 }
 
 /// Defines the mode for persistent flash memory
-enum PflashMode {
+enum PflashMode
+{
 	/// Read-only mode
 	ReadOnly,
 	/// Read-write mode
@@ -89,7 +94,8 @@ enum PflashMode {
 /// # Returns
 ///
 /// A vector of basic QEMU command-line arguments
-fn basic_args(arch: Arch,) -> Vec<String,> {
+fn basic_args(arch: Arch,) -> Vec<String,>
+{
 	match arch {
 		Arch::Aarch64 => vec![
 			// generic arm enviromnent
@@ -136,7 +142,8 @@ fn basic_args(arch: Arch,) -> Vec<String,> {
 fn persistent_flash_memory_args(
 	pflash_file: &PathBuf,
 	mode: PflashMode,
-) -> Vec<String,> {
+) -> Vec<String,>
+{
 	let mut args = vec!["-drive".to_string()];
 	let mut arg = String::from("if=pflash,format=raw,readonly=",);
 	arg.push_str(match mode {
@@ -161,7 +168,8 @@ fn persistent_flash_memory_args(
 /// # Returns
 ///
 /// A vector of QEMU command-line arguments for block devices
-fn block_device(disk_img: &Path,) -> Vec<String,> {
+fn block_device(disk_img: &Path,) -> Vec<String,>
+{
 	vec![
 		"-monitor".to_string(),
 		"stdio".to_string(),

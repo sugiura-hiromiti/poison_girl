@@ -6,7 +6,8 @@ use {
 pub fn wrapper(
 	static_frame_buffer: syn::Ident,
 	trait_def: syn::ItemTrait,
-) -> Rslt<TokenStream,> {
+) -> Rslt<TokenStream,>
+{
 	// Generate wrapper functions for each trait method
 	let wrapper_fns = trait_def.items.clone().into_iter().filter_map(|i| {
 		if let syn::TraitItem::Fn(method,) = i {
@@ -51,7 +52,8 @@ pub fn wrapper(
 
 pub fn method_args(
 	sig: &Signature,
-) -> impl Iterator<Item = std::boxed::Box<syn::Pat,>,> {
+) -> impl Iterator<Item = std::boxed::Box<syn::Pat,>,>
+{
 	sig.inputs.iter().filter_map(|a| match a {
 		// Skip receiver arguments (self, &self, &mut self, etc.)
 		syn::FnArg::Receiver(_,) => None,
@@ -61,14 +63,16 @@ pub fn method_args(
 	},)
 }
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {
 		super::*,
 		syn::{Signature, parse_quote},
 	};
 
 	#[test]
-	fn test_method_args_no_receiver() {
+	fn test_method_args_no_receiver()
+	{
 		let sig: Signature = parse_quote! {
 			fn test_function(arg1: i32, arg2: String, arg3: bool) -> i32
 		};
@@ -78,7 +82,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_with_self_receiver() {
+	fn test_method_args_with_self_receiver()
+	{
 		let sig: Signature = parse_quote! {
 			fn test_method(&self, arg1: i32, arg2: String) -> bool
 		};
@@ -89,7 +94,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_with_mut_self_receiver() {
+	fn test_method_args_with_mut_self_receiver()
+	{
 		let sig: Signature = parse_quote! {
 			fn test_method(&mut self, arg1: i32) -> ()
 		};
@@ -100,7 +106,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_with_owned_self_receiver() {
+	fn test_method_args_with_owned_self_receiver()
+	{
 		let sig: Signature = parse_quote! {
 			fn test_method(self, arg1: String, arg2: Vec<i32>) -> String
 		};
@@ -111,7 +118,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_no_arguments() {
+	fn test_method_args_no_arguments()
+	{
 		let sig: Signature = parse_quote! {
 			fn test_function() -> ()
 		};
@@ -121,7 +129,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_only_receiver() {
+	fn test_method_args_only_receiver()
+	{
 		let sig: Signature = parse_quote! {
 			fn test_method(&self) -> i32
 		};
@@ -132,7 +141,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_complex_types() {
+	fn test_method_args_complex_types()
+	{
 		let sig: Signature = parse_quote! {
 			fn complex_method(
 				&self,
@@ -149,7 +159,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_pattern_matching() {
+	fn test_method_args_pattern_matching()
+	{
 		let sig: Signature = parse_quote! {
 			fn pattern_method(&self, (x, y): (i32, i32), [a, b, c]: [u8; 3]) -> ()
 		};
@@ -160,7 +171,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_with_lifetimes() {
+	fn test_method_args_with_lifetimes()
+	{
 		let sig: Signature = parse_quote! {
 			fn lifetime_method<'a>(&self, arg1: &'a str, arg2: &'a mut Vec<i32>) -> &'a str
 		};
@@ -171,7 +183,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_with_generics() {
+	fn test_method_args_with_generics()
+	{
 		let sig: Signature = parse_quote! {
 			fn generic_method<T, U>(&self, arg1: T, arg2: Vec<U>, arg3: Option<T>) -> Result<T, U>
 		};
@@ -182,7 +195,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_method_args_preserves_pattern_structure() {
+	fn test_method_args_preserves_pattern_structure()
+	{
 		let sig: Signature = parse_quote! {
 			fn test_fn(&self, arg1: i32, arg2: String,)
 		};
@@ -197,7 +211,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_basic() {
+	fn test_wrapper_function_basic()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("FRAME_BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -220,7 +235,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_multiple_methods() {
+	fn test_wrapper_function_multiple_methods()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -248,7 +264,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_with_const() {
+	fn test_wrapper_function_with_const()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -269,7 +286,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_with_unsafe() {
+	fn test_wrapper_function_with_unsafe()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -290,7 +308,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_with_async() {
+	fn test_wrapper_function_with_async()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -311,7 +330,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_with_generics() {
+	fn test_wrapper_function_with_generics()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -333,7 +353,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_with_return_type() {
+	fn test_wrapper_function_with_return_type()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -357,7 +378,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_filters_non_functions() {
+	fn test_wrapper_function_filters_non_functions()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -382,7 +404,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_empty_trait() {
+	fn test_wrapper_function_empty_trait()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {
@@ -402,7 +425,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_wrapper_function_with_where_clause() {
+	fn test_wrapper_function_with_where_clause()
+	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
 		let trait_def: syn::ItemTrait = parse_quote! {

@@ -9,14 +9,17 @@ pub use this_is_b::{
 pub type PoisonGirlB<T,> = this_is_b::B<T, PoisonGirlError,>;
 
 #[derive(Debug,)]
-pub struct PoisonGirlError {
+pub struct PoisonGirlError
+{
 	_loc: &'static Location<'static,>,
 	_src: PoisonGirlErrorKind,
 }
 
-impl From<ElfParseError,> for PoisonGirlError {
+impl From<ElfParseError,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: ElfParseError,) -> Self {
+	fn from(value: ElfParseError,) -> Self
+	{
 		Self {
 			_loc: Location::caller(),
 			_src: PoisonGirlErrorKind::ElfParse(value,),
@@ -24,9 +27,11 @@ impl From<ElfParseError,> for PoisonGirlError {
 	}
 }
 
-impl From<ParserError,> for PoisonGirlError {
+impl From<ParserError,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: ParserError,) -> Self {
+	fn from(value: ParserError,) -> Self
+	{
 		Self {
 			_loc: Location::caller(),
 			_src: PoisonGirlErrorKind::Parser(value,),
@@ -34,9 +39,11 @@ impl From<ParserError,> for PoisonGirlError {
 	}
 }
 
-impl From<GraphicError,> for PoisonGirlError {
+impl From<GraphicError,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: GraphicError,) -> Self {
+	fn from(value: GraphicError,) -> Self
+	{
 		Self {
 			_loc: Location::caller(),
 			_src: PoisonGirlErrorKind::Graphic(value,),
@@ -44,9 +51,11 @@ impl From<GraphicError,> for PoisonGirlError {
 	}
 }
 
-impl From<UefiError,> for PoisonGirlError {
+impl From<UefiError,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: UefiError,) -> Self {
+	fn from(value: UefiError,) -> Self
+	{
 		Self {
 			_loc: Location::caller(),
 			_src: PoisonGirlErrorKind::Uefi(value,),
@@ -54,9 +63,11 @@ impl From<UefiError,> for PoisonGirlError {
 	}
 }
 
-impl From<GuidError,> for PoisonGirlError {
+impl From<GuidError,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: GuidError,) -> Self {
+	fn from(value: GuidError,) -> Self
+	{
 		Self {
 			_loc: Location::caller(),
 			_src: PoisonGirlErrorKind::Uefi(UefiError::Guid(value,),),
@@ -65,7 +76,8 @@ impl From<GuidError,> for PoisonGirlError {
 }
 
 #[derive(Debug,)]
-pub enum PoisonGirlErrorKind {
+pub enum PoisonGirlErrorKind
+{
 	Uefi(UefiError,),
 	ElfParse(ElfParseError,),
 	Parser(ParserError,),
@@ -73,7 +85,8 @@ pub enum PoisonGirlErrorKind {
 }
 
 #[derive(Debug,)]
-pub enum UefiError {
+pub enum UefiError
+{
 	CustomStatus(usize,),
 	Status(&'static str,),
 	Custom(&'static str,),
@@ -81,17 +94,21 @@ pub enum UefiError {
 }
 
 #[derive(Debug,)]
-pub enum GuidError {
+pub enum GuidError
+{
 	InvalidHexChar,
 }
 
 #[derive(Debug,)]
-pub enum ElfParseError {
-	EndOfBinary {
+pub enum ElfParseError
+{
+	EndOfBinary
+	{
 		parser_pos: &'static str,
 		stage:      ElfParseStage,
 	},
-	SizeOverflow {
+	SizeOverflow
+	{
 		stage:    ElfParseStage,
 		name:     u64,
 		expected: u64,
@@ -105,13 +122,15 @@ pub enum ElfParseError {
 	OsAbiOutOfSupport(u8,),
 	/// string context
 	DelimiterNotFound(u8,),
-	TooManySymbolsOffset {
+	TooManySymbolsOffset
+	{
 		offset: usize,
 		count:  usize,
 	},
 	InvalidEndianFlag(u8,),
 	InvalidProgramHeaderType(u32,),
-	InvalidGnuHash {
+	InvalidGnuHash
+	{
 		buckets_count: usize,
 		min_chain:     usize,
 		bloom_size:    usize,
@@ -119,7 +138,8 @@ pub enum ElfParseError {
 }
 
 #[derive(Debug,)]
-pub enum ElfParseStage {
+pub enum ElfParseStage
+{
 	Header,
 	ProgramHeader,
 	SectionHeader,
@@ -130,7 +150,8 @@ pub enum ElfParseStage {
 pub enum ParserError {}
 
 #[derive(Debug,)]
-pub enum GraphicError {
+pub enum GraphicError
+{
 	InvalidCoordinate,
 }
 

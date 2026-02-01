@@ -1,14 +1,15 @@
 use core::ptr;
 
-use crate::raw::protocol::device_path::DevicePathProtocol;
-use crate::raw::service::BootServices;
-use crate::raw::types::Boolean;
-use crate::raw::types::Status;
-use crate::raw::types::UnsafeHandle;
+use crate::raw::{
+	protocol::device_path::DevicePathProtocol,
+	service::BootServices,
+	types::{Boolean, Status, UnsafeHandle},
+};
 
 use super::Handle;
 
-impl BootServices {
+impl BootServices
+{
 	/// # Safety
 	/// TODO: fill doc comment
 	pub unsafe fn connect_controller(
@@ -17,7 +18,8 @@ impl BootServices {
 		driver_image_handle: Option<Handle,>,
 		remaining_device_path: Option<DevicePathProtocol,>,
 		recursive: Boolean,
-	) -> Status {
+	) -> Status
+	{
 		let driver_image_handle = match driver_image_handle {
 			Some(h,) => h.as_ptr(),
 			None => ptr::null_mut(),

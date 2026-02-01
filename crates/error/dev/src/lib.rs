@@ -12,55 +12,70 @@ use {
 pub type PoisonGirlB<T,> = this_is_b::B<T, PoisonGirlError,>;
 
 #[derive(Debug,)]
-pub struct PoisonGirlError {
+pub struct PoisonGirlError
+{
 	loc: &'static Location<'static,>,
 	src: DevError,
 }
 
-impl Display for PoisonGirlError {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result {
+impl Display for PoisonGirlError
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result
+	{
 		f.write_fmt(format_args!("at: {}\nsrc: {:?}", self.loc, self.src),)
 	}
 }
 
-impl From<std::io::Error,> for PoisonGirlError {
+impl From<std::io::Error,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: std::io::Error,) -> Self {
+	fn from(value: std::io::Error,) -> Self
+	{
 		Self { loc: Location::caller(), src: DevError::Io(value,), }
 	}
 }
 
-impl From<std::process::ExitStatusError,> for PoisonGirlError {
+impl From<std::process::ExitStatusError,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: std::process::ExitStatusError,) -> Self {
+	fn from(value: std::process::ExitStatusError,) -> Self
+	{
 		Self { loc: Location::caller(), src: DevError::ExitStatus(value,), }
 	}
 }
 
-impl From<PathNotFound,> for PoisonGirlError {
+impl From<PathNotFound,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: PathNotFound,) -> Self {
+	fn from(value: PathNotFound,) -> Self
+	{
 		Self { loc: Location::caller(), src: DevError::PathNotFound(value,), }
 	}
 }
 
-impl From<std::string::FromUtf8Error,> for PoisonGirlError {
+impl From<std::string::FromUtf8Error,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: std::string::FromUtf8Error,) -> Self {
+	fn from(value: std::string::FromUtf8Error,) -> Self
+	{
 		Self { loc: Location::caller(), src: DevError::FromUtf8(value,), }
 	}
 }
 
-impl From<toml::de::Error,> for PoisonGirlError {
+impl From<toml::de::Error,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: toml::de::Error,) -> Self {
+	fn from(value: toml::de::Error,) -> Self
+	{
 		Self { loc: Location::caller(), src: DevError::TomlDeError(value,), }
 	}
 }
 
-impl From<HostTupleNotFound,> for PoisonGirlError {
+impl From<HostTupleNotFound,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: HostTupleNotFound,) -> Self {
+	fn from(value: HostTupleNotFound,) -> Self
+	{
 		Self {
 			loc: Location::caller(),
 			src: DevError::HostTupleNotFound(value,),
@@ -68,16 +83,20 @@ impl From<HostTupleNotFound,> for PoisonGirlError {
 	}
 }
 
-impl From<ovmf_prebuilt::Error,> for PoisonGirlError {
+impl From<ovmf_prebuilt::Error,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: ovmf_prebuilt::Error,) -> Self {
+	fn from(value: ovmf_prebuilt::Error,) -> Self
+	{
 		Self { loc: Location::caller(), src: DevError::OvmfError(value,), }
 	}
 }
 
-impl From<&str,> for PoisonGirlError {
+impl From<&str,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: &str,) -> Self {
+	fn from(value: &str,) -> Self
+	{
 		Self {
 			loc: Location::caller(),
 			src: DevError::Todo(value.to_string(),),
@@ -85,16 +104,20 @@ impl From<&str,> for PoisonGirlError {
 	}
 }
 
-impl From<toml::ser::Error,> for PoisonGirlError {
+impl From<toml::ser::Error,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: toml::ser::Error,) -> Self {
+	fn from(value: toml::ser::Error,) -> Self
+	{
 		Self { loc: Location::caller(), src: DevError::TomlSerError(value,), }
 	}
 }
 
-impl From<InvalidManifest,> for PoisonGirlError {
+impl From<InvalidManifest,> for PoisonGirlError
+{
 	#[track_caller]
-	fn from(value: InvalidManifest,) -> Self {
+	fn from(value: InvalidManifest,) -> Self
+	{
 		Self {
 			loc: Location::caller(), src: DevError::InvalidManifest(value,),
 		}
@@ -102,7 +125,8 @@ impl From<InvalidManifest,> for PoisonGirlError {
 }
 
 #[derive(Debug,)]
-pub enum DevError {
+pub enum DevError
+{
 	Io(std::io::Error,),
 	ExitStatus(std::process::ExitStatusError,),
 	FromUtf8(std::string::FromUtf8Error,),
@@ -123,8 +147,10 @@ pub struct HostTupleNotFound;
 #[derive(Debug,)]
 pub struct InvalidManifest(pub String,);
 
-impl InvalidManifest {
-	pub fn new(s: impl Into<String,>,) -> Self {
+impl InvalidManifest
+{
+	pub fn new(s: impl Into<String,>,) -> Self
+	{
 		Self(s.into(),)
 	}
 }

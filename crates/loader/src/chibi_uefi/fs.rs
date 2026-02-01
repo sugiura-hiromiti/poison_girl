@@ -14,8 +14,10 @@ use {
 	poison_girl_no_std_error::{PoisonGirlB, UefiError, X},
 };
 
-impl SimpleFileSystemProtocol {
-	pub fn open_volume(&mut self,) -> PoisonGirlB<&mut FileProtocolV1,> {
+impl SimpleFileSystemProtocol
+{
+	pub fn open_volume(&mut self,) -> PoisonGirlB<&mut FileProtocolV1,>
+	{
 		let mut root = ptr::null_mut();
 		unsafe { (self.open_volume)(self, &mut root,) }.x_or_with(|_| {
 			unsafe { root.as_mut() }.expect("root directory handle is null",)
@@ -23,14 +25,16 @@ impl SimpleFileSystemProtocol {
 	}
 }
 
-impl FileProtocolV1 {
+impl FileProtocolV1
+{
 	/// opens a new file relative to the source directory's location
 	pub fn open(
 		&mut self,
 		path: impl AsRef<str,>,
 		mode: OpenMode,
 		attrs: FileAttributes,
-	) -> PoisonGirlB<&mut FileProtocolV1,> {
+	) -> PoisonGirlB<&mut FileProtocolV1,>
+	{
 		let path = into_null_terminated_utf16(path,);
 		let path = path.as_ptr();
 
@@ -49,13 +53,15 @@ impl FileProtocolV1 {
 	/// returns bytes amount of read data
 	/// # Safety
 	/// TODO: fill doc comment
-	pub unsafe fn read(&mut self, buf: &mut [u8],) -> PoisonGirlB<usize,> {
+	pub unsafe fn read(&mut self, buf: &mut [u8],) -> PoisonGirlB<usize,>
+	{
 		let mut len = buf.len();
 		unsafe { (self.read)(self, &mut len, buf.as_mut_ptr().cast(),) }
 			.x_or_with(|_| len,)
 	}
 
-	pub fn read_as_bytes(&mut self,) -> PoisonGirlB<Vec<u8,>,> {
+	pub fn read_as_bytes(&mut self,) -> PoisonGirlB<Vec<u8,>,>
+	{
 		let file_info = self.get_file_info()?;
 		let mut buf = alloc::vec![0; file_info.file_size as usize];
 		let read_len = unsafe { self.read(buf.as_mut_slice(),) }?;
@@ -66,7 +72,8 @@ impl FileProtocolV1 {
 	pub fn get_info<F: FileInformation,>(
 		&mut self,
 		buf: &mut [u8],
-	) -> PoisonGirlB<*mut F,> {
+	) -> PoisonGirlB<*mut F,>
+	{
 		let mut len = buf.len();
 		unsafe {
 			(self.get_info)(self, &F::GUID, &mut len, buf.as_mut_ptr().cast(),)
@@ -79,7 +86,8 @@ impl FileProtocolV1 {
 		X(file,)
 	}
 
-	pub fn get_file_info(&mut self,) -> PoisonGirlB<FileInfo,> {
+	pub fn get_file_info(&mut self,) -> PoisonGirlB<FileInfo,>
+	{
 		let info_size = self.info_size::<FileInfo>()?;
 		let mut buf = alloc::vec![0u8; info_size];
 		let buf: &mut [u8] = buf.as_mut();
@@ -87,7 +95,8 @@ impl FileProtocolV1 {
 		X(unsafe { *file_info },)
 	}
 
-	pub fn info_size<F: FileInformation,>(&mut self,) -> PoisonGirlB<usize,> {
+	pub fn info_size<F: FileInformation,>(&mut self,) -> PoisonGirlB<usize,>
+	{
 		let mut len = 0;
 		let status = unsafe {
 			(self.get_info)(self, &F::GUID, &mut len, ptr::null_mut(),)

@@ -55,7 +55,8 @@ const ELF_OS_ABI_INDEX: usize = 7;
 /// Index of the ABI version byte in the identification array
 const ELF_ABI_VERSION_INDEX: usize = 8;
 
-pub struct Elf {
+pub struct Elf
+{
 	pub header:                             ElfHeader,
 	pub program_headers:                    Vec<ProgramHeader,>,
 	pub section_headers:                    Vec<SectionHeader,>,
@@ -80,10 +81,12 @@ pub struct Elf {
 	pub is_position_independent_executable: bool,
 }
 
-impl Elf {
-	pub fn parse(binary: &[u8],) -> PoisonGirlB<Self,> {
+impl Elf
+{
+	pub fn parse(binary: &[u8],) -> PoisonGirlB<Self,>
+	{
 		let header = ElfHeader::parse(binary,)?;
-		poison_girl_proc_macro_def::test_elf_header_parse!(header);
+		poison_girl_macro::test_elf_header_parse!(header);
 
 		let mut offset = header.program_header_offset as usize;
 		let program_headers = ProgramHeader::parse(
@@ -295,7 +298,8 @@ impl Elf {
 	/// # Returns
 	///
 	/// `true` if this is a 64-bit ELF file, `false` if it's 32-bit
-	pub fn is_64(&self,) -> bool {
+	pub fn is_64(&self,) -> bool
+	{
 		self.header.is_64()
 	}
 
@@ -307,7 +311,8 @@ impl Elf {
 	/// # Returns
 	///
 	/// `true` if this is a shared library, `false` otherwise
-	pub fn is_lib(&self,) -> bool {
+	pub fn is_lib(&self,) -> bool
+	{
 		self.header.is_lib() && !self.is_position_independent_executable
 	}
 
@@ -316,7 +321,8 @@ impl Elf {
 	/// # Returns
 	///
 	/// `true` if little-endian, `false` if big-endian
-	pub fn is_little_endian(&self,) -> bool {
+	pub fn is_little_endian(&self,) -> bool
+	{
 		self.header.is_little_endian()
 	}
 
@@ -328,13 +334,15 @@ impl Elf {
 	/// # Returns
 	///
 	/// The entry point address as a `usize`
-	pub fn entry_point_address(&self,) -> usize {
+	pub fn entry_point_address(&self,) -> usize
+	{
 		self.header.entry as usize
 	}
 }
 
 #[derive(Debug, Default, PartialEq, Eq,)]
-pub struct ElfHeader {
+pub struct ElfHeader
+{
 	pub ident: ElfHeaderIdent,
 	pub ty: ElfType,
 	pub machine: u16,
@@ -351,7 +359,8 @@ pub struct ElfHeader {
 	pub section_header_index_of_section_name_string_table: u16,
 }
 
-impl ElfHeader {
+impl ElfHeader
+{
 	/// Intel 80386
 	pub const EM_386: u16 = 3;
 	/// Freescale 56800EX DSC
@@ -726,22 +735,26 @@ impl ElfHeader {
 	/// LSI Logic 16-bit DSP Processor
 	pub const EM_ZSP: u16 = 79;
 
-	pub fn parse(binary: &[u8],) -> PoisonGirlB<Self,> {
+	pub fn parse(binary: &[u8],) -> PoisonGirlB<Self,>
+	{
 		let ident = &binary[..ELF_IDENT_SIZE];
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
 		header_flag_fields(ident, remain,)
 	}
 
-	fn is_64(&self,) -> bool {
+	fn is_64(&self,) -> bool
+	{
 		self.ident.is_64()
 	}
 
-	fn is_lib(&self,) -> bool {
+	fn is_lib(&self,) -> bool
+	{
 		self.ty.is_lib()
 	}
 
-	fn is_little_endian(&self,) -> bool {
+	fn is_little_endian(&self,) -> bool
+	{
 		self.ident.is_little_endian()
 	}
 }
@@ -749,7 +762,8 @@ impl ElfHeader {
 fn header_flag_fields(
 	ident: ElfHeaderIdent,
 	ident_remain: &[u8],
-) -> PoisonGirlB<ElfHeader,> {
+) -> PoisonGirlB<ElfHeader,>
+{
 	let offset = &mut 0;
 
 	macro_rules! fields {
@@ -834,7 +848,8 @@ where
 }
 
 #[derive(PartialEq, Eq, Debug, Default,)]
-pub enum ElfType {
+pub enum ElfType
+{
 	None,
 	Relocatable,
 	#[default]
@@ -848,16 +863,20 @@ pub enum ElfType {
 	ProcessorSpecificRangeEnd,
 }
 
-impl ElfType {
-	fn is_lib(&self,) -> bool {
+impl ElfType
+{
+	fn is_lib(&self,) -> bool
+	{
 		*self == Self::SharedObject
 	}
 }
 
-impl TryFrom<u16,> for ElfType {
+impl TryFrom<u16,> for ElfType
+{
 	type Error = ElfParseError;
 
-	fn try_from(value: u16,) -> Result<Self, Self::Error,> {
+	fn try_from(value: u16,) -> Result<Self, Self::Error,>
+	{
 		let ty = match value {
 			0 => Self::None,
 			1 => Self::Relocatable,
@@ -878,7 +897,8 @@ impl TryFrom<u16,> for ElfType {
 }
 
 #[derive(Debug, Default, PartialEq, Eq,)]
-pub struct ElfHeaderIdent {
+pub struct ElfHeaderIdent
+{
 	pub file_class:    FileClass,
 	pub endianness:    Endian,
 	pub elf_version:   ElfVersion,
@@ -886,8 +906,10 @@ pub struct ElfHeaderIdent {
 	pub abi_version:   AbiVersion,
 }
 
-impl ElfHeaderIdent {
-	fn new(ident: &[u8],) -> PoisonGirlB<Self,> {
+impl ElfHeaderIdent
+{
+	fn new(ident: &[u8],) -> PoisonGirlB<Self,>
+	{
 		if ident.len() != ELF_IDENT_SIZE {
 			return Y(poison_girl_err!(ElfParseError::InvalidIdentLen(
 				ident.len()
@@ -917,32 +939,39 @@ impl ElfHeaderIdent {
 		},)
 	}
 
-	fn is_64(&self,) -> bool {
+	fn is_64(&self,) -> bool
+	{
 		self.file_class.is_64()
 	}
 
-	fn is_little_endian(&self,) -> bool {
+	fn is_little_endian(&self,) -> bool
+	{
 		self.endianness.is_little_endian()
 	}
 }
 
 #[derive(PartialEq, Eq, Debug, Default,)]
-pub enum FileClass {
+pub enum FileClass
+{
 	Bit32,
 	#[default]
 	Bit64,
 }
 
-impl FileClass {
-	fn is_64(&self,) -> bool {
+impl FileClass
+{
+	fn is_64(&self,) -> bool
+	{
 		*self == FileClass::Bit64
 	}
 }
 
-impl TryFrom<u8,> for FileClass {
+impl TryFrom<u8,> for FileClass
+{
 	type Error = ElfParseError;
 
-	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
+	fn try_from(value: u8,) -> Result<Self, Self::Error,>
+	{
 		match value {
 			ELF_32_BIT_OBJECT => Ok(Self::Bit32,),
 			ELF_64_BIT_OBJECT => Ok(Self::Bit64,),
@@ -954,23 +983,27 @@ impl TryFrom<u8,> for FileClass {
 #[derive(Debug, Default, PartialEq, Eq,)]
 pub struct ElfVersion(pub u8,);
 
-impl ElfVersion {
+impl ElfVersion
+{
 	pub const ONE: Self = Self(1,);
 }
 
 #[non_exhaustive]
 #[derive(Debug, Default, PartialEq, Eq,)]
-pub enum TargetOsAbi {
+pub enum TargetOsAbi
+{
 	SysV,
 	#[default]
 	Arm,
 	Standalone,
 }
 
-impl TryFrom<u8,> for TargetOsAbi {
+impl TryFrom<u8,> for TargetOsAbi
+{
 	type Error = ElfParseError;
 
-	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
+	fn try_from(value: u8,) -> Result<Self, Self::Error,>
+	{
 		match value {
 			0x0 => Ok(Self::SysV,),
 			0x53 => Ok(Self::Arm,),
@@ -982,18 +1015,21 @@ impl TryFrom<u8,> for TargetOsAbi {
 
 #[derive(Debug, Default, PartialEq, Eq,)]
 pub struct AbiVersion(pub u8,);
-impl AbiVersion {
+impl AbiVersion
+{
 	pub const ONE: Self = Self(0,);
 }
 
 #[derive(Default,)]
-pub struct StringTable {
+pub struct StringTable
+{
 	pub delimitor: StringContext,
 	pub bytes:     Vec<u8,>,
 	pub strings:   Vec<(usize, String,),>,
 }
 
-impl StringTable {
+impl StringTable
+{
 	/// # Params
 	///
 	/// - bytes
@@ -1004,7 +1040,8 @@ impl StringTable {
 		offset: usize,
 		len: usize,
 		delimiter: u8,
-	) -> PoisonGirlB<Self,> {
+	) -> PoisonGirlB<Self,>
+	{
 		let (end, overflow,) = offset.overflowing_add(len,);
 		if overflow || end > binary.len() {
 			return Y(poison_girl_err!(ElfParseError::SizeOverflow {
@@ -1029,7 +1066,8 @@ impl StringTable {
 		X(rslt,)
 	}
 
-	fn from_slice(bytes: &[u8], delimiter: u8,) -> Self {
+	fn from_slice(bytes: &[u8], delimiter: u8,) -> Self
+	{
 		Self {
 			delimitor: StringContext::Delimiter(delimiter,),
 			bytes:     bytes.to_vec(),
@@ -1037,7 +1075,8 @@ impl StringTable {
 		}
 	}
 
-	fn get_at(&self, offset: usize,) -> Option<String,> {
+	fn get_at(&self, offset: usize,) -> Option<String,>
+	{
 		match self.strings.binary_search_by_key(&offset, |(key, _value,)| *key,)
 		{
 			Ok(index,) => Some(self.strings[index].1.clone(),),
@@ -1055,14 +1094,17 @@ impl StringTable {
 	}
 }
 
-pub enum StringContext {
+pub enum StringContext
+{
 	Delimiter(u8,),
 	DelimiterUntil(u8, usize,),
 	Length(usize,),
 }
 
-impl StringContext {
-	fn read_bytes(&self, bytes: &[u8],) -> PoisonGirlB<String,> {
+impl StringContext
+{
+	fn read_bytes(&self, bytes: &[u8],) -> PoisonGirlB<String,>
+	{
 		let bytes = match self {
 			StringContext::Delimiter(delimiter,) => {
 				let mut i = 0;
@@ -1088,15 +1130,18 @@ impl StringContext {
 	}
 }
 
-impl Default for StringContext {
-	fn default() -> Self {
+impl Default for StringContext
+{
+	fn default() -> Self
+	{
 		// null delimiter
 		Self::Delimiter(0,)
 	}
 }
 
 #[derive(Default,)]
-pub struct SymbolTable {
+pub struct SymbolTable
+{
 	pub bytes: Vec<u8,>,
 	pub count: usize,
 	pub ctx:   Context,
@@ -1104,7 +1149,8 @@ pub struct SymbolTable {
 	pub end:   usize,
 }
 
-impl SymbolTable {
+impl SymbolTable
+{
 	/// size of symbol structure in 64bit.
 	const SIZE_OF_SYMBOL_64: usize = 4 + 1 + 1 + 2 + 8 + 8;
 
@@ -1113,7 +1159,8 @@ impl SymbolTable {
 		offset: usize,
 		count: usize,
 		context: &Context,
-	) -> PoisonGirlB<Self,> {
+	) -> PoisonGirlB<Self,>
+	{
 		let size = count
 			.checked_mul(match context.container {
 				Container::Little => todo!(),
@@ -1137,46 +1184,57 @@ impl SymbolTable {
 }
 
 #[derive(Clone, Default,)]
-pub struct Context {
+pub struct Context
+{
 	pub container: Container,
 	pub le:        Endian,
 }
 
 /// the size of a binary container
 #[derive(PartialEq, Eq, Clone,)]
-pub enum Container {
+pub enum Container
+{
 	Little,
 	Big,
 }
 
-impl Default for Container {
-	fn default() -> Self {
+impl Default for Container
+{
+	fn default() -> Self
+	{
 		Self::Big
 	}
 }
 
 #[derive(Debug, PartialEq, Eq, Clone,)]
-pub enum Endian {
+pub enum Endian
+{
 	Little,
 	Big,
 }
 
-impl Default for Endian {
-	fn default() -> Self {
+impl Default for Endian
+{
+	fn default() -> Self
+	{
 		Self::Big
 	}
 }
 
-impl Endian {
-	fn is_little_endian(&self,) -> bool {
+impl Endian
+{
+	fn is_little_endian(&self,) -> bool
+	{
 		*self == Self::Little
 	}
 }
 
-impl TryFrom<u8,> for Endian {
+impl TryFrom<u8,> for Endian
+{
 	type Error = ElfParseError;
 
-	fn try_from(value: u8,) -> Result<Self, Self::Error,> {
+	fn try_from(value: u8,) -> Result<Self, Self::Error,>
+	{
 		match value {
 			1 => Ok(Self::Little,),
 			2 => Ok(Self::Big,),
@@ -1185,12 +1243,14 @@ impl TryFrom<u8,> for Endian {
 	}
 }
 
-pub struct Dynamic {
+pub struct Dynamic
+{
 	pub dyns: Vec<Dyn,>,
 	pub info: DynamicInfo,
 }
 
-impl Dynamic {
+impl Dynamic
+{
 	/// No lazy binding for this object.
 	pub const DF_BIND_NOW: u64 = 0x0000_0008;
 	/// Configuration alternative created.
@@ -1384,7 +1444,8 @@ impl Dynamic {
 	fn parse(
 		binary: &[u8],
 		program_headers: &Vec<ProgramHeader,>,
-	) -> PoisonGirlB<Option<Self,>,> {
+	) -> PoisonGirlB<Option<Self,>,>
+	{
 		for program_header in program_headers {
 			if program_header.ty == ProgramHeaderType::Dynamic {
 				let offset = program_header.offset as usize;
@@ -1422,7 +1483,8 @@ impl Dynamic {
 		X(None,)
 	}
 
-	fn get_libraries(&self, string_table: &StringTable,) -> Vec<String,> {
+	fn get_libraries(&self, string_table: &StringTable,) -> Vec<String,>
+	{
 		let count = self.dyns.len().min(self.info.version_need_count as usize,);
 		let mut needed = Vec::with_capacity(count,);
 		for dynamic in &self.dyns {
@@ -1436,23 +1498,27 @@ impl Dynamic {
 	}
 }
 
-pub struct Dyn {
+pub struct Dyn
+{
 	pub tag: u64,
 	pub val: u64,
 }
 
-impl Dyn {
+impl Dyn
+{
 	const SIZE_OF_DYN_32: usize = 8;
 	const SIZE_OF_DYN_64: usize = 16;
 
-	fn size_of(Context { container, .. }: &Context,) -> usize {
+	fn size_of(Context { container, .. }: &Context,) -> usize
+	{
 		match container {
 			Container::Little => Self::SIZE_OF_DYN_32,
 			Container::Big => Self::SIZE_OF_DYN_64,
 		}
 	}
 
-	fn parse(bytes: &[u8], offset: &mut usize,) -> Self {
+	fn parse(bytes: &[u8], offset: &mut usize,) -> Self
+	{
 		let tag = read_le_bytes(offset, bytes,).unwrap();
 		let val = read_le_bytes(offset, bytes,).unwrap();
 		Self { tag, val, }
@@ -1460,7 +1526,8 @@ impl Dyn {
 }
 
 #[derive(Default,)]
-pub struct DynamicInfo {
+pub struct DynamicInfo
+{
 	/// An addend is an extra constant value used in a relocation to help
 	/// compute the correct final address. It adjusts the value that gets
 	/// written into the relocated memory.
@@ -1500,8 +1567,10 @@ pub struct DynamicInfo {
 	pub text_section_relocation:          bool,
 }
 
-impl DynamicInfo {
-	pub fn update(&mut self, phdrs: &[ProgramHeader], dynamic: &Dyn,) {
+impl DynamicInfo
+{
+	pub fn update(&mut self, phdrs: &[ProgramHeader], dynamic: &Dyn,)
+	{
 		match dynamic.tag {
 			Dynamic::DT_RELA => {
 				self.relocation_addend =
@@ -1602,9 +1671,9 @@ impl DynamicInfo {
 }
 
 fn vm_to_offset(
-	program_headers: &[ProgramHeader],
-	address: u64,
-) -> Option<u64,> {
+	program_headers: &[ProgramHeader], address: u64,
+) -> Option<u64,>
+{
 	for program_header in program_headers {
 		if program_header.ty == ProgramHeaderType::Load
 			&& address >= program_header.virtual_address
@@ -1619,7 +1688,8 @@ fn vm_to_offset(
 }
 
 #[derive(Default,)]
-pub struct RelocationSection {
+pub struct RelocationSection
+{
 	pub bytes:   Vec<u8,>,
 	pub count:   usize,
 	pub context: RelocationContext,
@@ -1627,7 +1697,8 @@ pub struct RelocationSection {
 	pub end:     usize,
 }
 
-impl RelocationSection {
+impl RelocationSection
+{
 	const SIZE_OF_RELOCATION_32: usize = 8;
 	const SIZE_OF_RELOCATION_64: usize = 16;
 	const SIZE_OF_RELOCATION_ADDEND_32: usize = 12;
@@ -1639,7 +1710,8 @@ impl RelocationSection {
 		size: usize,
 		is_addend: bool,
 		ctx: &Context,
-	) -> PoisonGirlB<Self,> {
+	) -> PoisonGirlB<Self,>
+	{
 		let bytes =
 			if size != 0 { &binary[offset..offset + size] } else { &[] }
 				.to_vec();
@@ -1656,7 +1728,8 @@ impl RelocationSection {
 	fn size(
 		is_relocation_addrend: bool,
 		Context { container, .. }: &Context,
-	) -> usize {
+	) -> usize
+	{
 		match (is_relocation_addrend, container,) {
 			(true, Container::Little,) => Self::SIZE_OF_RELOCATION_ADDEND_32,
 			(true, Container::Big,) => Self::SIZE_OF_RELOCATION_ADDEND_64,
@@ -1665,21 +1738,25 @@ impl RelocationSection {
 		}
 	}
 
-	fn iter(&self,) -> RelocationIterator {
+	fn iter(&self,) -> RelocationIterator
+	{
 		self.into_iter()
 	}
 }
 
-impl IntoIterator for &RelocationSection {
+impl IntoIterator for &RelocationSection
+{
 	type IntoIter = RelocationIterator;
 	type Item = <RelocationIterator as Iterator>::Item;
 
-	fn into_iter(self,) -> Self::IntoIter {
+	fn into_iter(self,) -> Self::IntoIter
+	{
 		todo!()
 	}
 }
 
-pub struct RelocationIterator {
+pub struct RelocationIterator
+{
 	bytes:   Vec<u8,>,
 	offset:  usize,
 	index:   usize,
@@ -1687,10 +1764,12 @@ pub struct RelocationIterator {
 	context: RelocationContext,
 }
 
-impl Iterator for RelocationIterator {
+impl Iterator for RelocationIterator
+{
 	type Item = Relocation;
 
-	fn next(&mut self,) -> Option<Self::Item,> {
+	fn next(&mut self,) -> Option<Self::Item,>
+	{
 		if self.index >= self.count {
 			None
 		} else {
@@ -1702,7 +1781,8 @@ impl Iterator for RelocationIterator {
 
 pub type RelocationContext = (bool, Context,);
 
-pub struct Relocation {
+pub struct Relocation
+{
 	/// address
 	pub offset:       u64,
 	/// addend
@@ -1714,12 +1794,14 @@ pub struct Relocation {
 	pub ty:           u32,
 }
 
-impl Relocation {
+impl Relocation
+{
 	fn parse(
 		bytes: &[u8],
 		offset: &mut usize,
 		(is_relocation_addrend, context,): &RelocationContext,
-	) -> PoisonGirlB<Self,> {
+	) -> PoisonGirlB<Self,>
+	{
 		let relocation = match (is_relocation_addrend, &context.container,) {
 			(true, Container::Little,) => todo!(),
 			(true, Container::Big,) => {
@@ -1732,14 +1814,17 @@ impl Relocation {
 	}
 }
 
-pub struct RelocAddend {
+pub struct RelocAddend
+{
 	pub offset: u64,
 	pub info:   u64,
 	pub addend: i64,
 }
 
-impl RelocAddend {
-	fn parse(binary: &[u8], offset: &mut usize,) -> Self {
+impl RelocAddend
+{
+	fn parse(binary: &[u8], offset: &mut usize,) -> Self
+	{
 		let reloc_offset: u64 = read_le_bytes(offset, binary,).unwrap();
 		let info: u64 = read_le_bytes(offset, binary,).unwrap();
 		let addend: i64 = read_le_bytes(offset, binary,).unwrap();
@@ -1747,8 +1832,10 @@ impl RelocAddend {
 	}
 }
 
-impl From<RelocAddend,> for Relocation {
-	fn from(value: RelocAddend,) -> Self {
+impl From<RelocAddend,> for Relocation
+{
+	fn from(value: RelocAddend,) -> Self
+	{
 		Self {
 			offset:       value.offset,
 			addend:       Some(value.addend,),
@@ -1758,11 +1845,13 @@ impl From<RelocAddend,> for Relocation {
 	}
 }
 
-fn relocation_symbol_index(info: u64,) -> u32 {
+fn relocation_symbol_index(info: u64,) -> u32
+{
 	(info >> 32) as u32
 }
 
-fn relocation_type(info: u64,) -> u32 {
+fn relocation_type(info: u64,) -> u32
+{
 	(info & 0xffff_ffff) as u32
 }
 
@@ -1770,21 +1859,26 @@ fn relocation_type(info: u64,) -> u32 {
 // 	(symbol << 32) + ty
 // }
 
-pub struct Reloc {
+pub struct Reloc
+{
 	pub offset: u64,
 	pub info:   u64,
 }
 
-impl Reloc {
-	fn parse(binary: &[u8], offset: &mut usize,) -> Self {
+impl Reloc
+{
+	fn parse(binary: &[u8], offset: &mut usize,) -> Self
+	{
 		let reloc_offset: u64 = read_le_bytes(offset, binary,).unwrap();
 		let info: u64 = read_le_bytes(offset, binary,).unwrap();
 		Self { offset: reloc_offset, info, }
 	}
 }
 
-impl From<Reloc,> for Relocation {
-	fn from(value: Reloc,) -> Self {
+impl From<Reloc,> for Relocation
+{
+	fn from(value: Reloc,) -> Self
+	{
 		Self {
 			offset:       value.offset,
 			addend:       None,
@@ -1794,17 +1888,20 @@ impl From<Reloc,> for Relocation {
 	}
 }
 
-pub struct SymbolVersionSection {
+pub struct SymbolVersionSection
+{
 	pub bytes:   Vec<u8,>,
 	pub context: Context,
 }
 
-impl SymbolVersionSection {
+impl SymbolVersionSection
+{
 	fn parse(
 		binary: &[u8],
 		section_headers: &[SectionHeader],
 		ctx: &Context,
-	) -> PoisonGirlB<Option<Self,>,> {
+	) -> PoisonGirlB<Option<Self,>,>
+	{
 		let (offset, size,) = if let Some(section_header,) = section_headers
 			.iter()
 			.find(|section_header| section_header.ty == SHT_GNU_VERSYM,)
@@ -1818,18 +1915,21 @@ impl SymbolVersionSection {
 	}
 }
 
-pub struct VersionDefinitionSection {
+pub struct VersionDefinitionSection
+{
 	pub bytes:   Vec<u8,>,
 	pub count:   usize,
 	pub context: Context,
 }
 
-impl VersionDefinitionSection {
+impl VersionDefinitionSection
+{
 	fn parse(
 		binary: &[u8],
 		section_headers: &[SectionHeader],
 		ctx: &Context,
-	) -> PoisonGirlB<Option<Self,>,> {
+	) -> PoisonGirlB<Option<Self,>,>
+	{
 		let (offset, size, count,) = if let Some(section_header,) =
 			section_headers
 				.iter()
@@ -1848,18 +1948,21 @@ impl VersionDefinitionSection {
 	}
 }
 
-pub struct VersionNeededSection {
+pub struct VersionNeededSection
+{
 	pub bytes:   Vec<u8,>,
 	pub count:   usize,
 	pub context: Context,
 }
 
-impl VersionNeededSection {
+impl VersionNeededSection
+{
 	fn parse(
 		binary: &[u8],
 		section_headers: &[SectionHeader],
 		ctx: &Context,
-	) -> PoisonGirlB<Option<Self,>,> {
+	) -> PoisonGirlB<Option<Self,>,>
+	{
 		let (offset, size, count,) = if let Some(section_header,) =
 			section_headers
 				.iter()
@@ -1914,103 +2017,156 @@ trait PrimitiveInteger:
 {
 }
 
-impl PrimitiveInteger for u8 {}
-impl PrimitiveInteger for u16 {}
-impl PrimitiveInteger for u32 {}
-impl PrimitiveInteger for u64 {}
-impl PrimitiveInteger for u128 {}
-impl PrimitiveInteger for usize {}
-impl PrimitiveInteger for i8 {}
-impl PrimitiveInteger for i16 {}
-impl PrimitiveInteger for i32 {}
-impl PrimitiveInteger for i64 {}
-impl PrimitiveInteger for i128 {}
-impl PrimitiveInteger for isize {}
+impl PrimitiveInteger for u8
+{
+}
+impl PrimitiveInteger for u16
+{
+}
+impl PrimitiveInteger for u32
+{
+}
+impl PrimitiveInteger for u64
+{
+}
+impl PrimitiveInteger for u128
+{
+}
+impl PrimitiveInteger for usize
+{
+}
+impl PrimitiveInteger for i8
+{
+}
+impl PrimitiveInteger for i16
+{
+}
+impl PrimitiveInteger for i32
+{
+}
+impl PrimitiveInteger for i64
+{
+}
+impl PrimitiveInteger for i128
+{
+}
+impl PrimitiveInteger for isize
+{
+}
 
-impl Integer<u8,> for u8 {
-	fn cast_int(self,) -> u8 {
+impl Integer<u8,> for u8
+{
+	fn cast_int(self,) -> u8
+	{
 		self
 	}
 }
 
-impl Integer<u16,> for u8 {
-	fn cast_int(self,) -> u16 {
+impl Integer<u16,> for u8
+{
+	fn cast_int(self,) -> u16
+	{
 		self as u16
 	}
 }
 
-impl Integer<u32,> for u8 {
-	fn cast_int(self,) -> u32 {
+impl Integer<u32,> for u8
+{
+	fn cast_int(self,) -> u32
+	{
 		self as u32
 	}
 }
 
-impl Integer<u64,> for u8 {
-	fn cast_int(self,) -> u64 {
+impl Integer<u64,> for u8
+{
+	fn cast_int(self,) -> u64
+	{
 		self as u64
 	}
 }
 
-impl Integer<u128,> for u8 {
-	fn cast_int(self,) -> u128 {
+impl Integer<u128,> for u8
+{
+	fn cast_int(self,) -> u128
+	{
 		self as u128
 	}
 }
 
-impl Integer<usize,> for u8 {
-	fn cast_int(self,) -> usize {
+impl Integer<usize,> for u8
+{
+	fn cast_int(self,) -> usize
+	{
 		self as usize
 	}
 }
 
-impl Integer<i8,> for u8 {
-	fn cast_int(self,) -> i8 {
+impl Integer<i8,> for u8
+{
+	fn cast_int(self,) -> i8
+	{
 		self as i8
 	}
 }
 
-impl Integer<i16,> for u8 {
-	fn cast_int(self,) -> i16 {
+impl Integer<i16,> for u8
+{
+	fn cast_int(self,) -> i16
+	{
 		self as i16
 	}
 }
 
-impl Integer<i32,> for u8 {
-	fn cast_int(self,) -> i32 {
+impl Integer<i32,> for u8
+{
+	fn cast_int(self,) -> i32
+	{
 		self as i32
 	}
 }
 
-impl Integer<i64,> for u8 {
-	fn cast_int(self,) -> i64 {
+impl Integer<i64,> for u8
+{
+	fn cast_int(self,) -> i64
+	{
 		self as i64
 	}
 }
 
-impl Integer<i128,> for u8 {
-	fn cast_int(self,) -> i128 {
+impl Integer<i128,> for u8
+{
+	fn cast_int(self,) -> i128
+	{
 		self as i128
 	}
 }
 
-impl Integer<isize,> for u8 {
-	fn cast_int(self,) -> isize {
+impl Integer<isize,> for u8
+{
+	fn cast_int(self,) -> isize
+	{
 		self as isize
 	}
 }
 
-trait AsInt<T: PrimitiveInteger,> {
+trait AsInt<T: PrimitiveInteger,>
+{
 	fn as_int(&self,) -> T;
 }
 
-impl AsInt<u8,> for &[u8] {
-	fn as_int(&self,) -> u8 {
+impl AsInt<u8,> for &[u8]
+{
+	fn as_int(&self,) -> u8
+	{
 		*self.first().unwrap()
 	}
 }
 
-impl AsInt<u16,> for &[u8] {
-	fn as_int(&self,) -> u16 {
+impl AsInt<u16,> for &[u8]
+{
+	fn as_int(&self,) -> u16
+	{
 		// unsafe { *(&self[..2] as *const _ as *const u16) }
 		let mut rslt = 0;
 		for i in (0..size_of::<u16,>()).rev() {
@@ -2022,8 +2178,10 @@ impl AsInt<u16,> for &[u8] {
 	}
 }
 
-impl AsInt<u32,> for &[u8] {
-	fn as_int(&self,) -> u32 {
+impl AsInt<u32,> for &[u8]
+{
+	fn as_int(&self,) -> u32
+	{
 		// unsafe { *(&self[..4] as *const _ as *const u32) }
 		let mut rslt = 0;
 		for i in (0..size_of::<u32,>()).rev() {
@@ -2035,8 +2193,10 @@ impl AsInt<u32,> for &[u8] {
 	}
 }
 
-impl AsInt<u64,> for &[u8] {
-	fn as_int(&self,) -> u64 {
+impl AsInt<u64,> for &[u8]
+{
+	fn as_int(&self,) -> u64
+	{
 		// unsafe { *(&self[..8] as *const _ as *const u64) }
 		let mut rslt = 0;
 		for i in (0..size_of::<u64,>()).rev() {
@@ -2048,8 +2208,10 @@ impl AsInt<u64,> for &[u8] {
 	}
 }
 
-impl AsInt<u128,> for &[u8] {
-	fn as_int(&self,) -> u128 {
+impl AsInt<u128,> for &[u8]
+{
+	fn as_int(&self,) -> u128
+	{
 		// unsafe { *(&self[..16] as *const _ as *const u128) }
 		let mut rslt = 0;
 		for i in (0..size_of::<u128,>()).rev() {
@@ -2061,8 +2223,10 @@ impl AsInt<u128,> for &[u8] {
 	}
 }
 
-impl AsInt<usize,> for &[u8] {
-	fn as_int(&self,) -> usize {
+impl AsInt<usize,> for &[u8]
+{
+	fn as_int(&self,) -> usize
+	{
 		// unsafe { *(&self[..8] as *const _ as *const usize) }
 		let mut rslt = 0;
 		for i in (0..size_of::<usize,>()).rev() {
@@ -2074,14 +2238,18 @@ impl AsInt<usize,> for &[u8] {
 	}
 }
 
-impl AsInt<i8,> for &[u8] {
-	fn as_int(&self,) -> i8 {
+impl AsInt<i8,> for &[u8]
+{
+	fn as_int(&self,) -> i8
+	{
 		*self.first().unwrap() as i8
 	}
 }
 
-impl AsInt<i16,> for &[u8] {
-	fn as_int(&self,) -> i16 {
+impl AsInt<i16,> for &[u8]
+{
+	fn as_int(&self,) -> i16
+	{
 		// unsafe { *(&self[..2] as *const _ as *const u16) }
 		let mut rslt = 0;
 		for i in (0..size_of::<i16,>()).rev() {
@@ -2093,8 +2261,10 @@ impl AsInt<i16,> for &[u8] {
 	}
 }
 
-impl AsInt<i32,> for &[u8] {
-	fn as_int(&self,) -> i32 {
+impl AsInt<i32,> for &[u8]
+{
+	fn as_int(&self,) -> i32
+	{
 		// unsafe { *(&self[..4] as *const _ as *const u32) }
 		let mut rslt = 0;
 		for i in (0..size_of::<i32,>()).rev() {
@@ -2106,8 +2276,10 @@ impl AsInt<i32,> for &[u8] {
 	}
 }
 
-impl AsInt<i64,> for &[u8] {
-	fn as_int(&self,) -> i64 {
+impl AsInt<i64,> for &[u8]
+{
+	fn as_int(&self,) -> i64
+	{
 		// unsafe { *(&self[..8] as *const _ as *const u64) }
 		let mut rslt = 0;
 		for i in (0..size_of::<i64,>()).rev() {
@@ -2119,8 +2291,10 @@ impl AsInt<i64,> for &[u8] {
 	}
 }
 
-impl AsInt<i128,> for &[u8] {
-	fn as_int(&self,) -> i128 {
+impl AsInt<i128,> for &[u8]
+{
+	fn as_int(&self,) -> i128
+	{
 		// unsafe { *(&self[..16] as *const _ as *const u128) }
 		let mut rslt = 0;
 		for i in (0..size_of::<i128,>()).rev() {
@@ -2132,8 +2306,10 @@ impl AsInt<i128,> for &[u8] {
 	}
 }
 
-impl AsInt<isize,> for &[u8] {
-	fn as_int(&self,) -> isize {
+impl AsInt<isize,> for &[u8]
+{
+	fn as_int(&self,) -> isize
+	{
 		// unsafe { *(&self[..8] as *const _ as *const usize) }
 		let mut rslt = 0;
 		for i in (0..size_of::<isize,>()).rev() {

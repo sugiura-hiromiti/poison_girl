@@ -6,7 +6,8 @@ use super::PhysicalAddress;
 
 #[repr(C)]
 #[derive(Clone, Copy, Default,)]
-pub struct GraphicsOutputModeInfo {
+pub struct GraphicsOutputModeInfo
+{
 	pub version:               u32,
 	pub horizontal_resolution: u32,
 	pub vertical_resolution:   u32,
@@ -15,16 +16,20 @@ pub struct GraphicsOutputModeInfo {
 	pub pixels_per_scal_line:  u32,
 }
 
-impl GraphicsOutputModeInfo {
-	pub fn resolution(&self,) -> (usize, usize,) {
+impl GraphicsOutputModeInfo
+{
+	pub fn resolution(&self,) -> (usize, usize,)
+	{
 		(self.horizontal_resolution as usize, self.vertical_resolution as usize,)
 	}
 
-	pub fn stride(&self,) -> usize {
+	pub fn stride(&self,) -> usize
+	{
 		self.pixels_per_scal_line as usize
 	}
 
-	pub fn pixel_format(&self,) -> PixelFormatConf {
+	pub fn pixel_format(&self,) -> PixelFormatConf
+	{
 		use GraphicsPixelFormat as GPF;
 		match self.pixel_format {
 			GPF::RGB_RESERVED_8_BIT_PER_COLOR => PixelFormatConf::Rgb,
@@ -38,7 +43,8 @@ impl GraphicsOutputModeInfo {
 
 #[repr(C)]
 #[derive(Clone, Default, Eq, PartialEq, Ord, PartialOrd, Hash,)]
-pub struct GraphicsOutputBltPixel {
+pub struct GraphicsOutputBltPixel
+{
 	pub blue:     u8,
 	pub green:    u8,
 	pub red:      u8,
@@ -69,7 +75,8 @@ c_style_enum! {
 
 #[repr(C)]
 #[derive(Clone, Default, Eq, PartialEq, Ord, PartialOrd, Hash,)]
-pub struct GraphicsOutputProtocolMode {
+pub struct GraphicsOutputProtocolMode
+{
 	pub max_mode:          u32,
 	pub mode:              u32,
 	pub info:              *mut GraphicsOutputModeInfo,
@@ -77,34 +84,41 @@ pub struct GraphicsOutputProtocolMode {
 	pub frame_buffer_size: usize,
 }
 
-impl GraphicsOutputProtocolMode {
-	pub fn info(&self,) -> &GraphicsOutputModeInfo {
+impl GraphicsOutputProtocolMode
+{
+	pub fn info(&self,) -> &GraphicsOutputModeInfo
+	{
 		unsafe { &*self.info }
 	}
 
-	pub fn resolution(&self,) -> (usize, usize,) {
+	pub fn resolution(&self,) -> (usize, usize,)
+	{
 		self.info().resolution()
 	}
 
-	pub fn stride(&self,) -> usize {
+	pub fn stride(&self,) -> usize
+	{
 		self.info().stride()
 	}
 
-	pub fn pixel_format(&self,) -> PixelFormatConf {
+	pub fn pixel_format(&self,) -> PixelFormatConf
+	{
 		self.info().pixel_format()
 	}
 }
 
 #[repr(C)]
 #[derive(Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash,)]
-pub struct PixelBitMask {
+pub struct PixelBitMask
+{
 	pub red:      u32,
 	pub green:    u32,
 	pub blue:     u32,
 	pub reserved: u32,
 }
 
-pub struct GraphicsOutputProtocolModes {
+pub struct GraphicsOutputProtocolModes
+{
 	pub index:     u32,
 	pub info_size: usize,
 }

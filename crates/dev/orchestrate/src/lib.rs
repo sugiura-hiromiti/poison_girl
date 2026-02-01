@@ -83,13 +83,15 @@ pub mod fs;
 pub const OSO_DEV_UTIL_PATH: &str = std::env!("CARGO_MANIFEST_PATH");
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use crate::cargo::Arch;
 
 	use super::*;
 
 	#[test]
-	fn test_oso_dev_util_path_constant() {
+	fn test_oso_dev_util_path_constant()
+	{
 		// Test that the OSO_DEV_UTIL_PATH constant is set and valid
 		assert!(OSO_DEV_UTIL_PATH.contains("Cargo.toml"));
 
@@ -103,7 +105,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_module_accessibility() {
+	fn test_module_accessibility()
+	{
 		// Test that all public modules are accessible
 		// This is a compile-time test - if it compiles, the modules are
 		// accessible
@@ -120,7 +123,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_module_structure() {
+	fn test_module_structure()
+	{
 		// Test that the expected module structure exists
 		// This is primarily a compile-time test
 
@@ -135,7 +139,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_feature_flags() {
+	fn test_feature_flags()
+	{
 		// Test that feature flags are accessible
 		use cargo::Feature;
 
@@ -148,7 +153,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_compile_opt_trait() {
+	fn test_compile_opt_trait()
+	{
 		// Test the CompileOpt trait functionality
 		use cargo::{BuildMode, CompileOpt, Feature, Opts};
 
@@ -170,7 +176,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_cli_to_opts_conversion() {
+	fn test_cli_to_opts_conversion()
+	{
 		// Test CLI to Opts conversion
 		use cargo::{Arch, BuildMode, Cli};
 
@@ -187,7 +194,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_cli_defaults() {
+	fn test_cli_defaults()
+	{
 		// Test CLI with default values
 		use cargo::Cli;
 
@@ -204,7 +212,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_firmware_structure() {
+	fn test_firmware_structure()
+	{
 		// Test Firmware struct
 		use {cargo::Firmware, std::path::PathBuf};
 
@@ -221,7 +230,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_assets_structure() {
+	fn test_assets_structure()
+	{
 		// Test Assets struct
 		use {
 			cargo::{Assets, Firmware},
@@ -242,7 +252,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_enum_string_conversions() {
+	fn test_enum_string_conversions()
+	{
 		// Test AsRefStr implementations
 		use cargo::{Arch, BuildMode};
 
@@ -254,7 +265,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_enum_is_methods() {
+	fn test_enum_is_methods()
+	{
 		// Test EnumIs implementations
 		use cargo::{Arch, BuildMode};
 
@@ -272,7 +284,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_clone_implementations() {
+	fn test_clone_implementations()
+	{
 		// Test Clone implementations
 		use cargo::{Arch, BuildMode};
 
@@ -286,7 +299,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_default_implementations() {
+	fn test_default_implementations()
+	{
 		// Test Default implementations
 		use cargo::{Arch, BuildMode};
 
@@ -298,7 +312,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_value_enum_implementations() {
+	fn test_value_enum_implementations()
+	{
 		// Test that ValueEnum is implemented for CLI enums
 		use {
 			cargo::{Arch, BuildMode},
@@ -318,7 +333,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_oso_dev_util_path_validation() {
+	fn test_oso_dev_util_path_validation()
+	{
 		// Test that the OSO_DEV_UTIL_PATH constant points to a valid Cargo.toml
 		let path = std::path::Path::new(OSO_DEV_UTIL_PATH,);
 
@@ -336,7 +352,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_module_imports() {
+	fn test_module_imports()
+	{
 		// Test that all modules can be imported without conflicts
 		use {cargo::*, fs::*};
 
@@ -350,20 +367,23 @@ mod tests {
 	}
 
 	#[test]
-	fn test_feature_flag_compilation() {
+	fn test_feature_flag_compilation()
+	{
 		// Test that we can reference the Feature enum even if empty
 		use cargo::Feature;
 		let _features: Vec<Feature,> = vec![];
 	}
 
 	#[test]
-	fn test_type_system_constraints() {
+	fn test_type_system_constraints()
+	{
 		// Test that the type system enforces expected constraints
 		use cargo::{Arch, BuildMode, CompileOpt, Feature, Opts};
 
 		// Test that all enums implement required traits
 		fn test_enum_traits<T,>(_value: T,)
-		where T: Clone + Copy + PartialEq + Eq + std::fmt::Debug + Default {
+		where T: Clone + Copy + PartialEq + Eq + std::fmt::Debug + Default
+		{
 			// If this compiles, the traits are implemented
 		}
 
@@ -391,7 +411,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_path_handling() {
+	fn test_path_handling()
+	{
 		// Test path handling throughout the crate
 		use std::path::{Path, PathBuf};
 
@@ -416,7 +437,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_conversions_comprehensive() {
+	fn test_string_conversions_comprehensive()
+	{
 		// Test all string conversion patterns used in the crate
 		use {
 			cargo::{Arch, BuildMode},
@@ -444,7 +466,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_memory_safety() {
+	fn test_memory_safety()
+	{
 		// Test that the crate handles memory safely
 		use cargo::{Arch, BuildMode, Feature, Opts};
 
@@ -472,7 +495,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_concurrent_access() {
+	fn test_concurrent_access()
+	{
 		// Test that constants and static data can be accessed concurrently
 		use std::thread;
 
@@ -497,7 +521,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_documentation_examples() {
+	fn test_documentation_examples()
+	{
 		// Test that code examples from documentation work
 		use cargo::{Arch, BuildMode, CompileOpt, Feature, Opts};
 

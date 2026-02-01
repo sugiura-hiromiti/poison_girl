@@ -3,32 +3,42 @@ use {
 	poison_girl_dev_error::PoisonGirlB,
 };
 
-pub trait Package: PackageAction + PackageSurvey {
-	fn as_action(&self,) -> &impl PackageAction {
+pub trait Package: PackageAction + PackageSurvey
+{
+	fn as_action(&self,) -> &impl PackageAction
+	{
 		self
 	}
 
-	fn as_survey(&self,) -> &impl PackageSurvey {
+	fn as_survey(&self,) -> &impl PackageSurvey
+	{
 		self
 	}
 }
 
-pub trait PackageAction: PackageInfo + CrateAction {}
-pub trait PackageSurvey: PackageInfo + CrateSurvey {
+pub trait PackageAction: PackageInfo + CrateAction
+{
+}
+pub trait PackageSurvey: PackageInfo + CrateSurvey
+{
 	fn default_target(&self,) -> PoisonGirlB<impl Into<String,>,>;
 }
 
-pub trait PackageInfo: Sized + CrateInfo {}
+pub trait PackageInfo: Sized + CrateInfo
+{
+}
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {super::*, crate::decl_manage::crate_::OsoCrate, std::path::PathBuf};
 
 	// Note: Working around FromPathBuf macro validation by using current
 	// directory
 
 	#[test]
-	fn test_package_trait_hierarchy() {
+	fn test_package_trait_hierarchy()
+	{
 		// Test that Package trait requires both PackageAction and PackageSurvey
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -46,7 +56,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_package_action_trait() {
+	fn test_package_action_trait()
+	{
 		// Test that PackageAction combines PackageInfo and CrateAction
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -67,7 +78,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_package_survey_trait() {
+	fn test_package_survey_trait()
+	{
 		// Test that PackageSurvey combines PackageInfo and CrateSurvey
 
 		let current_dir =
@@ -83,7 +95,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_package_info_trait() {
+	fn test_package_info_trait()
+	{
 		// Test that PackageInfo extends CrateInfo
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -102,22 +115,27 @@ mod tests {
 	}
 
 	#[test]
-	fn test_trait_bounds_compilation() {
+	fn test_trait_bounds_compilation()
+	{
 		// Test that all trait bounds compile correctly
-		fn test_package<P: Package,>(package: &P,) {
+		fn test_package<P: Package,>(package: &P,)
+		{
 			let _action = package.as_action();
 			let _survey = package.as_survey();
 		}
 
-		fn test_package_action<PA: PackageAction,>(action: &PA,) {
+		fn test_package_action<PA: PackageAction,>(action: &PA,)
+		{
 			let _build_result = action.build();
 		}
 
-		fn test_package_survey<PS: PackageSurvey,>(survey: &PS,) {
+		fn test_package_survey<PS: PackageSurvey,>(survey: &PS,)
+		{
 			let _target_result = survey.default_target();
 		}
 
-		fn test_package_info<PI: PackageInfo,>(info: &PI,) {
+		fn test_package_info<PI: PackageInfo,>(info: &PI,)
+		{
 			let _path = info.path();
 		}
 
@@ -132,10 +150,12 @@ mod tests {
 	}
 
 	#[test]
-	fn test_generic_constraints() {
+	fn test_generic_constraints()
+	{
 		// Test that generic constraints work correctly
 		fn work_with_package<P,>(package: P,)
-		where P: Package + Clone {
+		where P: Package + Clone
+		{
 			let _cloned = package.clone();
 			let _action = package.as_action();
 			let _survey = package.as_survey();

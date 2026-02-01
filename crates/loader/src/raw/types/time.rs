@@ -4,7 +4,8 @@ use super::Boolean;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug,)]
-pub struct Time {
+pub struct Time
+{
 	year:        u16,
 	month:       u8,
 	day:         u8,
@@ -20,7 +21,8 @@ pub struct Time {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,)]
 #[repr(C)]
-pub struct TimeCapabilities {
+pub struct TimeCapabilities
+{
 	resolution:   u32,
 	accuracy:     u32,
 	sets_to_zero: Boolean,

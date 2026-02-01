@@ -16,27 +16,33 @@ use {
 			search_upstream_at,
 		},
 	},
-	poison_girl_proc_macro_def::FromPathBuf,
+	poison_girl_macro::FromPathBuf,
 	std::{ffi::OsStr, fmt::Debug, path::PathBuf, process::Command},
 };
 
-pub trait Crate: Workspace + Package {
-	fn as_pkg(&self,) -> &impl Package {
+pub trait Crate: Workspace + Package
+{
+	fn as_pkg(&self,) -> &impl Package
+	{
 		self
 	}
 
-	fn as_wrkspc(&self,) -> &impl Workspace {
+	fn as_wrkspc(&self,) -> &impl Workspace
+	{
 		self
 	}
 }
 
-pub trait CrateSurvey: CrateInfo {
-	fn has_parent(&self,) -> PoisonGirlB<bool,> {
+pub trait CrateSurvey: CrateInfo
+{
+	fn has_parent(&self,) -> PoisonGirlB<bool,>
+	{
 		let path = self.path();
 		X(search_upstream_at(&path, CARGO_MANIFEST,)?.is_some(),)
 	}
 	fn go_parent(&mut self,) -> PoisonGirlB<(),>;
-	fn fix(&self,) -> PoisonGirlB<(),> {
+	fn fix(&self,) -> PoisonGirlB<(),>
+	{
 		let mut manifest = self.toml()?;
 		if let Some(pkg,) = manifest.get_mut("package",)
 			&& let Some(toml::Value::String(name,),) = pkg.get_mut("name",)
@@ -55,50 +61,63 @@ pub trait CrateSurvey: CrateInfo {
 }
 
 /// methods provided keeps environment e.g. current path
-pub trait CrateAction: CrateInfo {
+pub trait CrateAction: CrateInfo
+{
 	// actions for all packages
 
-	fn build(&self,) -> PoisonGirlB<(),> {
+	fn build(&self,) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx("build",)
 	}
-	fn test(&self,) -> PoisonGirlB<(),> {
+	fn test(&self,) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx("test",)
 	}
-	fn run(&self,) -> PoisonGirlB<(),> {
+	fn run(&self,) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx("run",)
 	}
-	fn check(&self,) -> PoisonGirlB<(),> {
+	fn check(&self,) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx("check",)
 	}
-	fn format(&self,) -> PoisonGirlB<(),> {
+	fn format(&self,) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx("fmt",)
 	}
-	fn cargo_xxx(&self, cmd: impl AsRef<OsStr,>,) -> PoisonGirlB<(),> {
+	fn cargo_xxx(&self, cmd: impl AsRef<OsStr,>,) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx_with(cmd, &["",],)
 	}
 
 	// actions for all packages with specific options
 
-	fn build_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
+	fn build_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx_with("build", opt,)
 	}
-	fn test_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
+	fn test_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx_with("test", opt,)
 	}
-	fn run_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
+	fn run_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx_with("run", opt,)
 	}
-	fn ckeck_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
+	fn ckeck_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx_with("check", opt,)
 	}
-	fn fmt_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),> {
+	fn fmt_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+	{
 		self.cargo_xxx_with("fmt", opt,)
 	}
 	fn cargo_xxx_with(
 		&self,
 		cmd: impl AsRef<OsStr,>,
 		opt: &[impl AsRef<OsStr,>],
-	) -> PoisonGirlB<(),> {
+	) -> PoisonGirlB<(),>
+	{
 		let mut cargo = Command::new("cargo",);
 		let cargo = cargo.arg(cmd,);
 
@@ -112,8 +131,10 @@ pub trait CrateAction: CrateInfo {
 	}
 }
 
-pub trait CrateInfo: CrateCalled {
-	fn is_package(&self,) -> PoisonGirlB<bool,> {
+pub trait CrateInfo: CrateCalled
+{
+	fn is_package(&self,) -> PoisonGirlB<bool,>
+	{
 		let pkg_sec = self.toml()?;
 		let pkg_sec = pkg_sec.get("package",);
 		match pkg_sec {
@@ -121,7 +142,8 @@ pub trait CrateInfo: CrateCalled {
 			None => X(false,),
 		}
 	}
-	fn is_workspace(&self,) -> PoisonGirlB<bool,> {
+	fn is_workspace(&self,) -> PoisonGirlB<bool,>
+	{
 		let pkg_sec = self.toml()?;
 		let pkg_sec = pkg_sec.get("workspace",);
 		match pkg_sec {
@@ -129,7 +151,8 @@ pub trait CrateInfo: CrateCalled {
 			None => X(false,),
 		}
 	}
-	fn is_pkg_and_ws(&self,) -> PoisonGirlB<bool,> {
+	fn is_pkg_and_ws(&self,) -> PoisonGirlB<bool,>
+	{
 		X(self.is_package()? && self.is_workspace()?,)
 	}
 
@@ -138,17 +161,20 @@ pub trait CrateInfo: CrateCalled {
 	/// self has path in compile time
 	fn path(&self,) -> PathBuf;
 
-	fn toml(&self,) -> PoisonGirlB<toml::Table,> {
+	fn toml(&self,) -> PoisonGirlB<toml::Table,>
+	{
 		let cargo_toml = self.path().join(CARGO_MANIFEST,);
 		read_toml(cargo_toml,)
 	}
 
-	fn cargo_conf(&self,) -> Option<PoisonGirlB<toml::Table,>,> {
+	fn cargo_conf(&self,) -> Option<PoisonGirlB<toml::Table,>,>
+	{
 		let config_toml = self.path().join(CARGO_CONFIG,);
 		Some(read_toml(config_toml,),)
 	}
 
-	fn name(&self,) -> String {
+	fn name(&self,) -> String
+	{
 		self.path()
 			.file_name()
 			.expect("error on obtaining crate name",)
@@ -159,14 +185,17 @@ pub trait CrateInfo: CrateCalled {
 }
 
 #[derive(FromPathBuf, Default, PartialEq, Eq, Clone,)]
-pub struct OsoCrate {
+pub struct OsoCrate
+{
 	path: PathBuf,
 	#[chart]
 	i_am: OsoCrateChart,
 }
 
-impl std::fmt::Debug for OsoCrate {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result {
+impl std::fmt::Debug for OsoCrate
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result
+	{
 		f.debug_struct("OsoCrate",)
 			.field("path", &self.path,)
 			.field("i_am", &"<OsoCrateChart>",)
@@ -174,21 +203,30 @@ impl std::fmt::Debug for OsoCrate {
 	}
 }
 
-impl From<OsoCrateChart,> for OsoCrate {
-	fn from(value: OsoCrateChart,) -> Self {
+impl From<OsoCrateChart,> for OsoCrate
+{
+	fn from(value: OsoCrateChart,) -> Self
+	{
 		Self::from(value.to_path_buf(),)
 	}
 }
 
-impl Crate for OsoCrate {}
-impl CrateAction for OsoCrate {}
-impl CrateSurvey for OsoCrate {
-	fn land_on(&mut self, on: impl CrateCalled,) {
+impl Crate for OsoCrate
+{
+}
+impl CrateAction for OsoCrate
+{
+}
+impl CrateSurvey for OsoCrate
+{
+	fn land_on(&mut self, on: impl CrateCalled,)
+	{
 		let path = on.path_buf();
 		*self = Self::from(path,);
 	}
 
-	fn go_parent(&mut self,) -> PoisonGirlB<(),> {
+	fn go_parent(&mut self,) -> PoisonGirlB<(),>
+	{
 		if self.has_parent()? {
 			let parent = self.path();
 			let parent = parent.parent().unwrap();
@@ -201,44 +239,60 @@ impl CrateSurvey for OsoCrate {
 	}
 }
 
-impl CrateInfo for OsoCrate {
-	fn path(&self,) -> PathBuf {
+impl CrateInfo for OsoCrate
+{
+	fn path(&self,) -> PathBuf
+	{
 		self.path.clone()
 	}
 }
 
-impl CrateCalled for OsoCrate {
+impl CrateCalled for OsoCrate
+{
 	type F = OsoCrateChart;
 
-	fn whoami(&self,) -> Self::F {
+	fn whoami(&self,) -> Self::F
+	{
 		self.i_am.clone()
 	}
 
-	fn path_buf(&self,) -> PathBuf {
+	fn path_buf(&self,) -> PathBuf
+	{
 		self.path()
 	}
 }
 
-impl CrateCalled for OsoCrateChart {
+impl CrateCalled for OsoCrateChart
+{
 	type F = OsoCrateChart;
 
-	fn whoami(&self,) -> Self::F {
+	fn whoami(&self,) -> Self::F
+	{
 		self.clone()
 	}
 
-	fn path_buf(&self,) -> PathBuf {
+	fn path_buf(&self,) -> PathBuf
+	{
 		self.to_path_buf()
 	}
 }
 
-impl Workspace for OsoCrate {}
-impl WorkspaceAction for OsoCrate {}
+impl Workspace for OsoCrate
+{
+}
+impl WorkspaceAction for OsoCrate
+{
+}
 
-impl WorkspaceSurvey for OsoCrate {}
+impl WorkspaceSurvey for OsoCrate
+{
+}
 
-impl WorkspaceInfo for OsoCrate {
+impl WorkspaceInfo for OsoCrate
+{
 	#[allow(refining_impl_trait)]
-	fn members(&self,) -> Vec<OsoCrate,> {
+	fn members(&self,) -> Vec<OsoCrate,>
+	{
 		all_crates_in(&self.path(),)
 			.expect("failed to get some crates within workspace",)
 			.iter()
@@ -250,7 +304,8 @@ impl WorkspaceInfo for OsoCrate {
 	fn members_with_target(
 		&self,
 		target: impl Into<String,> + Clone,
-	) -> Vec<OsoCrate,> {
+	) -> Vec<OsoCrate,>
+	{
 		self.members()
 			.into_iter()
 			.filter(|c| {
@@ -265,10 +320,16 @@ impl WorkspaceInfo for OsoCrate {
 	}
 }
 
-impl Package for OsoCrate {}
-impl PackageAction for OsoCrate {}
-impl PackageSurvey for OsoCrate {
-	fn default_target(&self,) -> PoisonGirlB<impl Into<String,>,> {
+impl Package for OsoCrate
+{
+}
+impl PackageAction for OsoCrate
+{
+}
+impl PackageSurvey for OsoCrate
+{
+	fn default_target(&self,) -> PoisonGirlB<impl Into<String,>,>
+	{
 		X(match self.cargo_conf() {
 			Some(conf,) => {
 				let conf = conf?;
@@ -287,16 +348,20 @@ impl PackageSurvey for OsoCrate {
 	}
 }
 
-impl PackageInfo for OsoCrate {}
+impl PackageInfo for OsoCrate
+{
+}
 
-pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> + Debug {
+pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> + Debug
+{
 	type F: CrateCalled;
 	fn whoami(&self,) -> Self::F;
 	fn path_buf(&self,) -> PathBuf;
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {super::*, std::path::PathBuf};
 
 	// Note: The FromPathBuf macro validates paths and panics on non-existent
@@ -305,7 +370,8 @@ mod tests {
 	// exist
 
 	#[test]
-	fn test_oso_crate_default() {
+	fn test_oso_crate_default()
+	{
 		let default_crate = OsoCrate::default();
 		let default_path = default_crate.path();
 		// Default should create an empty PathBuf
@@ -313,7 +379,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_oso_crate_creation_with_current_dir() {
+	fn test_oso_crate_creation_with_current_dir()
+	{
 		// Use current directory which should exist
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -322,7 +389,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_oso_crate_clone_with_current_dir() {
+	fn test_oso_crate_clone_with_current_dir()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let original = OsoCrate::from(current_dir.clone(),);
@@ -333,7 +401,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_oso_crate_equality_with_current_dir() {
+	fn test_oso_crate_equality_with_current_dir()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate1 = OsoCrate::from(current_dir.clone(),);
@@ -343,7 +412,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_crate_info_path_with_current_dir() {
+	fn test_crate_info_path_with_current_dir()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
@@ -353,7 +423,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_crate_called_whoami_with_current_dir() {
+	fn test_crate_called_whoami_with_current_dir()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
@@ -364,7 +435,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_crate_called_path_buf_with_current_dir() {
+	fn test_crate_called_path_buf_with_current_dir()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
@@ -374,7 +446,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_from_pathbuf_conversion_with_current_dir() {
+	fn test_from_pathbuf_conversion_with_current_dir()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 
@@ -391,7 +464,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_oso_crate_chart_conversion_with_current_dir() {
+	fn test_oso_crate_chart_conversion_with_current_dir()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir.clone(),);
@@ -408,7 +482,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_debug_implementation() {
+	fn test_debug_implementation()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -422,7 +497,8 @@ mod tests {
 	// Test methods that don't require valid paths (they return Results)
 
 	#[test]
-	fn test_crate_action_methods_exist() {
+	fn test_crate_action_methods_exist()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -439,7 +515,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_crate_action_with_methods_exist() {
+	fn test_crate_action_with_methods_exist()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -455,7 +532,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_crate_info_methods() {
+	fn test_crate_info_methods()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -469,7 +547,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_package_survey_methods() {
+	fn test_package_survey_methods()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -487,7 +566,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_info_methods() {
+	fn test_workspace_info_methods()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -499,7 +579,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_workspace_survey_land_on() {
+	fn test_workspace_survey_land_on()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let parent_dir =
@@ -516,7 +597,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_trait_implementations() {
+	fn test_trait_implementations()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);
@@ -535,7 +617,8 @@ mod tests {
 
 	// Test the survey methods that contain todo!() - they should panic
 	#[test]
-	fn test_crate_survey_todo_methods() {
+	fn test_crate_survey_todo_methods()
+	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
 		let crate_obj = OsoCrate::from(current_dir,);

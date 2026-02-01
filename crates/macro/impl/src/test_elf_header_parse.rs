@@ -6,7 +6,8 @@ use {
 };
 
 #[derive(Default, Debug,)]
-pub struct ReadElfH {
+pub struct ReadElfH
+{
 	/// ELF file class (32-bit or 64-bit)
 	pub file_class: String,
 	/// Data encoding (little-endian or big-endian)
@@ -45,8 +46,10 @@ pub struct ReadElfH {
 	pub section_header_index_of_section_name_string_table: String,
 }
 
-impl ReadElfH {
-	fn fix(&mut self,) {
+impl ReadElfH
+{
+	fn fix(&mut self,)
+	{
 		// Extract first word from each field (split on whitespace)
 		self.file_class = self
 			.file_class
@@ -106,12 +109,15 @@ impl ReadElfH {
 	}
 }
 
-trait Property {
+trait Property
+{
 	fn is_peoperty_of(&self, key: &str,) -> bool;
 }
 
-impl Property for Vec<&str,> {
-	fn is_peoperty_of(&self, key: &str,) -> bool {
+impl Property for Vec<&str,>
+{
+	fn is_peoperty_of(&self, key: &str,) -> bool
+	{
 		// Check if the first element (index 0) matches the key
 		self.first().is_some_and(|s| *s == key,)
 	}
@@ -119,7 +125,8 @@ impl Property for Vec<&str,> {
 
 pub fn test_elf_header_parse(
 	rslt: proc_macro2::TokenStream,
-) -> Rslt<TokenStream,> {
+) -> Rslt<TokenStream,>
+{
 	elf_header_info().replace_by(|ts| {
 		Rslt::new(quote::quote! {
 		if cfg!(debug_assertions) {
@@ -129,7 +136,8 @@ pub fn test_elf_header_parse(
 	},)
 }
 
-pub fn elf_header_info() -> Rslt<TokenStream,> {
+pub fn elf_header_info() -> Rslt<TokenStream,>
+{
 	readelf_h()
 		.replace_by(|header| {
 			elf_header_ident_build(&header,)
@@ -176,7 +184,8 @@ pub fn elf_header_info() -> Rslt<TokenStream,> {
 		},)
 }
 
-fn elf_header_ident_build(header: &ReadElfH,) -> Rslt<TokenStream,> {
+fn elf_header_ident_build(header: &ReadElfH,) -> Rslt<TokenStream,>
+{
 	parse_file_class(header,).replace_by(|file_class| {
 		parse_endianness(header,).replace_by(|endianness| {
 			parse_elf_version(header,).replace_by(|elf_version| {
@@ -198,7 +207,8 @@ fn elf_header_ident_build(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	},)
 }
 
-fn parse_file_class(header: &ReadElfH,) -> Rslt<TokenStream,> {
+fn parse_file_class(header: &ReadElfH,) -> Rslt<TokenStream,>
+{
 	let file_class = header.file_class.as_str();
 
 	let file_class = match file_class {
@@ -218,7 +228,8 @@ fn parse_file_class(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	Rslt::new(file_class,)
 }
 
-fn parse_endianness(header: &ReadElfH,) -> Rslt<TokenStream,> {
+fn parse_endianness(header: &ReadElfH,) -> Rslt<TokenStream,>
+{
 	let endianness = header.endianness.as_str();
 
 	let endianness = match endianness {
@@ -238,7 +249,8 @@ fn parse_endianness(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	Rslt::new(endianness,)
 }
 
-fn parse_elf_version(header: &ReadElfH,) -> Rslt<TokenStream,> {
+fn parse_elf_version(header: &ReadElfH,) -> Rslt<TokenStream,>
+{
 	let elf_version = header.elf_version.as_str();
 
 	let elf_version = match elf_version {
@@ -258,7 +270,8 @@ fn parse_elf_version(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	),),)
 }
 
-fn parse_target_os_abi(header: &ReadElfH,) -> Rslt<TokenStream,> {
+fn parse_target_os_abi(header: &ReadElfH,) -> Rslt<TokenStream,>
+{
 	let target_os_abi = header.target_os_abi.as_str();
 
 	let target_os_abi = if target_os_abi.contains("UNIX - System V",) {
@@ -280,7 +293,8 @@ fn parse_target_os_abi(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	Rslt::new(target_os_abi,)
 }
 
-fn parse_abi_version(header: &ReadElfH,) -> Rslt<TokenStream,> {
+fn parse_abi_version(header: &ReadElfH,) -> Rslt<TokenStream,>
+{
 	let abi_version = header.abi_version.as_str();
 
 	let abi_version = match abi_version {
@@ -300,7 +314,8 @@ fn parse_abi_version(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	),),)
 }
 
-fn parse_ty(header: &ReadElfH,) -> Rslt<TokenStream,> {
+fn parse_ty(header: &ReadElfH,) -> Rslt<TokenStream,>
+{
 	let ty = header.ty.as_str();
 
 	if ty != "EXEC" {
@@ -314,7 +329,8 @@ fn parse_ty(header: &ReadElfH,) -> Rslt<TokenStream,> {
 	},)
 }
 
-fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	// Normalize machine name: uppercase and replace spaces with underscores
 	let machine: String = header
 		.machine
@@ -339,7 +355,8 @@ fn parse_machine(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-fn parse_version(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_version(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	let version = header.version.as_str();
 	let version = &version[2..]; // Remove "0x" prefix
 	let version = u32::from_str_radix(version, 16,).unwrap_or_else(|_| {
@@ -351,7 +368,8 @@ fn parse_version(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	let entry = header.entry.as_str();
 	let entry = &entry[2..]; // Remove "0x" prefix
 	let entry = u64::from_str_radix(entry, 16,).unwrap_or_else(|_| {
@@ -363,7 +381,8 @@ fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	let program_header_offset = header.program_header_offset.as_str();
 	let program_header_offset =
 		program_header_offset.parse::<u64>().unwrap_or_else(|_| {
@@ -378,7 +397,8 @@ fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-fn parse_section_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_section_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	let section_header_offset = header.section_header_offset.as_str();
 	let section_header_offset =
 		section_header_offset.parse::<u64>().unwrap_or_else(|_| {
@@ -393,7 +413,8 @@ fn parse_section_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	let flags = header.flags.as_str();
 	let flags = &flags[2..]; // Remove "0x" prefix
 	let flags = u32::from_str_radix(flags, 16,)
@@ -404,7 +425,8 @@ fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream {
 	}
 }
 
-fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	let elf_header_size = header.elf_header_size.as_str();
 	let elf_header_size = elf_header_size.parse::<u16>().unwrap_or_else(|_| {
 		panic!("elf_header_size must be valid hex number: {elf_header_size}")
@@ -417,7 +439,8 @@ fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream {
 
 fn parse_program_header_entry_size(
 	header: &ReadElfH,
-) -> proc_macro2::TokenStream {
+) -> proc_macro2::TokenStream
+{
 	let program_header_entry_size = header.program_header_entry_size.as_str();
 	let program_header_entry_size =
 		program_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
@@ -432,7 +455,8 @@ fn parse_program_header_entry_size(
 	}
 }
 
-fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	let program_header_count = header.program_header_count.as_str();
 	let program_header_count =
 		program_header_count.parse::<u16>().unwrap_or_else(|_| {
@@ -449,7 +473,8 @@ fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 
 fn parse_section_header_entry_size(
 	header: &ReadElfH,
-) -> proc_macro2::TokenStream {
+) -> proc_macro2::TokenStream
+{
 	let section_header_entry_size = header.section_header_entry_size.as_str();
 	let section_header_entry_size =
 		section_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
@@ -464,7 +489,8 @@ fn parse_section_header_entry_size(
 	}
 }
 
-fn parse_section_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
+fn parse_section_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream
+{
 	let section_header_count = header.section_header_count.as_str();
 	let section_header_count =
 		section_header_count.parse::<u16>().unwrap_or_else(|_| {
@@ -481,7 +507,8 @@ fn parse_section_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream {
 
 fn parse_section_header_index_of_section_name_string_table(
 	header: &ReadElfH,
-) -> proc_macro2::TokenStream {
+) -> proc_macro2::TokenStream
+{
 	let section_header_index_of_section_name_string_table =
 		header.section_header_index_of_section_name_string_table.as_str();
 	let section_header_index_of_section_name_string_table =
@@ -500,7 +527,8 @@ fn parse_section_header_index_of_section_name_string_table(
 	}
 }
 
-pub fn readelf_h() -> Rslt<ReadElfH,> {
+pub fn readelf_h() -> Rslt<ReadElfH,>
+{
 	// Ensure the kernel file exists before attempting to parse it
 	check_poison_girl_kernel()?;
 
@@ -593,12 +621,14 @@ pub fn readelf_h() -> Rslt<ReadElfH,> {
 	Rslt::new(header,)
 }
 #[cfg(test)]
-mod tests {
+mod tests
+{
 
 	use super::*;
 
 	#[test]
-	fn test_readelf_h_default() {
+	fn test_readelf_h_default()
+	{
 		let header = ReadElfH::default();
 
 		// All fields should be empty strings by default
@@ -626,7 +656,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_fix_method() {
+	fn test_readelf_h_fix_method()
+	{
 		let mut header = ReadElfH {
 			file_class: "ELF64 (64-bit)".to_string(),
 			endianness: "little endian".to_string(),
@@ -677,25 +708,29 @@ mod tests {
 	}
 
 	#[test]
-	fn test_property_trait_positive() {
+	fn test_property_trait_positive()
+	{
 		let key_value = vec!["Class", "ELF64"];
 		assert!(key_value.is_peoperty_of("Class"));
 	}
 
 	#[test]
-	fn test_property_trait_negative() {
+	fn test_property_trait_negative()
+	{
 		let key_value = vec!["Class", "ELF64"];
 		assert!(!key_value.is_peoperty_of("Data"));
 	}
 
 	#[test]
-	fn test_property_trait_single_element() {
+	fn test_property_trait_single_element()
+	{
 		let key_value = vec!["Class"];
 		assert!(key_value.is_peoperty_of("Class"));
 	}
 
 	#[test]
-	fn test_property_trait_multiple_elements() {
+	fn test_property_trait_multiple_elements()
+	{
 		let key_value =
 			vec!["Entry point address", "0x401000", "additional", "info"];
 		assert!(key_value.is_peoperty_of("Entry point address"));
@@ -703,7 +738,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_debug_trait_implementation() {
+	fn test_debug_trait_implementation()
+	{
 		let header = ReadElfH::default();
 
 		// Should be able to debug print the struct
@@ -712,7 +748,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_field_parsing_simulation() {
+	fn test_readelf_h_field_parsing_simulation()
+	{
 		// Simulate parsing different types of readelf output lines
 		let test_cases = vec![
 			("Class:                             ELF64", "Class", "ELF64",),
@@ -763,7 +800,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_version_field_handling() {
+	fn test_readelf_h_version_field_handling()
+	{
 		// Test the special case where Version field can be either ELF version
 		// or object version
 		let elf_version_line = "Version:                           1 (current)";
@@ -782,7 +820,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_fix_method_edge_cases() {
+	fn test_readelf_h_fix_method_edge_cases()
+	{
 		let mut header = ReadElfH {
 			file_class: "ELF32".to_string(), // No extra text
 			endianness: "big".to_string(),   // Single word
@@ -830,7 +869,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_property_trait_case_sensitivity() {
+	fn test_property_trait_case_sensitivity()
+	{
 		let key_value = vec!["Class", "ELF64"];
 
 		// Should match exact case
@@ -842,7 +882,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_property_trait_partial_matches() {
+	fn test_property_trait_partial_matches()
+	{
 		let key_value = vec!["Entry point address", "0x401000"];
 
 		// Should match full string
@@ -855,7 +896,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_property_trait_empty_vector() {
+	fn test_property_trait_empty_vector()
+	{
 		let key_value: Vec<&str,> = vec![];
 
 		// Should not match anything with empty vector
@@ -864,7 +906,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_property_trait_whitespace_handling() {
+	fn test_property_trait_whitespace_handling()
+	{
 		let key_value = vec!["  Class  ", "ELF64"];
 
 		// Should not match due to whitespace differences
@@ -875,7 +918,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_with_whitespace_variations() {
+	fn test_readelf_h_with_whitespace_variations()
+	{
 		let mut header = ReadElfH {
 			file_class: "  ELF64   (64-bit)  ".to_string(),
 			endianness: "\tlittle\tendian\t".to_string(),
@@ -907,7 +951,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_memory_efficiency() {
+	fn test_readelf_h_memory_efficiency()
+	{
 		// Test that creating many ReadElfH instances doesn't cause issues
 		let mut headers = Vec::new();
 
@@ -931,7 +976,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_clone_behavior() {
+	fn test_readelf_h_clone_behavior()
+	{
 		let original = ReadElfH {
 			file_class: "ELF64".to_string(),
 			endianness: "little".to_string(),
@@ -953,7 +999,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_field_independence() {
+	fn test_readelf_h_field_independence()
+	{
 		let mut header = ReadElfH::default();
 
 		// Test that modifying one field doesn't affect others
@@ -974,7 +1021,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_string_operations() {
+	fn test_readelf_h_string_operations()
+	{
 		// Test various string operations that might be used with ReadElfH
 		let header = ReadElfH {
 			file_class: "ELF64".to_string(),
@@ -996,7 +1044,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_with_unicode_content() {
+	fn test_readelf_h_with_unicode_content()
+	{
 		let mut header = ReadElfH {
 			target_os_abi: "UNIX - System V with unicode: αβγ".to_string(),
 			..Default::default()
@@ -1009,7 +1058,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_empty_string_handling() {
+	fn test_readelf_h_empty_string_handling()
+	{
 		let mut header = ReadElfH {
 			file_class: "".to_string(),
 			endianness: " ".to_string(),    // Just whitespace
@@ -1027,7 +1077,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_numeric_field_formats() {
+	fn test_readelf_h_numeric_field_formats()
+	{
 		let mut header =
 			ReadElfH {
 				entry: "0x401000 (entry point)".to_string(),
@@ -1063,7 +1114,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_architecture_variations() {
+	fn test_readelf_h_architecture_variations()
+	{
 		let architectures = vec![
 			("Advanced Micro Devices X86-64", "Advanced",),
 			("ARM", "ARM",),
@@ -1085,7 +1137,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_type_variations() {
+	fn test_readelf_h_type_variations()
+	{
 		let types = vec![
 			("EXEC (Executable file)", "EXEC",),
 			("DYN (Shared object file)", "DYN",),
@@ -1103,7 +1156,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_property_trait_with_special_characters() {
+	fn test_property_trait_with_special_characters()
+	{
 		let key_value = vec!["Entry point address", "0x401000"];
 
 		// Should handle strings with spaces
@@ -1116,7 +1170,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_h_all_fields_populated() {
+	fn test_readelf_h_all_fields_populated()
+	{
 		let mut header =
 			ReadElfH {
 				file_class: "ELF64 (64-bit)".to_string(),

@@ -5,26 +5,32 @@ use {
 	std::process::Command,
 };
 
-pub trait IntField: Sized {
+pub trait IntField: Sized
+{
 	fn parse(hex: &str,) -> Rslt<Self,>;
 }
 
-impl IntField for u32 {
-	fn parse(hex: &str,) -> Rslt<Self,> {
+impl IntField for u32
+{
+	fn parse(hex: &str,) -> Rslt<Self,>
+	{
 		let rslt = Self::from_str_radix(hex, 16,)?;
 		Rslt::new(rslt,)
 	}
 }
 
-impl IntField for u64 {
-	fn parse(hex: &str,) -> Rslt<Self,> {
+impl IntField for u64
+{
+	fn parse(hex: &str,) -> Rslt<Self,>
+	{
 		let rslt = Self::from_str_radix(hex, 16,)?;
 		Rslt::new(rslt,)
 	}
 }
 
 #[derive(Default, Debug,)]
-pub struct ReadElfL {
+pub struct ReadElfL
+{
 	/// Segment type (e.g., "LOAD", "INTERP", "DYNAMIC")
 	pub ty:               String,
 	/// File offset where the segment begins
@@ -46,7 +52,8 @@ pub struct ReadElfL {
 
 pub fn test_program_headers_parse(
 	rslt: proc_macro2::TokenStream,
-) -> Rslt<TokenStream,> {
+) -> Rslt<TokenStream,>
+{
 	program_headers_info().replace_by(|v| {
 		Rslt::new(quote::quote! {
 			if cfg!(debug_assertions) {
@@ -56,7 +63,8 @@ pub fn test_program_headers_parse(
 	},)
 }
 
-pub fn program_headers_info() -> Rslt<TokenStream,> {
+pub fn program_headers_info() -> Rslt<TokenStream,>
+{
 	readelf_l().replace_by(|program_headers| {
 		let program_headers = program_headers.iter().map(|rel| {
 			let ty = parse_program_header_type(rel,);
@@ -91,7 +99,8 @@ pub fn program_headers_info() -> Rslt<TokenStream,> {
 
 fn parse_program_header_type(
 	program_header: &ReadElfL,
-) -> proc_macro2::TokenStream {
+) -> proc_macro2::TokenStream
+{
 	// Convert underscore_separated to CamelCase
 	let camel_cased: String = program_header
 		.ty
@@ -110,7 +119,8 @@ fn parse_program_header_type(
 	}
 }
 
-pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,> {
+pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,>
+{
 	check_poison_girl_kernel()?;
 
 	readelf_l_out()
@@ -149,7 +159,8 @@ pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,> {
 		},)
 }
 
-fn readelf_l_out() -> Rslt<Vec<String,>,> {
+fn readelf_l_out() -> Rslt<Vec<String,>,>
+{
 	let program_headers_info = Command::new("readelf",)
 		.args(["-l", "target/oso_kernel.elf",],)
 		.output()?
@@ -163,7 +174,8 @@ fn readelf_l_out() -> Rslt<Vec<String,>,> {
 	Rslt::new(program_headers_info,)
 }
 
-fn program_headers_count(info: &str,) -> Rslt<usize,> {
+fn program_headers_count(info: &str,) -> Rslt<usize,>
+{
 	let desc_lines_count = info.lines().count();
 	if desc_lines_count < 2 {
 		return Rslt::new_err(
@@ -184,7 +196,8 @@ fn program_headers_count(info: &str,) -> Rslt<usize,> {
 fn program_headers_fields(
 	infos: &[String],
 	count: usize,
-) -> impl Iterator<Item = std::string::String,> {
+) -> impl Iterator<Item = std::string::String,>
+{
 	infos[1]
 		.lines()
 		.skip(3,)
@@ -193,7 +206,8 @@ fn program_headers_fields(
 		.take(count,)
 }
 
-fn parse_str_hex_repr<I: IntField,>(hex: &str,) -> Rslt<I,> {
+fn parse_str_hex_repr<I: IntField,>(hex: &str,) -> Rslt<I,>
+{
 	let hex_repr = if hex.len() < 2 {
 		// we can assume that `hex` is not prefixed by `0x`
 		hex
@@ -204,7 +218,8 @@ fn parse_str_hex_repr<I: IntField,>(hex: &str,) -> Rslt<I,> {
 	I::parse(hex_repr,)
 }
 
-fn parse_flags_and_align(fields_info: &[&str],) -> Rslt<(u32, u64,),> {
+fn parse_flags_and_align(fields_info: &[&str],) -> Rslt<(u32, u64,),>
+{
 	let rslt = if fields_info.len() == 8 {
 		let flags_str = fields_info[6];
 		let mut flags = 0;
@@ -234,7 +249,8 @@ fn parse_flags_and_align(fields_info: &[&str],) -> Rslt<(u32, u64,),> {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use std::{
 		env::{current_dir, set_current_dir},
 		path::PathBuf,
@@ -244,7 +260,8 @@ mod tests {
 
 	use super::*;
 
-	fn go_crate_root() -> PoisonGirlB<PathBuf,> {
+	fn go_crate_root() -> PoisonGirlB<PathBuf,>
+	{
 		let mut cwd = current_dir()?;
 		while let Some(parent_path,) = cwd.parent()
 			&& parent_path.file_name().unwrap() != "oso"
@@ -261,7 +278,8 @@ mod tests {
 		X(cwd,)
 	}
 
-	fn go_workspace_root() -> PoisonGirlB<PathBuf,> {
+	fn go_workspace_root() -> PoisonGirlB<PathBuf,>
+	{
 		let cwd = go_crate_root()?;
 		if let Some(crate_name,) = cwd.file_name()
 			&& crate_name == "oso"
@@ -274,13 +292,15 @@ mod tests {
 	}
 
 	#[test]
-	fn test_slice_range() {
+	fn test_slice_range()
+	{
 		let a = &"0x1"[2..];
 		assert_eq!(a, "1");
 	}
 
 	#[test]
-	fn test_readelf_l() -> Rslt<(),> {
+	fn test_readelf_l() -> Rslt<(),>
+	{
 		let cwd = current_dir()?;
 		go_workspace_root()?;
 
@@ -298,7 +318,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_program_headers_info() -> Rslt<(),> {
+	fn test_program_headers_info() -> Rslt<(),>
+	{
 		let cwd = current_dir()?;
 		go_workspace_root()?;
 
@@ -317,7 +338,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_program_headers_count() -> Rslt<(),> {
+	fn test_program_headers_count() -> Rslt<(),>
+	{
 		let cwd = current_dir()?;
 		go_workspace_root()?;
 
@@ -338,7 +360,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_program_headers_fields() -> Rslt<(),> {
+	fn test_program_headers_fields() -> Rslt<(),>
+	{
 		let cwd = current_dir()?;
 		go_workspace_root()?;
 
@@ -363,68 +386,78 @@ mod tests {
 	}
 
 	#[test]
-	fn test_int_field_u32_parse_valid_hex() -> Rslt<(),> {
+	fn test_int_field_u32_parse_valid_hex() -> Rslt<(),>
+	{
 		let result = u32::parse("1a2b",)??;
 		assert_eq!(result, 0x1a2b);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_int_field_u32_parse_zero() -> Rslt<(),> {
+	fn test_int_field_u32_parse_zero() -> Rslt<(),>
+	{
 		let result = u32::parse("0",)??;
 		assert_eq!(result, 0);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_int_field_u32_parse_max_value() -> Rslt<(),> {
+	fn test_int_field_u32_parse_max_value() -> Rslt<(),>
+	{
 		let result = u32::parse("ffffffff",)??;
 		assert_eq!(result, u32::MAX);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_int_field_u32_parse_invalid() {
+	fn test_int_field_u32_parse_invalid()
+	{
 		let result = u32::parse("invalid",);
 		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_int_field_u32_parse_overflow() {
+	fn test_int_field_u32_parse_overflow()
+	{
 		// This should fail because it's too large for u32
 		let result = u32::parse("100000000",); // 9 hex digits
 		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_int_field_u64_parse_valid_hex() -> Rslt<(),> {
+	fn test_int_field_u64_parse_valid_hex() -> Rslt<(),>
+	{
 		let result = u64::parse("1a2b3c4d5e6f",)??;
 		assert_eq!(result, 0x1a2b3c4d5e6f);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_int_field_u64_parse_zero() -> Rslt<(),> {
+	fn test_int_field_u64_parse_zero() -> Rslt<(),>
+	{
 		let result = u64::parse("0",)??;
 		assert_eq!(result, 0);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_int_field_u64_parse_max_value() -> Rslt<(),> {
+	fn test_int_field_u64_parse_max_value() -> Rslt<(),>
+	{
 		let result = u64::parse("ffffffffffffffff",)??;
 		assert_eq!(result, u64::MAX);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_int_field_u64_parse_invalid() {
+	fn test_int_field_u64_parse_invalid()
+	{
 		let result = u64::parse("invalid",);
 		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_readelf_l_default() {
+	fn test_readelf_l_default()
+	{
 		let header = ReadElfL::default();
 
 		// All fields should have default values
@@ -439,7 +472,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_l_debug() {
+	fn test_readelf_l_debug()
+	{
 		let header = ReadElfL {
 			ty:               "LOAD".to_string(),
 			offset:           0x1000,
@@ -458,46 +492,53 @@ mod tests {
 	}
 
 	#[test]
-	fn test_parse_str_hex_repr_with_0x_prefix() -> Rslt<(),> {
+	fn test_parse_str_hex_repr_with_0x_prefix() -> Rslt<(),>
+	{
 		let result: u64 = parse_str_hex_repr("0x1000",)??;
 		assert_eq!(result, 0x1000);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_parse_str_hex_repr_without_0x_prefix() -> Rslt<(),> {
+	fn test_parse_str_hex_repr_without_0x_prefix() -> Rslt<(),>
+	{
 		let result: u64 = parse_str_hex_repr("1000",)??;
 		assert_eq!(result, 0x1000);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_parse_str_hex_repr_zero() -> Rslt<(),> {
+	fn test_parse_str_hex_repr_zero() -> Rslt<(),>
+	{
 		let result: u64 = parse_str_hex_repr("0x0",)??;
 		assert_eq!(result, 0);
 		Rslt::new((),)
 	}
 
 	#[test]
-	fn test_parse_str_hex_repr_invalid() {
+	fn test_parse_str_hex_repr_invalid()
+	{
 		let result: Rslt<u64,> = parse_str_hex_repr("invalid",);
 		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_parse_str_hex_repr_empty() {
+	fn test_parse_str_hex_repr_empty()
+	{
 		let result: Rslt<u64,> = parse_str_hex_repr("",);
 		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_parse_str_hex_repr_only_0x() {
+	fn test_parse_str_hex_repr_only_0x()
+	{
 		let result: Rslt<u64,> = parse_str_hex_repr("0x",);
 		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_program_headers_count_parsing() -> Rslt<(),> {
+	fn test_program_headers_count_parsing() -> Rslt<(),>
+	{
 		let test_line = "There are 4 program headers, starting at offset \
 		                 64\n\n"
 			.to_string();
@@ -507,7 +548,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_program_headers_count_different_format() -> Rslt<(),> {
+	fn test_program_headers_count_different_format() -> Rslt<(),>
+	{
 		let test_line = "There are 2 program headers, starting at offset \
 		                 128\n\n"
 			.to_string();
@@ -517,21 +559,24 @@ mod tests {
 	}
 
 	#[test]
-	fn test_program_headers_count_invalid_format() {
+	fn test_program_headers_count_invalid_format()
+	{
 		let test_line = "Invalid format without numbers\n\n".to_string();
 		let result = program_headers_count(&test_line,);
 		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_program_headers_count_no_numbers() {
+	fn test_program_headers_count_no_numbers()
+	{
 		let test_line = "There are no program headers\n\n".to_string();
 		let result = program_headers_count(&test_line,);
 		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_program_headers_fields_iterator() {
+	fn test_program_headers_fields_iterator()
+	{
 		let test_lines = vec![
 			"Program Headers:".to_string(),
 			"  Type           Offset             VirtAddr           PhysAddr"
@@ -564,7 +609,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_program_headers_fields_insufficient_lines() {
+	fn test_program_headers_fields_insufficient_lines()
+	{
 		let test_lines = vec![
 			"Program Headers:".to_string(),
 			"  Type           Offset             VirtAddr           PhysAddr"
@@ -579,7 +625,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_readelf_l_out_simulation() {
+	fn test_readelf_l_out_simulation()
+	{
 		// We can't easily test the actual readelf command without the binary,
 		// but we can test that the function signature is correct and it returns
 		// a Result This test would need to be ignored in CI/CD environments
@@ -587,7 +634,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_hex_string_edge_cases() -> Rslt<(),> {
+	fn test_hex_string_edge_cases() -> Rslt<(),>
+	{
 		// Test various hex string formats
 		let test_cases = vec![
 			("0x0", 0u64,),
@@ -608,7 +656,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_program_header_parsing_complete_flow() -> Rslt<(),> {
+	fn test_program_header_parsing_complete_flow() -> Rslt<(),>
+	{
 		// Simulate a complete parsing flow with mock data
 		let mut mock_readelf_output = vec![
 			"".to_string(),

@@ -26,9 +26,10 @@
 //! ## Usage
 //!
 //! ```rust,no_run
-//! use oso_no_std_shared::bridge::graphic::FrameBufConf;
-//! use oso_no_std_shared::bridge::graphic::PixelFormatConf;
-//! use oso_no_std_shared::wfi;
+//! use oso_no_std_shared::{
+//! 	bridge::graphic::{FrameBufConf, PixelFormatConf},
+//! 	wfi,
+//! };
 //!
 //! // Configure graphics
 //! let framebuf = FrameBufConf::new(
@@ -81,7 +82,8 @@ use core::arch::asm;
 ///
 /// This function never returns and contains inline assembly.
 #[inline(always)]
-pub fn wfi() -> ! {
+pub fn wfi() -> !
+{
 	loop {
 		unsafe {
 			if cfg!(target_arch = "aarch64") {
@@ -122,7 +124,8 @@ pub fn wfi() -> ! {
 ///
 /// This function never returns and contains inline assembly.
 #[inline(always)]
-pub fn wfe() -> ! {
+pub fn wfe() -> !
+{
 	loop {
 		unsafe {
 			if cfg!(target_arch = "aarch64") {
@@ -162,7 +165,8 @@ pub fn wfe() -> ! {
 ///
 /// This function never returns and contains inline assembly.
 #[inline(always)]
-pub fn nop() -> ! {
+pub fn nop() -> !
+{
 	loop {
 		unsafe {
 			// Platform-specific no-operation implementation

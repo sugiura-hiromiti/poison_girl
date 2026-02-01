@@ -32,8 +32,7 @@
 //! The bootloader discovers display hardware and creates a `FrameBufConf`:
 //!
 //! ```rust,no_run
-//! use oso_no_std_shared::bridge::graphic::FrameBufConf;
-//! use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+//! use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
 //!
 //! // Bootloader code
 //! let framebuf_config = FrameBufConf::new(
@@ -56,7 +55,8 @@
 //!
 //! ```rust,no_run
 //! // Kernel code
-//! fn initialize_graphics(config: FrameBufConf,) {
+//! fn initialize_graphics(config: FrameBufConf,)
+//! {
 //! 	match config.pixel_format {
 //! 		PixelFormatConf::Rgb => {
 //! 			// Initialize RGB graphics driver
@@ -147,7 +147,8 @@
 ///   access
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy,)]
-pub enum PixelFormatConf {
+pub enum PixelFormatConf
+{
 	/// Red, Green, Blue color format
 	///
 	/// Standard RGB format where red is in the lowest memory address,
@@ -173,7 +174,8 @@ pub enum PixelFormatConf {
 	BltOnly,
 }
 
-impl PixelFormatConf {
+impl PixelFormatConf
+{
 	/// Returns the typical bytes per pixel for this format
 	///
 	/// This method provides an estimate of the bytes per pixel for common
@@ -195,7 +197,8 @@ impl PixelFormatConf {
 	/// assert_eq!(PixelFormatConf::Bitmask.bytes_per_pixel(), None);
 	/// assert_eq!(PixelFormatConf::BltOnly.bytes_per_pixel(), None);
 	/// ```
-	pub fn bytes_per_pixel(&self,) -> Option<usize,> {
+	pub fn bytes_per_pixel(&self,) -> Option<usize,>
+	{
 		match self {
 			PixelFormatConf::Rgb | PixelFormatConf::Bgr => Some(4,), /* Assuming 32-bit RGBA/BGRA */
 			PixelFormatConf::Bitmask | PixelFormatConf::BltOnly => None, /* Variable or unknown */
@@ -222,7 +225,8 @@ impl PixelFormatConf {
 	/// assert!(PixelFormatConf::Bitmask.supports_pixel_access());
 	/// assert!(!PixelFormatConf::BltOnly.supports_pixel_access());
 	/// ```
-	pub fn supports_pixel_access(&self,) -> bool {
+	pub fn supports_pixel_access(&self,) -> bool
+	{
 		match self {
 			PixelFormatConf::Rgb
 			| PixelFormatConf::Bgr
@@ -288,8 +292,7 @@ impl PixelFormatConf {
 /// ### Basic Configuration
 ///
 /// ```rust,no_run
-/// use oso_no_std_shared::bridge::graphic::FrameBufConf;
-/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
 ///
 /// // Create a framebuffer configuration for a 1024x768 display
 /// let framebuf = FrameBufConf::new(
@@ -305,8 +308,7 @@ impl PixelFormatConf {
 /// ### With Row Padding
 ///
 /// ```rust,no_run
-/// use oso_no_std_shared::bridge::graphic::FrameBufConf;
-/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
 ///
 /// // Framebuffer with row padding for alignment
 /// let framebuf = FrameBufConf::new(
@@ -331,7 +333,8 @@ impl PixelFormatConf {
 /// - The memory region remains valid for the lifetime of the configuration
 #[derive(Debug,)]
 #[repr(C)]
-pub struct FrameBufConf {
+pub struct FrameBufConf
+{
 	/// The pixel format used by the framebuffer
 	pub pixel_format: PixelFormatConf,
 	/// Pointer to the start of the framebuffer memory
@@ -346,7 +349,8 @@ pub struct FrameBufConf {
 	pub stride:       usize,
 }
 
-impl FrameBufConf {
+impl FrameBufConf
+{
 	/// Creates a new framebuffer configuration with the specified parameters
 	///
 	/// This constructor validates that the provided parameters are consistent
@@ -368,8 +372,7 @@ impl FrameBufConf {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_no_std_shared::bridge::graphic::FrameBufConf;
-	/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+	/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
 	///
 	/// // Create a configuration for a Full HD display
 	/// let framebuf = FrameBufConf::new(
@@ -396,7 +399,8 @@ impl FrameBufConf {
 		width: usize,
 		height: usize,
 		stride: usize,
-	) -> Self {
+	) -> Self
+	{
 		// Debug assertions to catch common configuration errors
 		debug_assert!(width > 0, "Width must be greater than 0");
 		debug_assert!(height > 0, "Height must be greater than 0");
@@ -431,8 +435,7 @@ impl FrameBufConf {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_no_std_shared::bridge::graphic::FrameBufConf;
-	/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+	/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
 	///
 	/// let framebuf = FrameBufConf::new(
 	/// 	PixelFormatConf::Rgb,
@@ -448,7 +451,8 @@ impl FrameBufConf {
 	/// 	println!("Pixel offset: {}", offset);
 	/// }
 	/// ```
-	pub fn pixel_offset(&self, x: usize, y: usize,) -> Option<usize,> {
+	pub fn pixel_offset(&self, x: usize, y: usize,) -> Option<usize,>
+	{
 		// Check bounds
 		if x >= self.width || y >= self.height {
 			return None;
@@ -473,8 +477,7 @@ impl FrameBufConf {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_no_std_shared::bridge::graphic::FrameBufConf;
-	/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+	/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
 	///
 	/// let framebuf = FrameBufConf::new(
 	/// 	PixelFormatConf::Rgb,
@@ -487,7 +490,8 @@ impl FrameBufConf {
 	///
 	/// assert_eq!(framebuf.pixel_count(), 1024 * 768);
 	/// ```
-	pub fn pixel_count(&self,) -> usize {
+	pub fn pixel_count(&self,) -> usize
+	{
 		self.width * self.height
 	}
 
@@ -503,8 +507,7 @@ impl FrameBufConf {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_no_std_shared::bridge::graphic::FrameBufConf;
-	/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+	/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
 	///
 	/// let framebuf = FrameBufConf::new(
 	/// 	PixelFormatConf::Rgb,
@@ -517,7 +520,8 @@ impl FrameBufConf {
 	///
 	/// assert!(framebuf.is_valid());
 	/// ```
-	pub fn is_valid(&self,) -> bool {
+	pub fn is_valid(&self,) -> bool
+	{
 		// Basic sanity checks
 		if self.width == 0
 			|| self.height == 0

@@ -45,7 +45,8 @@ use poison_girl_no_std_error::PoisonGirlB;
 ///     }
 /// }
 /// ```
-pub trait ParserGenerator<C: Context,> {
+pub trait ParserGenerator<C: Context,>
+{
 	// Future expansion possibilities:
 	// fn parser_lists(&self,) -> &[impl Parser<C,>];
 	// fn parser<F: Fn(&Self,) -> Rslt<R, ParserError,>, R,>(&self,) -> F;
@@ -81,7 +82,8 @@ pub trait ParserGenerator<C: Context,> {
 ///
 /// - `SIZE`: The size in bytes of the output type (defaults to
 ///   `size_of::<Self::Output>()`)
-pub trait Context {
+pub trait Context
+{
 	/// The type that will be produced by successful parsing
 	type Output;
 
@@ -105,7 +107,9 @@ pub trait Context {
 	///
 	/// This method is currently a placeholder for future functionality
 	/// that might involve field-level parsing operations.
-	fn field_count() {}
+	fn field_count()
+	{
+	}
 }
 
 // ==================== Parser Component Framework ====================
@@ -124,7 +128,8 @@ pub trait Context {
 ///
 /// This trait is designed to support a compositional approach to parser
 /// construction, where complex parsers are built from simpler components.
-pub trait ParserComponents<C: Context,> {
+pub trait ParserComponents<C: Context,>
+{
 	/// Apply this parser component to the given context.
 	///
 	/// This method performs the parsing operation represented by this
@@ -179,7 +184,8 @@ pub trait ParserComponents<C: Context,> {
 ///
 /// TODO: Implement this trait for the `Tree` data structure to enable
 /// tree-based parsing operations.
-pub trait Parser<C: Context,> {
+pub trait Parser<C: Context,>
+{
 	/// Parse data from the context and produce the output.
 	///
 	/// This method performs the complete parsing operation, consuming or

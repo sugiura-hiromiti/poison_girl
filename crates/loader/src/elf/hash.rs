@@ -10,7 +10,8 @@ pub fn gnu_hash_len(
 	binary: &[u8],
 	mut offset: usize,
 	context: &Context,
-) -> PoisonGirlB<usize,> {
+) -> PoisonGirlB<usize,>
+{
 	let buckets_count =
 		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
 	let min_chain =
@@ -61,7 +62,8 @@ pub fn hash_len(
 	mut offset: usize,
 	machine: u16,
 	context: &Context,
-) -> PoisonGirlB<usize,> {
+) -> PoisonGirlB<usize,>
+{
 	offset = offset.saturating_add(4,);
 	let nchain = if (machine == ElfHeader::EM_FAKE_ALPHA
 		|| machine == ElfHeader::EM_S390)

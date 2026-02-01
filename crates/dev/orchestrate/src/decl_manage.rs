@@ -15,20 +15,24 @@ pub mod crate_;
 pub mod package;
 pub mod workspace;
 
-pub trait CargoCrate {
+pub trait CargoCrate
+{
 	fn specified_target(&self,) -> PoisonGirlB<impl Into<String,>,>;
 	fn build_artifact(&self,) -> PoisonGirlB<PathBuf,>;
 	fn as_crate(&self,) -> &impl Crate;
 	fn as_opts(&self,) -> &impl CompileOpt;
 }
 
-pub struct OsoCargoInterface {
+pub struct OsoCargoInterface
+{
 	ws:  OsoCrate,
 	opt: Opts,
 }
 
-impl CargoCrate for OsoCargoInterface {
-	fn specified_target(&self,) -> PoisonGirlB<impl Into<String,>,> {
+impl CargoCrate for OsoCargoInterface
+{
+	fn specified_target(&self,) -> PoisonGirlB<impl Into<String,>,>
+	{
 		let search_rslt = search_in_with(&self.ws.path(), |entry| {
 			let file_name = entry
 				.as_ref()
@@ -48,7 +52,8 @@ impl CargoCrate for OsoCargoInterface {
 		}
 	}
 
-	fn build_artifact(&self,) -> PoisonGirlB<PathBuf,> {
+	fn build_artifact(&self,) -> PoisonGirlB<PathBuf,>
+	{
 		X(self
 			.ws
 			.path()
@@ -57,11 +62,13 @@ impl CargoCrate for OsoCargoInterface {
 			.join(self.opt.build_mode().into(),),)
 	}
 
-	fn as_crate(&self,) -> &impl Crate {
+	fn as_crate(&self,) -> &impl Crate
+	{
 		&self.ws
 	}
 
-	fn as_opts(&self,) -> &impl CompileOpt {
+	fn as_opts(&self,) -> &impl CompileOpt
+	{
 		&self.opt
 	}
 }

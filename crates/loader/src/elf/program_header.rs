@@ -5,7 +5,8 @@ use {
 };
 
 #[derive(PartialEq, Eq,)]
-pub struct ProgramHeader {
+pub struct ProgramHeader
+{
 	pub ty:               ProgramHeaderType,
 	pub flags:            u32,
 	pub offset:           u64,
@@ -16,7 +17,8 @@ pub struct ProgramHeader {
 	pub align:            u64,
 }
 
-impl ProgramHeader {
+impl ProgramHeader
+{
 	/// size of program header in 64bit architecture
 	const SIZE_64: usize = 56;
 
@@ -24,7 +26,8 @@ impl ProgramHeader {
 		binary: &[u8],
 		offset: &mut usize,
 		count: usize,
-	) -> PoisonGirlB<Vec<Self,>,> {
+	) -> PoisonGirlB<Vec<Self,>,>
+	{
 		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
 
 		let mut program_headers = Vec::with_capacity(count,);
@@ -55,16 +58,16 @@ impl ProgramHeader {
 			program_headers.push(program_header,);
 		}
 
-		poison_girl_proc_macro_def::test_program_headers_parse!(
-			program_headers
-		);
+		poison_girl_macro::test_program_headers_parse!(program_headers);
 
 		X(program_headers,)
 	}
 }
 
-impl core::fmt::Debug for ProgramHeader {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result {
+impl core::fmt::Debug for ProgramHeader
+{
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result
+	{
 		f.debug_struct("ProgramHeader",)
 			.field("ty", &self.ty,)
 			.field("flags", &format!("{:#x}", self.flags),)
@@ -80,7 +83,8 @@ impl core::fmt::Debug for ProgramHeader {
 
 #[repr(u32)]
 #[derive(PartialEq, Eq, Debug,)]
-pub enum ProgramHeaderType {
+pub enum ProgramHeaderType
+{
 	/// ARM unwind segment
 	ArmExidx    = 0x7000_0001,
 	/// Dynamic linking information
@@ -123,10 +127,12 @@ pub enum ProgramHeaderType {
 	Tls         = 7,
 }
 
-impl TryFrom<u32,> for ProgramHeaderType {
+impl TryFrom<u32,> for ProgramHeaderType
+{
 	type Error = ElfParseError;
 
-	fn try_from(value: u32,) -> Result<Self, Self::Error,> {
+	fn try_from(value: u32,) -> Result<Self, Self::Error,>
+	{
 		let ty = match value {
 			0x7000_0001 => Self::ArmExidx,
 			2 => Self::Dynamic,

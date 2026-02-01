@@ -12,7 +12,8 @@ use {
 pub fn features(
 	_attr: TokenStream,
 	mut item: syn::ItemEnum,
-) -> Rslt<TokenStream,> {
+) -> Rslt<TokenStream,>
+{
 	let mut hs = std::collections::HashSet::new();
 	all_crates()?
 		.iter()

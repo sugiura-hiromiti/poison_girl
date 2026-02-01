@@ -1,5 +1,6 @@
-use super::table::system_table;
-use crate::raw::protocol::text::TextOutputProtocol;
+use {
+	super::table::system_table, crate::raw::protocol::text::TextOutputProtocol,
+};
 
 #[macro_export]
 macro_rules! print {
@@ -18,14 +19,17 @@ macro_rules! println {
 	}
 }
 
-pub fn print(args: core::fmt::Arguments,) {
+pub fn print(args: core::fmt::Arguments,)
+{
 	use core::fmt::Write;
 	let st = unsafe { system_table().as_ref() };
 	unsafe { st.stdout.as_mut() }.unwrap().write_fmt(args,).unwrap();
 }
 
-impl core::fmt::Write for TextOutputProtocol {
-	fn write_str(&mut self, s: &str,) -> core::fmt::Result {
+impl core::fmt::Write for TextOutputProtocol
+{
+	fn write_str(&mut self, s: &str,) -> core::fmt::Result
+	{
 		self.output(s,)?;
 		Ok((),)
 	}

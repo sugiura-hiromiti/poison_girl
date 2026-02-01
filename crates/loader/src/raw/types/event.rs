@@ -2,7 +2,8 @@
 #[repr(transparent)]
 pub struct EventType(pub u32,);
 
-impl EventType {
+impl EventType
+{
 	pub const NOTIFY_SIGNAL: u32 = 0x0000_0200;
 	pub const NOTIFY_WAIT: u32 = 0x0000_0100;
 	pub const RUNTIME: u32 = 0x4000_0000;

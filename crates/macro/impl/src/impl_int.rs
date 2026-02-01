@@ -4,19 +4,24 @@ use {
 	syn::{TypePath, parse::Parse, spanned::Spanned},
 };
 
-pub struct Types {
+pub struct Types
+{
 	/// Internal storage for the parsed types
 	type_list: Vec<syn::Type,>,
 }
 
-impl Types {
-	pub fn iter(&self,) -> std::slice::Iter<'_, syn::Type,> {
+impl Types
+{
+	pub fn iter(&self,) -> std::slice::Iter<'_, syn::Type,>
+	{
 		self.type_list.iter()
 	}
 }
 
-impl Parse for Types {
-	fn parse(input: syn::parse::ParseStream,) -> syn::Result<Self,> {
+impl Parse for Types
+{
+	fn parse(input: syn::parse::ParseStream,) -> syn::Result<Self,>
+	{
 		let parsed = input.step(|c| {
 			let mut rest = *c;
 			let mut type_list = vec![];
@@ -47,7 +52,8 @@ impl Parse for Types {
 	}
 }
 
-pub fn impl_int(types: Types,) -> Rslt<proc_macro2::TokenStream,> {
+pub fn impl_int(types: Types,) -> Rslt<proc_macro2::TokenStream,>
+{
 	let integers = types.iter().map(implement,);
 
 	Rslt::new(quote::quote! {
@@ -55,7 +61,8 @@ pub fn impl_int(types: Types,) -> Rslt<proc_macro2::TokenStream,> {
 	},)
 }
 
-pub fn implement(ty: &syn::Type,) -> proc_macro2::TokenStream {
+pub fn implement(ty: &syn::Type,) -> proc_macro2::TokenStream
+{
 	let idnt = unwrap_primitive(ty,).unwrap();
 	let digit_count = digit_count_impl();
 	let nth_digit = nth_digit_impl();
@@ -70,7 +77,8 @@ pub fn implement(ty: &syn::Type,) -> proc_macro2::TokenStream {
 	}
 }
 
-fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,> {
+fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,>
+{
 	// Extract segment as `seg` from `ty`
 	let syn::Type::Path(TypePath {
 		qself: None,
@@ -105,7 +113,8 @@ fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,> {
 	Ok(idnt.clone(),)
 }
 
-fn digit_count_impl() -> proc_macro2::TokenStream {
+fn digit_count_impl() -> proc_macro2::TokenStream
+{
 	quote::quote! {
 		fn digit_count(&self) -> usize {
 			let mut n = self.clone();
@@ -122,7 +131,8 @@ fn digit_count_impl() -> proc_macro2::TokenStream {
 	}
 }
 
-fn nth_digit_impl() -> proc_macro2::TokenStream {
+fn nth_digit_impl() -> proc_macro2::TokenStream
+{
 	quote::quote! {
 		/// Extracts the nth digit from the right (1-indexed)
 		///
@@ -152,7 +162,8 @@ fn nth_digit_impl() -> proc_macro2::TokenStream {
 	}
 }
 
-fn shift_right_impl(idnt: &syn::Ident,) -> proc_macro2::TokenStream {
+fn shift_right_impl(idnt: &syn::Ident,) -> proc_macro2::TokenStream
+{
 	// Different handling for signed vs unsigned types
 	let return_value = if idnt.to_string().contains("u",) {
 		// Unsigned types: direct conversion
@@ -193,7 +204,8 @@ fn shift_right_impl(idnt: &syn::Ident,) -> proc_macro2::TokenStream {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {
 		super::*,
 		quote::quote,
@@ -201,7 +213,8 @@ mod tests {
 	};
 
 	#[test]
-	fn test_types_parse_single_type() {
+	fn test_types_parse_single_type()
+	{
 		let input = quote! { u32 };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
 
@@ -210,7 +223,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_types_parse_multiple_types() {
+	fn test_types_parse_multiple_types()
+	{
 		let input = quote! { u8, u16, u32, u64 };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
 
@@ -219,7 +233,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_types_parse_with_extra_commas() {
+	fn test_types_parse_with_extra_commas()
+	{
 		let input = quote! { u8, , u16, , u32, };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
 
@@ -228,7 +243,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_types_parse_signed_types() {
+	fn test_types_parse_signed_types()
+	{
 		let input = quote! { i8, i16, i32, i64 };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
 
@@ -237,7 +253,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_types_parse_mixed_types() {
+	fn test_types_parse_mixed_types()
+	{
 		let input = quote! { u8, i16, u32, i64, usize, isize };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
 
@@ -246,7 +263,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_types_parse_empty_input() {
+	fn test_types_parse_empty_input()
+	{
 		let input = quote! {};
 		let types: Types =
 			syn::parse2(input,).expect("Failed to parse empty types",);
@@ -256,7 +274,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_types_parse_error_on_invalid_token() {
+	fn test_types_parse_error_on_invalid_token()
+	{
 		let input = quote! { u32, "invalid", u64 };
 		let result: Result<Types, _,> = syn::parse2(input,);
 
@@ -264,7 +283,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_unwrap_primitive_u32() {
+	fn test_unwrap_primitive_u32()
+	{
 		let ty: Type = parse_quote! { u32 };
 		let ident = unwrap_primitive(&ty,).expect("Failed to unwrap u32",);
 
@@ -272,7 +292,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_unwrap_primitive_i64() {
+	fn test_unwrap_primitive_i64()
+	{
 		let ty: Type = parse_quote! { i64 };
 		let ident = unwrap_primitive(&ty,).expect("Failed to unwrap i64",);
 
@@ -280,7 +301,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_unwrap_primitive_usize() {
+	fn test_unwrap_primitive_usize()
+	{
 		let ty: Type = parse_quote! { usize };
 		let ident = unwrap_primitive(&ty,).expect("Failed to unwrap usize",);
 
@@ -288,7 +310,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_unwrap_primitive_error_on_generic() {
+	fn test_unwrap_primitive_error_on_generic()
+	{
 		let ty: Type = parse_quote! { Vec<i32> };
 		let result = unwrap_primitive(&ty,);
 
@@ -296,7 +319,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_unwrap_primitive_error_on_path() {
+	fn test_unwrap_primitive_error_on_path()
+	{
 		let ty: Type = parse_quote! { std::collections::HashMap };
 		let result = unwrap_primitive(&ty,);
 
@@ -304,7 +328,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_unwrap_primitive_error_on_reference() {
+	fn test_unwrap_primitive_error_on_reference()
+	{
 		let ty: Type = parse_quote! { &str };
 		let result = unwrap_primitive(&ty,);
 
@@ -312,7 +337,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_implement_generates_valid_tokens() {
+	fn test_implement_generates_valid_tokens()
+	{
 		let ty: Type = parse_quote! { u32 };
 		let implementation = implement(&ty,);
 
@@ -325,7 +351,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_implement_unsigned_type() {
+	fn test_implement_unsigned_type()
+	{
 		let ty: Type = parse_quote! { u64 };
 		let implementation = implement(&ty,);
 
@@ -336,7 +363,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_implement_signed_type() {
+	fn test_implement_signed_type()
+	{
 		let ty: Type = parse_quote! { i32 };
 		let implementation = implement(&ty,);
 
@@ -347,7 +375,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_digit_count_impl_structure() {
+	fn test_digit_count_impl_structure()
+	{
 		let implementation = digit_count_impl();
 		let code_str = implementation.to_string();
 
@@ -359,7 +388,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_nth_digit_impl_structure() {
+	fn test_nth_digit_impl_structure()
+	{
 		let implementation = nth_digit_impl();
 		let code_str = implementation.to_string();
 
@@ -372,7 +402,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_shift_right_impl_unsigned() {
+	fn test_shift_right_impl_unsigned()
+	{
 		let ident: syn::Ident = syn::parse_str("u32",).unwrap();
 		let implementation = shift_right_impl(&ident,);
 		let code_str = implementation.to_string();
@@ -386,7 +417,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_shift_right_impl_signed() {
+	fn test_shift_right_impl_signed()
+	{
 		let ident: syn::Ident = syn::parse_str("i32",).unwrap();
 		let implementation = shift_right_impl(&ident,);
 		let code_str = implementation.to_string();
@@ -400,7 +432,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_types_iter_functionality() {
+	fn test_types_iter_functionality()
+	{
 		let input = quote! { u8, u16, u32 };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
 
@@ -413,7 +446,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_complete_workflow() {
+	fn test_complete_workflow()
+	{
 		// Test the complete workflow from parsing to implementation
 		let input = quote! { u8, i16, u32 };
 		let types: Types = syn::parse2(input,).expect("Failed to parse types",);

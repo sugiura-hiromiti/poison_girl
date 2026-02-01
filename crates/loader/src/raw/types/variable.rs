@@ -2,7 +2,8 @@
 #[repr(transparent)]
 pub struct VariableAttributes(pub u32,);
 
-impl VariableAttributes {
+impl VariableAttributes
+{
 	pub const APPEND_WRITE: u32 = 0x40;
 	pub const ATHENTICATED_WRITE_ACCESS: u32 = 0x10;
 	pub const BOOTSERVICE_ACCESS: u32 = 0x02;

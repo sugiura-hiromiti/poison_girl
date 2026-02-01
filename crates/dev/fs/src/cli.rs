@@ -7,12 +7,15 @@ use {
 	},
 };
 
-pub trait Run {
+pub trait Run
+{
 	fn run(&mut self,) -> PoisonGirlB<(),>;
 }
 
-impl Run for Command {
-	fn run(&mut self,) -> PoisonGirlB<(),> {
+impl Run for Command
+{
+	fn run(&mut self,) -> PoisonGirlB<(),>
+	{
 		// Format the command display string with program and arguments
 		let cmd_dsply = format!(
 			"{} {}",
@@ -40,11 +43,13 @@ impl Run for Command {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use super::*;
 
 	#[test]
-	fn test_run_trait_successful_command() {
+	fn test_run_trait_successful_command()
+	{
 		let mut cmd = Command::new("echo",);
 		cmd.arg("test",);
 
@@ -53,7 +58,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_failing_command() {
+	fn test_run_trait_failing_command()
+	{
 		let mut cmd = Command::new("false",); // Command that always fails
 
 		let result = cmd.run();
@@ -61,7 +67,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_nonexistent_command() {
+	fn test_run_trait_nonexistent_command()
+	{
 		let mut cmd = Command::new("definitely_nonexistent_command_12345",);
 
 		let result = cmd.run();
@@ -69,7 +76,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_args() {
+	fn test_run_trait_with_args()
+	{
 		let mut cmd = Command::new("echo",);
 		cmd.args(&["hello", "world",],);
 
@@ -78,7 +86,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_env() {
+	fn test_run_trait_with_env()
+	{
 		let mut cmd = Command::new("echo",);
 		cmd.arg("test",);
 		cmd.env("TEST_VAR", "test_value",);
@@ -88,7 +97,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_multiple_calls() {
+	fn test_run_trait_multiple_calls()
+	{
 		// Test that we can call run multiple times on different command
 		// instances
 		let mut cmd1 = Command::new("echo",);
@@ -101,7 +111,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_current_dir() {
+	fn test_run_trait_with_current_dir()
+	{
 		let mut cmd = Command::new("pwd",);
 		cmd.current_dir("/tmp",);
 
@@ -113,7 +124,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_command_builder_pattern() {
+	fn test_command_builder_pattern()
+	{
 		// Test that we can use the builder pattern with our trait
 		let result = Command::new("echo",)
 			.arg("builder",)
@@ -125,7 +137,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_idempotent_success() {
+	fn test_run_trait_idempotent_success()
+	{
 		// Test that successful commands are idempotent
 		let mut cmd = Command::new("true",); // Command that always succeeds
 
@@ -135,7 +148,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_idempotent_failure() {
+	fn test_run_trait_idempotent_failure()
+	{
 		// Test that failing commands consistently fail
 		let mut cmd = Command::new("false",); // Command that always fails
 
@@ -144,7 +158,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_output_redirection() {
+	fn test_run_trait_with_output_redirection()
+	{
 		// Test commands that might produce output
 		let mut cmd = Command::new("echo",);
 		cmd.arg("output_test",);
@@ -154,7 +169,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_error_output() {
+	fn test_run_trait_with_error_output()
+	{
 		// Test commands that write to stderr
 		let mut cmd = Command::new("sh",);
 		cmd.args(&["-c", "echo 'error message' >&2",],);
@@ -167,7 +183,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_exit_code_handling() {
+	fn test_run_trait_exit_code_handling()
+	{
 		// Test that non-zero exit codes are treated as errors
 		let mut cmd = Command::new("sh",);
 		cmd.args(&["-c", "exit 1",],);
@@ -177,7 +194,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_zero_exit_code() {
+	fn test_run_trait_zero_exit_code()
+	{
 		// Test that zero exit code is treated as success
 		let mut cmd = Command::new("sh",);
 		cmd.args(&["-c", "exit 0",],);
@@ -187,7 +205,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_long_running_command() {
+	fn test_run_trait_with_long_running_command()
+	{
 		// Test with a command that takes a bit of time
 		let mut cmd = Command::new("sleep",);
 		cmd.arg("0.1",); // Sleep for 100ms
@@ -197,7 +216,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_command_not_found_vs_execution_failure() {
+	fn test_run_trait_command_not_found_vs_execution_failure()
+	{
 		// Test the difference between command not found and execution failure
 		let mut nonexistent_cmd =
 			Command::new("definitely_nonexistent_command_12345",);
@@ -214,7 +234,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_complex_args() {
+	fn test_run_trait_with_complex_args()
+	{
 		// Test with complex argument patterns
 		let mut cmd = Command::new("echo",);
 		cmd.args(&["--flag", "value", "-x", "test with spaces",],);
@@ -224,7 +245,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_empty_args() {
+	fn test_run_trait_with_empty_args()
+	{
 		// Test with no arguments
 		let mut cmd = Command::new("true",); // Command that always succeeds
 
@@ -233,7 +255,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_special_characters_in_args() {
+	fn test_run_trait_with_special_characters_in_args()
+	{
 		// Test with special characters in arguments
 		let mut cmd = Command::new("echo",);
 		cmd.args(&["hello", "world!", "@#$%", "test",],);
@@ -243,7 +266,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_unicode_args() {
+	fn test_run_trait_with_unicode_args()
+	{
 		// Test with unicode characters in arguments
 		let mut cmd = Command::new("echo",);
 		cmd.args(&["hello", "世界", "🦀", "test",],);
@@ -253,7 +277,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_very_long_args() {
+	fn test_run_trait_with_very_long_args()
+	{
 		// Test with very long arguments
 		let long_arg = "a".repeat(1000,);
 		let mut cmd = Command::new("echo",);
@@ -264,7 +289,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_many_args() {
+	fn test_run_trait_with_many_args()
+	{
 		// Test with many arguments
 		let mut cmd = Command::new("echo",);
 		for i in 0..50 {
@@ -276,7 +302,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_env_vars() {
+	fn test_run_trait_with_env_vars()
+	{
 		// Test with multiple environment variables
 		let mut cmd = Command::new("echo",);
 		cmd.arg("test",);
@@ -289,7 +316,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_working_directory() {
+	fn test_run_trait_with_working_directory()
+	{
 		// Test with different working directories
 		let mut cmd = Command::new("pwd",);
 
@@ -304,7 +332,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_command_display_formatting() {
+	fn test_run_trait_command_display_formatting()
+	{
 		// Test that command display includes program name and args
 		// This is harder to test directly since the output goes to stdout
 		// But we can at least verify the command runs without panicking
@@ -316,7 +345,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_shell_commands() {
+	fn test_run_trait_with_shell_commands()
+	{
 		// Test with shell commands that might have different exit codes
 		let test_cases = vec![
 			("true", true,),   // Should succeed
@@ -336,7 +366,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_error_propagation() {
+	fn test_run_trait_error_propagation()
+	{
 		// Test that errors are properly propagated
 		let mut cmd = Command::new("sh",);
 		cmd.args(&["-c", "exit 42",],); // Exit with specific code
@@ -346,7 +377,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_stdin_interaction() {
+	fn test_run_trait_with_stdin_interaction()
+	{
 		// Test commands that might read from stdin
 		let mut cmd = Command::new("cat",);
 		cmd.args(&["/dev/null",],); // Read from /dev/null instead of stdin
@@ -357,7 +389,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_output_commands() {
+	fn test_run_trait_with_output_commands()
+	{
 		// Test commands that produce various types of output
 		let test_commands = vec![
 			vec!["echo", "simple output"],
@@ -382,7 +415,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_concurrent_execution() {
+	fn test_run_trait_concurrent_execution()
+	{
 		// Test that multiple commands can be run concurrently
 		use std::thread;
 
@@ -403,7 +437,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_path_commands() {
+	fn test_run_trait_with_path_commands()
+	{
 		// Test commands with full paths
 		let common_paths =
 			vec!["/bin/echo", "/usr/bin/echo", "/bin/true", "/usr/bin/true"];
@@ -425,7 +460,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_relative_paths() {
+	fn test_run_trait_with_relative_paths()
+	{
 		// Test with relative path commands (if any exist)
 		// This is system-dependent, so we'll just test that it doesn't panic
 		let mut cmd = Command::new("./nonexistent_relative_command",);
@@ -434,7 +470,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_command_chaining_simulation() {
+	fn test_run_trait_command_chaining_simulation()
+	{
 		// Simulate command chaining by running multiple commands in sequence
 		let commands = vec![
 			vec!["echo", "first"],
@@ -454,7 +491,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_numeric_args() {
+	fn test_run_trait_with_numeric_args()
+	{
 		// Test with numeric arguments
 		let mut cmd = Command::new("echo",);
 		cmd.args(&["123", "456.789", "-42", "0",],);
@@ -464,7 +502,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_run_trait_with_boolean_like_args() {
+	fn test_run_trait_with_boolean_like_args()
+	{
 		// Test with boolean-like arguments
 		let mut cmd = Command::new("echo",);
 		cmd.args(&["true", "false", "yes", "no", "on", "off",],);

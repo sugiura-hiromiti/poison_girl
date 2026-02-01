@@ -24,8 +24,7 @@
 //! Binary parsers are built using the builder pattern, allowing for flexible
 //! configuration of parsing behavior while maintaining type safety.
 
-use crate::parser::generator::Context;
-use crate::parser::generator::Parser;
+use crate::parser::generator::{Context, Parser};
 // Future enhancement: Uncomment when ParserGenerator is needed
 // use crate::parser::generator::ParserGenerator;
 use core::marker::PhantomData;
@@ -67,7 +66,9 @@ use core::marker::PhantomData;
 ///
 /// impl<C: Context> BinaryParser<C> for ElfParser {}
 /// ```
-pub trait BinaryParser<C: Context,>: Parser<C,> {}
+pub trait BinaryParser<C: Context,>: Parser<C,>
+{
+}
 
 /// Builder for constructing binary parsers using the builder pattern.
 ///
@@ -100,7 +101,8 @@ pub trait BinaryParser<C: Context,>: Parser<C,> {}
 ///     .with_alignment(4)
 ///     .build();
 /// ```
-pub struct BinaryParserBuilder<T,> {
+pub struct BinaryParserBuilder<T,>
+{
 	/// Phantom data to maintain type parameter `T` without storing actual data
 	///
 	/// This field ensures that the builder maintains information about the
@@ -116,7 +118,8 @@ pub struct BinaryParserBuilder<T,> {
 // 	}
 // }
 
-impl<T,> BinaryParserBuilder<T,> {
+impl<T,> BinaryParserBuilder<T,>
+{
 	/// Create a new binary parser builder for type `T`.
 	///
 	/// This constructor initializes a new builder instance that can be used
@@ -133,7 +136,8 @@ impl<T,> BinaryParserBuilder<T,> {
 	///
 	/// let builder = BinaryParserBuilder::<u64>::new();
 	/// ```
-	pub fn new() -> Self {
+	pub fn new() -> Self
+	{
 		Self { __marker: PhantomData, }
 	}
 
@@ -185,14 +189,17 @@ impl<T,> BinaryParserBuilder<T,> {
 	///
 	/// This method is currently commented out but represents the final step
 	/// in the builder pattern where the configured parser is constructed.
-	pub fn build<C: Context,>(self,) {
+	pub fn build<C: Context,>(self,)
+	{
 		// Construct the final parser with all configurations
 		todo!()
 	}
 }
 
-impl<T,> Default for BinaryParserBuilder<T,> {
-	fn default() -> Self {
+impl<T,> Default for BinaryParserBuilder<T,>
+{
+	fn default() -> Self
+	{
 		Self::new()
 	}
 }

@@ -131,7 +131,8 @@ pub trait DeviceTree:
 	/// # Returns
 	///
 	/// A reference to an object implementing [`DeviceTreeMemoryReservation`]
-	fn memory_reservation_parser(&self,) -> &impl DeviceTreeMemoryReservation {
+	fn memory_reservation_parser(&self,) -> &impl DeviceTreeMemoryReservation
+	{
 		self
 	}
 
@@ -143,7 +144,8 @@ pub trait DeviceTree:
 	/// # Returns
 	///
 	/// A reference to an object implementing [`DeviceTreeStructure`]
-	fn structure_parser(&self,) -> &impl DeviceTreeStructure {
+	fn structure_parser(&self,) -> &impl DeviceTreeStructure
+	{
 		self
 	}
 
@@ -156,7 +158,8 @@ pub trait DeviceTree:
 	/// # Returns
 	///
 	/// A reference to an object implementing [`DeviceTreeStrings`]
-	fn strings_parser(&self,) -> &impl DeviceTreeStrings {
+	fn strings_parser(&self,) -> &impl DeviceTreeStrings
+	{
 		self
 	}
 }
@@ -180,7 +183,8 @@ pub trait DeviceTree:
 /// - Version information
 /// - Boot CPU ID
 /// - Block sizes
-pub trait DeviceTreeHeader {
+pub trait DeviceTreeHeader
+{
 	/// Validates the device tree magic number
 	///
 	/// The magic number should be 0xd00dfeed (big-endian) for a valid device
@@ -294,7 +298,8 @@ pub trait DeviceTreeHeader {
 ///
 /// Each entry in the memory reservation block consists of an address and size
 /// pair, both stored as 64-bit big-endian values.
-pub trait DeviceTreeMemoryReservation: MemoryReserveEntry {
+pub trait DeviceTreeMemoryReservation: MemoryReserveEntry
+{
 	/// Returns the number of memory reservation entries
 	///
 	/// The memory reservation block contains zero or more entries, terminated
@@ -326,7 +331,8 @@ pub trait DeviceTreeMemoryReservation: MemoryReserveEntry {
 /// This trait provides methods for accessing the data within a single memory
 /// reservation entry. Each entry describes a contiguous region of memory
 /// that is reserved and should not be used by the OS.
-pub trait MemoryReserveEntry: BinaryParser<false, usize,> {
+pub trait MemoryReserveEntry: BinaryParser<false, usize,>
+{
 	/// Returns the physical address of the reserved memory region
 	///
 	/// # Returns
@@ -353,7 +359,8 @@ pub trait MemoryReserveEntry: BinaryParser<false, usize,> {
 /// - Property definitions
 /// - No-operation tokens
 /// - End-of-structure marker
-pub trait DeviceTreeStructure: DeviceTreeStrings {
+pub trait DeviceTreeStructure: DeviceTreeStrings
+{
 	/// Returns the next structure token from the current position
 	///
 	/// This method advances the parser position and returns the next token
@@ -390,7 +397,8 @@ pub trait DeviceTreeStructure: DeviceTreeStrings {
 /// This trait provides methods for accessing strings stored in the strings
 /// block of the device tree. The strings block contains null-terminated strings
 /// that are referenced by properties in the structure block.
-pub trait DeviceTreeStrings {
+pub trait DeviceTreeStrings
+{
 	/// Retrieves a string from the strings block at the specified offset
 	///
 	/// # Arguments
@@ -430,7 +438,8 @@ pub trait DeviceTreeStrings {
 	///     println!("Found PCI node");
 	/// }
 	/// ```
-	fn is_node_of(&self, offset: usize, name: &str,) -> bool {
+	fn is_node_of(&self, offset: usize, name: &str,) -> bool
+	{
 		self.get_name(offset,) == name
 	}
 }
@@ -458,7 +467,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	/// # Returns
 	///
 	/// `true` for little-endian, `false` for big-endian
-	fn is_little_endian() -> bool {
+	fn is_little_endian() -> bool
+	{
 		IS_LITTLE_ENDIAN
 	}
 
@@ -467,7 +477,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	/// # Returns
 	///
 	/// `true` for big-endian, `false` for little-endian
-	fn is_big_endian() -> bool {
+	fn is_big_endian() -> bool
+	{
 		!IS_LITTLE_ENDIAN
 	}
 
@@ -516,7 +527,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	/// ```rust,ignore
 	/// parser.advance(4).advance(8); // Advance by 12 bytes total
 	/// ```
-	fn advance(&mut self, by: usize,) -> &mut Self {
+	fn advance(&mut self, by: usize,) -> &mut Self
+	{
 		let cur_pos = self.cur_pos();
 		self.set_pos(cur_pos + by,);
 		self
@@ -537,7 +549,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	///
 	/// The caller must ensure that `offset + len` is within the bounds of the
 	/// data.
-	fn bytes_of(&self, offset: usize, len: usize,) -> &[u8] {
+	fn bytes_of(&self, offset: usize, len: usize,) -> &[u8]
+	{
 		let raw = unsafe { self.raw().add(offset,) };
 		unsafe { core::slice::from_raw_parts(raw, len,) }
 	}
@@ -550,7 +563,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	/// # Returns
 	///
 	/// A byte slice containing the data that was read
-	fn read_range(&mut self,) -> &[u8] {
+	fn read_range(&mut self,) -> &[u8]
+	{
 		let cur_pos = self.cur_pos();
 		self.set_pos(cur_pos + T::DATA_SIZE,);
 		self.bytes_of(cur_pos, T::DATA_SIZE,)
@@ -572,7 +586,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	/// let value: u32 = parser.parse()?;
 	/// let next_value: u32 = parser.parse()?; // Automatically advanced
 	/// ```
-	fn parse(&mut self,) -> PoisonGirlB<T::Output,> {
+	fn parse(&mut self,) -> PoisonGirlB<T::Output,>
+	{
 		let bytes = self.read_range();
 		T::try_interpret(bytes,)
 	}
@@ -597,7 +612,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 	/// let future_value: u32 = parser.peek(16)?; // Look 16 bytes ahead
 	/// let current_value: u32 = parser.parse()?; // Still at original position
 	/// ```
-	fn peek(&self, offset: usize,) -> PoisonGirlB<T::Output,> {
+	fn peek(&self, offset: usize,) -> PoisonGirlB<T::Output,>
+	{
 		let bytes = self.bytes_of(offset, T::DATA_SIZE,);
 		T::try_interpret(bytes,)
 	}
@@ -608,7 +624,8 @@ pub trait BinaryParser<const IS_LITTLE_ENDIAN: bool, T: BinaryParserTarget,>:
 /// This trait defines how to interpret raw bytes as a specific type.
 /// It provides the size information and conversion logic needed by
 /// the binary parser framework.
-pub trait BinaryParserTarget: Sized {
+pub trait BinaryParserTarget: Sized
+{
 	/// The output type after parsing (defaults to Self)
 	type Output = Self;
 
@@ -638,7 +655,8 @@ pub trait BinaryParserTarget: Sized {
 /// - Implement proper endianness conversion
 /// - Add bounds checking for the input bytes
 /// - Handle different architectures (32-bit vs 64-bit)
-impl BinaryParserTarget for usize {
+impl BinaryParserTarget for usize
+{
 	/// Attempts to interpret bytes as a `usize` value
 	///
 	/// # Arguments
@@ -657,7 +675,8 @@ impl BinaryParserTarget for usize {
 	/// - Endianness handling (big-endian for device trees)
 	/// - Architecture-specific size handling
 	/// - Error handling for invalid input
-	fn try_interpret(_bytes: &[u8],) -> PoisonGirlB<Self::Output,> {
+	fn try_interpret(_bytes: &[u8],) -> PoisonGirlB<Self::Output,>
+	{
 		todo!("Implement usize parsing with proper endianness conversion")
 	}
 }
@@ -689,7 +708,8 @@ impl BinaryParserTarget for usize {
 ///     println!("Device tree size: {} bytes", total_size);
 /// }
 /// ```
-pub struct DeviceTreeData {
+pub struct DeviceTreeData
+{
 	/// Raw pointer to the device tree blob
 	ptr:                              *const u8,
 	/// Current parsing position (byte offset)
@@ -725,7 +745,8 @@ pub struct DeviceTreeData {
 ///
 /// This struct is currently unused but represents the intended structure
 /// for a complete device tree implementation.
-struct FlattenedDeviceTree {
+struct FlattenedDeviceTree
+{
 	/// Device tree header with metadata
 	fdt_header:               FlattenedDeviceTreeHeader,
 	/// Memory reservation entries
@@ -755,7 +776,8 @@ struct FlattenedDeviceTree {
 /// - `system_boot_cpu_physical_id`: Boot CPU identifier
 /// - `strings_block_size`: Size of the strings block
 /// - `struct_block_size`: Size of the structure block
-struct FlattenedDeviceTreeHeader {
+struct FlattenedDeviceTreeHeader
+{
 	/// Magic number for device tree validation (0xd00dfeed)
 	magic:                           u32,
 	/// Total size of the device tree blob in bytes
@@ -810,12 +832,14 @@ struct MemoryReservationBlock {}
 /// - Device memory regions
 /// - Boot loader reserved areas
 /// - Hardware-specific reserved regions
-pub struct MemoryReserveEntryData {
+pub struct MemoryReserveEntryData
+{
 	/// Pointer to the entry data in the device tree
 	entry_address: *const u8,
 }
 
-impl MemoryReserveEntry for MemoryReserveEntryData {
+impl MemoryReserveEntry for MemoryReserveEntryData
+{
 	/// Returns the physical address of the reserved memory region
 	///
 	/// # Returns
@@ -825,7 +849,8 @@ impl MemoryReserveEntry for MemoryReserveEntryData {
 	/// # TODO
 	///
 	/// Implement proper parsing of the 64-bit big-endian address value
-	fn address(&self,) -> usize {
+	fn address(&self,) -> usize
+	{
 		todo!("Parse 64-bit big-endian address from entry_address")
 	}
 
@@ -838,12 +863,14 @@ impl MemoryReserveEntry for MemoryReserveEntryData {
 	/// # TODO
 	///
 	/// Implement proper parsing of the 64-bit big-endian size value
-	fn mem_size(&self,) -> usize {
+	fn mem_size(&self,) -> usize
+	{
 		todo!("Parse 64-bit big-endian size from entry_address + 8")
 	}
 }
 
-impl BinaryParser<false, usize,> for MemoryReserveEntryData {
+impl BinaryParser<false, usize,> for MemoryReserveEntryData
+{
 	/// Returns the raw pointer to the entry data
 	///
 	/// # Returns
@@ -853,7 +880,8 @@ impl BinaryParser<false, usize,> for MemoryReserveEntryData {
 	/// # TODO
 	///
 	/// Implement proper pointer management and validation
-	fn raw(&self,) -> *const u8 {
+	fn raw(&self,) -> *const u8
+	{
 		todo!("Return validated entry_address pointer")
 	}
 
@@ -866,7 +894,8 @@ impl BinaryParser<false, usize,> for MemoryReserveEntryData {
 	/// # TODO
 	///
 	/// Implement position tracking for entry parsing
-	fn cur_pos(&self,) -> usize {
+	fn cur_pos(&self,) -> usize
+	{
 		todo!("Track current position within memory reservation entry")
 	}
 
@@ -879,7 +908,8 @@ impl BinaryParser<false, usize,> for MemoryReserveEntryData {
 	/// # TODO
 	///
 	/// Implement position setting with bounds checking
-	fn set_pos(&mut self, _to: usize,) {
+	fn set_pos(&mut self, _to: usize,)
+	{
 		todo!("Set parsing position with bounds validation")
 	}
 }
@@ -926,7 +956,8 @@ struct StructureBlock {}
 /// - `FDT_PROP` = 0x00000003
 /// - `FDT_NOP` = 0x00000004
 /// - `FDT_END` = 0x00000009
-pub enum StructureToken {
+pub enum StructureToken
+{
 	/// Beginning of a device node
 	BeginNode,
 	/// End of a device node

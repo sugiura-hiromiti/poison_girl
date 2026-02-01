@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. Status Codes &mdash; UEFI Specification 2.11 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=f2209469" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css?v=faba8a36" />
+      <link rel="stylesheet" type="text/css" href="_static/theme-overrides.css?v=84235ce0" />
+
+
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=2de06f63"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. Universal Network Driver Interfaces" href="Apx_E_Universal_Network_Driver_Interfaces.html" />
+    <link rel="prev" title="3. Device Path Examples" href="Apx_C_Device_Path_Examples.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+
+          <a href="index.html" class="icon icon-home">
+            UEFI Specification
+          </a>
+              <div class="version">
+                2.11
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="Frontmatter/List_of_Tables.html">List of Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Frontmatter/List_of_Figures.html">List of Figures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Frontmatter/Revision_History.html">Revision History</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="01_Introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02_Overview.html">2. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03_Boot_Manager.html">3. Boot Manager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="04_EFI_System_Table.html">4. EFI System Table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="05_GUID_Partition_Table_Format.html">5. GUID Partition Table (GPT) Disk Layout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="06_Block_Transition_Table_Layout.html">6. Block Translation Table (BTT) Layout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="07_Services_Boot_Services.html">7. Services — Boot Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="08_Services_Runtime_Services.html">8. Services — Runtime Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="09_Protocols_EFI_Loaded_Image.html">9. Protocols - EFI Loaded Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_Protocols_Device_Path_Protocol.html">10. Protocols – Device Path Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_Protocols_UEFI_Driver_Model.html">11. Protocols — UEFI Driver Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="12_Protocols_Console_Support.html">12. Protocols — Console Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="13_Protocols_Media_Access.html">13. Protocols – Media Access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="14_Protocols_PCI_Bus_Support.html">14. Protocols — PCI Bus Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="15_Protocols_SCSI_Driver_Models_and_Bus_Support.html">15. Protocols — SCSI Driver Models and Bus Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="16_Protocols_iSCSI_Boot.html">16. Protocols — iSCSI Boot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="17_Protocols_USB_Support.html">17. Protocols — USB Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="18_Protocols_Debugger_Support.html">18. Protocols — Debugger Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="19_Protocols_Compression_Algorithm_Specification.html">19. Protocols — Compression Algorithm Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="20_Protocols_ACPI_Protocols.html">20. Protocols — ACPI Protocols</a></li>
+<li class="toctree-l1"><a class="reference internal" href="21_Protocols_String_Services.html">21. Protocols — String Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="22_EFI_Byte_Code_Virtual_Machine.html">22. EFI Byte Code Virtual Machine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="23_Firmware_Update_and_Reporting.html">23. Firmware Update and Reporting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="24_Network_Protocols_SNP_PXE_BIS.html">24. Network Protocols — SNP, PXE, BIS and HTTP Boot</a></li>
+<li class="toctree-l1"><a class="reference internal" href="25_Network_Protocols_Managed_Network.html">25. Network Protocols - Managed Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="26_Network_Protocols_Bluetooth.html">26. Network Protocols — Bluetooth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="27_Network_Protocols_VLAN_and_EAP.html">27. Network Protocols — VLAN, EAP, Wi-Fi and Supplicant</a></li>
+<li class="toctree-l1"><a class="reference internal" href="28_Network_Protocols_TCP_IP_and_Configuration.html">28. Network Protocols — TCP, IP, IPsec, FTP, TLS and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="29_Network_Protocols_ARP_and_DHCP.html">29. Network Protocols — ARP, DHCP, DNS, HTTP and REST</a></li>
+<li class="toctree-l1"><a class="reference internal" href="30_Network_Protocols_UDP_and_MTFTP.html">30. Network Protocols — UDP and MTFTP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="31_EFI_Redfish_Service_Support.html">31. EFI Redfish Service Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="32_Secure_Boot_and_Driver_Signing.html">32. Secure Boot and Driver Signing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="33_Human_Interface_Infrastructure.html">33. Human Interface Infrastructure Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="34_HII_Protocols.html">34. HII Protocols</a></li>
+<li class="toctree-l1"><a class="reference internal" href="35_HII_Configuration_Processing_and_Browser_Protocol.html">35. HII Configuration Processing and Browser Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="36_User_Identification.html">36. User Identification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="37_Secure_Technologies.html">37. Secure Technologies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="38_Confidential_Computing.html">38. Confidential Computing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="39_Micellaneous_Protocols.html">39. Miscellaneous Protocols</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Apx_A_GUID_and_Time_Formats.html">A. GUID and Time Formats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_B_Console.html">B. Console</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_C_Device_Path_Examples.html">C. Device Path Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">D. Status Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_E_Universal_Network_Driver_Interfaces.html">E. Universal Network Driver Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_F_Using_the_Simple_Pointer_Protocol.html">F. Using the Simple Pointer Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_G_Using_the_EFI_Extended_SCSI_Pass_Thru_Protocol.html">G. Using the EFI Extended SCSI Pass Thru Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_H_Compression_Source_Code.html">H. Compression Source Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_I_Decompression_Source_Code.html">I. Decompression Source Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_J_EFI_Byte_Code_Virtual_Machine_Opcode_List.html">J. EFI Byte Code Virtual Machine Opcode List</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_K_Alphabetic_Function_Lists.html">K. Alphabetic Function Lists</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_L_EFI_1.10_Protocol_Changes_and_Deprecation_List.html">L. EFI 1.10 Protocol Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_M_Formats_Language_Codes_and_Language_Code_Arrays.html">M. Formats — Language Codes and Language Code Arrays</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_N_Common_Platform_Error_Record.html">N. Common Platform Error Record (CPER)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_O_UEFI_ACPI_Data_Table.html">O. UEFI ACPI Data Table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_P_Hardware_Error_Record_Persistence_Usage.html">P. Hardware Error Record Persistence Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_Q_References.html">Q. References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Apx_R_Glossary.html">R. Glossary</a></li>
+</ul>
+
+    <a href= "genindex.html">Index</a>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">UEFI Specification</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">4. </span>Status Codes</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="status-codes">
+<span id="appendix-d-status-codes-apx-d-status-codes"></span><h1><span class="section-number">D. </span>Status Codes<a class="headerlink" href="#status-codes" title="Link to this heading"></a></h1>
+<p>EFI interfaces return an <em>EFI_STATUS</em> code.    See  <a class="reference internal" href="#efi-status-success-codes-high-bit-clear-apx-d-status-codes"><span class="std std-ref">EFI_STATUS Success Codes (High Bit Clear)</span></a> ,   <a class="reference internal" href="#efi-status-error-codes-high-bit-set-apx-d-status-codes"><span class="std std-ref">EFI_STATUS Error Codes (High Bit Set)</span></a> ,   <a class="reference internal" href="#efi-status-warning-codes-high-bit-clear-apx-d-status-codes"><span class="std std-ref">EFI_STATUS Warning Codes (High Bit Clear)</span></a> list these codes for success, errors, and warnings, respectively. The range of status codes that have the highest bit set and the next to highest bit clear are reserved for use by EFI. The range of status codes that have both the highest bit set and the next to highest bit set are reserved for use by OEMs. Success and warning codes have their highest bit clear, so all success and warning codes have positive values. The range of status codes that have both the highest bit clear and the next to highest bit clear are reserved for use by EFI. The range of status code that have the highest bit clear and the next to highest bit set are reserved for use by OEMs.  The Table below lists the status code ranges described above.</p>
+<table class="longtable docutils align-default" id="efi-status-code-ranges-apx-d-status-codes">
+<caption><span class="caption-number">Table D.1 </span><span class="caption-text">EFI_STATUS Code Ranges</span><a class="headerlink" href="#efi-status-code-ranges-apx-d-status-codes" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 16.7%" />
+<col style="width: 33.3%" />
+<col style="width: 50.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Supported 32-bit Range</strong></p></td>
+<td><p><strong>Supported 64-bit Architecture Ranges</strong></p></td>
+<td><p><strong>Description</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0x00000000-0x1fffffff</p></td>
+<td><p>0x00000000000000 00-0x1fffffffffffffff</p></td>
+<td><p>Warning codes reserved for use by UEFI main specification.</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x20000000-0x3fffffff</p></td>
+<td><p>0x20000000000000 00-0x3fffffffffffffff</p></td>
+<td><p>Warning codes reserved for use by the Platform Initialization Architecture Specification.</p></td>
+</tr>
+<tr class="row-even"><td><p>0x40000000- 0x7fffffff</p></td>
+<td><p>0x4000000000000000- 0x7fffffffffffffff</p></td>
+<td><p>Warning codes reserved for OEM usage.</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x80000000-0x9fffffff</p></td>
+<td><p>0x80000000000000 00-0x9fffffffffffffff</p></td>
+<td><p>Error codes reserved for use by UEFI main spec.</p></td>
+</tr>
+<tr class="row-even"><td><p>0xa0000000-0xbfffffff</p></td>
+<td><p>0xa0000000000000 00-0xbfffffffffffffff</p></td>
+<td><p>Error codes reserved for use by the Platform Initialization Architecture Specification.</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xc0000000- 0xffffffff</p></td>
+<td><p>0xc000000000000000- 0xcfffffffffffffff</p></td>
+<td><p>Error codes reserved for OEM usage.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="efi-status-success-codes-high-bit-clear-apx-d-status-codes">
+<caption><span class="caption-number">Table D.2 </span><span class="caption-text">EFI_STATUS Success Codes (High Bit Clear)</span><a class="headerlink" href="#efi-status-success-codes-high-bit-clear-apx-d-status-codes" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 38.9%" />
+<col style="width: 11.1%" />
+<col style="width: 50.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Mnemonic</strong></p></td>
+<td><p><strong>Value</strong></p></td>
+<td><p><strong>Description</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_SUCCESS</p></td>
+<td><p>0</p></td>
+<td><p>The operation completed successfully.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="longtable docutils align-default" id="efi-status-error-codes-high-bit-set-apx-d-status-codes">
+<caption><span class="caption-number">Table D.3 </span><span class="caption-text">EFI_STATUS Error Codes (High Bit Set)</span><a class="headerlink" href="#efi-status-error-codes-high-bit-set-apx-d-status-codes" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 38.9%" />
+<col style="width: 11.1%" />
+<col style="width: 50.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Mnemonic</strong></p></td>
+<td><p><strong>Value</strong></p></td>
+<td><p><strong>Description</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_LOAD_ERROR</p></td>
+<td><p>1</p></td>
+<td><p>The image failed to load.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_INVALID_PARAMETER</p></td>
+<td><p>2</p></td>
+<td><p>A parameter was incorrect.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_UNSUPPORTED</p></td>
+<td><p>3</p></td>
+<td><p>The operation is not supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_BAD_BUFFER_SIZE</p></td>
+<td><p>4</p></td>
+<td><p>The buffer was not the proper size for the request.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_BUFFER_TOO_SMALL</p></td>
+<td><p>5</p></td>
+<td><p>The buffer is not large enough to hold the requested data. The required buffer size is returned in the appropriate parameter when this error occurs.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_NOT_READY</p></td>
+<td><p>6</p></td>
+<td><p>There is no data pending upon return.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_DEVICE_ERROR</p></td>
+<td><p>7</p></td>
+<td><p>The physical device reported an error while attempting the operation.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_WRITE_PROTECTED</p></td>
+<td><p>8</p></td>
+<td><p>The device cannot be written to.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_OUT_OF_RESOURCES</p></td>
+<td><p>9</p></td>
+<td><p>A resource has run out.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_VOLUME_CORRUPTED</p></td>
+<td><p>10</p></td>
+<td><p>An inconstancy was detected on the file system causing the operating to fail.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_VOLUME_FULL</p></td>
+<td><p>11</p></td>
+<td><p>There is no more space on the file system.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_NO_MEDIA</p></td>
+<td><p>12</p></td>
+<td><p>The device does not contain any medium to perform the operation.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_MEDIA_CHANGED</p></td>
+<td><p>13</p></td>
+<td><p>The medium in the device has changed since the last access.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_NOT_FOUND</p></td>
+<td><p>14</p></td>
+<td><p>The item was not found.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_ACCESS_DENIED</p></td>
+<td><p>15</p></td>
+<td><p>Access was denied.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_NO_RESPONSE</p></td>
+<td><p>16</p></td>
+<td><p>The server was not found or did not respond to the request.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_NO_MAPPING</p></td>
+<td><p>17</p></td>
+<td><p>A mapping to a device does not exist.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_TIMEOUT</p></td>
+<td><p>18</p></td>
+<td><p>The timeout time expired.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_NOT_STARTED</p></td>
+<td><p>19</p></td>
+<td><p>The protocol has not been started.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_ALREADY_STARTED</p></td>
+<td><p>20</p></td>
+<td><p>The protocol has already been started.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_ABORTED</p></td>
+<td><p>21</p></td>
+<td><p>The operation was aborted.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_ICMP_ERROR</p></td>
+<td><p>22</p></td>
+<td><p>An ICMP error occurred during the network operation.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_TFTP_ERROR</p></td>
+<td><p>23</p></td>
+<td><p>A TFTP error occurred during the network operation.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_PROTOCOL_ERROR</p></td>
+<td><p>24</p></td>
+<td><p>A protocol error occurred during the network operation.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_INCOMPATIBLE_VERSION</p></td>
+<td><p>25</p></td>
+<td><p>The function encountered an internal version that was incompatible with a version requested by the caller.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_SECURITY_VIOLATION</p></td>
+<td><p>26</p></td>
+<td><p>The function was not performed due to a security violation.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_CRC_ERROR</p></td>
+<td><p>27</p></td>
+<td><p>A CRC error was detected.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_END_OF_MEDIA</p></td>
+<td><p>28</p></td>
+<td><p>Beginning or end of media was reached</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_END_OF_FILE</p></td>
+<td><p>31</p></td>
+<td><p>The end of the file was reached.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_INVALID_LANGUAGE</p></td>
+<td><p>32</p></td>
+<td><p>The language specified was invalid.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_COMPROMISED_DATA</p></td>
+<td><p>33</p></td>
+<td><p>The security status of the data is unknown or compromised and the data must be updated or replaced to restore a valid security status.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_IP_ADDRESS_CONFLICT</p></td>
+<td><p>34</p></td>
+<td><p>There is an address conflict address allocation</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_HTTP_ERROR</p></td>
+<td><p>35</p></td>
+<td><p>A HTTP error occurred during the network operation.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="longtable docutils align-default" id="efi-status-warning-codes-high-bit-clear-apx-d-status-codes">
+<caption><span class="caption-number">Table D.4 </span><span class="caption-text">EFI_STATUS Warning Codes (High Bit Clear)</span><a class="headerlink" href="#efi-status-warning-codes-high-bit-clear-apx-d-status-codes" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 38.9%" />
+<col style="width: 11.1%" />
+<col style="width: 50.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Mnemonic</strong></p></td>
+<td><p><strong>Value</strong></p></td>
+<td><p><strong>Description</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_WARN_UNKNOWN_GLYPH</p></td>
+<td><p>1</p></td>
+<td><p>The string contained one or more characters that the device could not render and were skipped.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_WARN_DELETE_FAILURE</p></td>
+<td><p>2</p></td>
+<td><p>The handle was closed, but the file was not deleted.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_WARN_WRITE_FAILURE</p></td>
+<td><p>3</p></td>
+<td><p>The handle was closed, but the data to the file was not flushed properly.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_WARN_BUFFER_TOO_SMALL</p></td>
+<td><p>4</p></td>
+<td><p>The resulting buffer was too small, and the data was truncated to the buffer size.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_WARN_STALE_DATA</p></td>
+<td><p>5</p></td>
+<td><p>The data has not been updated within the timeframe set by local policy for this type of data.</p></td>
+</tr>
+<tr class="row-odd"><td><p>EFI_WARN_FILE_SYSTEM</p></td>
+<td><p>6</p></td>
+<td><p>The resulting buffer contains UEFI-compliant file system.</p></td>
+</tr>
+<tr class="row-even"><td><p>EFI_WARN_RESET_REQUIRED</p></td>
+<td><p>7</p></td>
+<td><p>The operation will be processed across a system reset.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Apx_C_Device_Path_Examples.html" class="btn btn-neutral float-left" title="3. Device Path Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Apx_E_Universal_Network_Driver_Interfaces.html" class="btn btn-neutral float-right" title="5. Universal Network Driver Interfaces" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, UEFI Forum, Inc..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c6ddbb91bb93f22',t:'MTc2OTkxMTI1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"9c6ddbb91bb93f22","version":"2025.9.1","r":1,"token":"8edd36b92c4148938975673e82c4a4fb","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}}}' crossorigin="anonymous"></script>
+</body>
+</html>

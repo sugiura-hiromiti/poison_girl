@@ -2,7 +2,8 @@
 ///
 /// This trait provides methods for working with multi-dimensional coordinates
 /// that can represent positions in tree hierarchies.
-pub trait Coordinate {
+pub trait Coordinate
+{
 	/// Get the value at the nth dimension.
 	///
 	/// # Parameters
@@ -21,7 +22,8 @@ pub trait Coordinate {
 	/// # Returns
 	///
 	/// The coordinate value at dimension 0
-	fn first_dim(&self,) -> usize {
+	fn first_dim(&self,) -> usize
+	{
 		self.nth_dim(0,)
 	}
 
@@ -30,7 +32,8 @@ pub trait Coordinate {
 	/// # Returns
 	///
 	/// The coordinate value at the highest dimension index
-	fn last_dim(&self,) -> usize {
+	fn last_dim(&self,) -> usize
+	{
 		let last_dimension_is = self.dim_count();
 		self.nth_dim(last_dimension_is - 1,)
 	}
@@ -50,11 +53,13 @@ pub trait Coordinate {
 	/// - `value`: The new value for that dimension
 	fn set_at(&mut self, dim: usize, value: usize,);
 
-	fn set_first(&mut self, value: usize,) {
+	fn set_first(&mut self, value: usize,)
+	{
 		self.set_at(0, value,);
 	}
 
-	fn set_last(&mut self, value: usize,) {
+	fn set_last(&mut self, value: usize,)
+	{
 		let dim_count = self.dim_count();
 		self.set_at(dim_count - 1, value,);
 	}

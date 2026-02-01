@@ -22,44 +22,54 @@ use {
 	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, poison_girl_err},
 };
 
-pub trait Protocol {
+pub trait Protocol
+{
 	const GUID: Guid;
 }
 
-impl Protocol for TextOutputProtocol {
+impl Protocol for TextOutputProtocol
+{
 	const GUID: Guid = guid!("387477c2-69c7-11d2-8e39-00a0c969723b");
 }
 
-impl Protocol for DevicePathProtocol {
+impl Protocol for DevicePathProtocol
+{
 	const GUID: Guid = guid!("09576e91-6d3f-11d2-8e39-00a0c969723b");
 }
 
-impl Protocol for SimpleFileSystemProtocol {
+impl Protocol for SimpleFileSystemProtocol
+{
 	const GUID: Guid = guid!("964e5b22-6459-11d2-8e39-00a0c969723b");
 }
 
-impl Protocol for FileInfo {
+impl Protocol for FileInfo
+{
 	const GUID: Guid = guid!("09576e92-6d3f-11d2-8e39-00a0c969723b");
 }
 
-impl Protocol for FileSystemInfo {
+impl Protocol for FileSystemInfo
+{
 	const GUID: Guid = guid!("09576e93-6d3f-11d2-8e39-00a0c969723b");
 }
 
-impl Protocol for FileSystemVolumeLabel {
+impl Protocol for FileSystemVolumeLabel
+{
 	const GUID: Guid = guid!("db47d7d3-fe81-11d3-9a35-0090273fC14d");
 }
 
-impl Protocol for GraphicsOutputProtocol {
+impl Protocol for GraphicsOutputProtocol
+{
 	const GUID: Guid = guid!("9042a9de-23dc-4a38-96fb-7aded080516a");
 }
 
-impl BootServices {
+impl BootServices
+{
 	/// # Safety
 	pub unsafe fn locate_handle_buffer(
 		&self,
 		ty: HandleSearchType,
-	) -> PoisonGirlB<&mut [UnsafeHandle],> {
+	) -> PoisonGirlB<&mut [UnsafeHandle],>
+	{
 		let (ty, guid, key,) = match ty {
 			HandleSearchType::AllHandles => (0, ptr::null(), ptr::null(),),
 			HandleSearchType::ByRegisterNotify(protocol_search_key,) => {
@@ -90,14 +100,16 @@ impl BootServices {
 	}
 
 	/// return guid to search protocol
-	pub fn protocol_for<P: Protocol,>(&'_ self,) -> HandleSearchType<'_,> {
+	pub fn protocol_for<P: Protocol,>(&'_ self,) -> HandleSearchType<'_,>
+	{
 		HandleSearchType::ByProtocol(&P::GUID,)
 	}
 
 	/// # Safety
 	pub unsafe fn handles_for_protocol<P: Protocol,>(
 		&self,
-	) -> PoisonGirlB<&mut [UnsafeHandle],> {
+	) -> PoisonGirlB<&mut [UnsafeHandle],>
+	{
 		let search_ty = self.protocol_for::<P>();
 		unsafe { self.locate_handle_buffer(search_ty,) }
 	}
@@ -105,7 +117,8 @@ impl BootServices {
 	/// # Safety
 	pub unsafe fn handle_for_protocol<P: Protocol,>(
 		&self,
-	) -> PoisonGirlB<Handle,> {
+	) -> PoisonGirlB<Handle,>
+	{
 		let handles = unsafe { self.handles_for_protocol::<P>() }?;
 		let first_handle = *handles.first().ok_or(poison_girl_err!(
 			UefiError::Custom("length of handles is 0")
@@ -140,7 +153,8 @@ impl BootServices {
 		&self,
 		necessity: OpenProtoNecessity,
 		attr: OpenProtoAttr,
-	) -> PoisonGirlB<ProtocolInterface<P,>,> {
+	) -> PoisonGirlB<ProtocolInterface<P,>,>
+	{
 		let mut interface = ptr::null_mut();
 		unsafe {
 			(self.open_protocol)(
@@ -165,14 +179,16 @@ impl BootServices {
 	pub fn open_protocol_exclusive<P: Protocol,>(
 		&self,
 		handle: Handle,
-	) -> PoisonGirlB<ProtocolInterface<P,>,> {
+	) -> PoisonGirlB<ProtocolInterface<P,>,>
+	{
 		let necessity = OpenProtoNecessity::for_app(handle,);
 		unsafe { self.open_protocol(necessity, OpenProtoAttr::EXCULSIVE,) }
 	}
 
 	pub fn open_protocol_with<P: Protocol,>(
 		&self,
-	) -> PoisonGirlB<ProtocolInterface<P,>,> {
+	) -> PoisonGirlB<ProtocolInterface<P,>,>
+	{
 		let bs = boot_services();
 		let handle = unsafe { bs.handle_for_protocol::<P>() }?;
 		let necessity = OpenProtoNecessity::for_app(handle,);
@@ -184,7 +200,8 @@ impl BootServices {
 	pub fn handle_protocol<P: Protocol,>(
 		&self,
 		handle: Handle,
-	) -> PoisonGirlB<NonNull<ProtocolInterface<P,>,>,> {
+	) -> PoisonGirlB<NonNull<ProtocolInterface<P,>,>,>
+	{
 		let interface = ptr::null_mut();
 		unsafe {
 			(self.handle_protocol)(handle.as_ptr(), &P::GUID, interface,)
@@ -198,7 +215,8 @@ impl BootServices {
 }
 
 #[derive(Debug,)]
-pub enum HandleSearchType<'g,> {
+pub enum HandleSearchType<'g,>
+{
 	/// return all handles present on the system
 	AllHandles,
 	/// return all handles that implement a protocol when an intereface for that
@@ -215,7 +233,8 @@ pub struct ProtocolSearchKey(pub(crate) NonNull<c_void,>,);
 #[repr(transparent)]
 pub struct OpenProtoAttr(u32,);
 
-impl OpenProtoAttr {
+impl OpenProtoAttr
+{
 	/// busドライバに使用される
 	/// このフラグが立っている場合、再帰的にchild controllerに接続しようとする
 	pub const BY_CHILD_CONTROLLER: Self = Self(0x8,);
@@ -238,19 +257,24 @@ impl OpenProtoAttr {
 
 /// protocol interface representation which is designed as safe(automatically
 /// closed on drop)
-pub struct ProtocolInterface<P: Protocol,> {
+pub struct ProtocolInterface<P: Protocol,>
+{
 	interface: Option<NonNull<P,>,>,
 	handles:   OpenProtoNecessity,
 }
 
-impl<P: Protocol,> ProtocolInterface<P,> {
-	pub fn interface(&self,) -> NonNull<P,> {
+impl<P: Protocol,> ProtocolInterface<P,>
+{
+	pub fn interface(&self,) -> NonNull<P,>
+	{
 		self.interface.unwrap()
 	}
 }
 
-impl<P: Protocol,> Drop for ProtocolInterface<P,> {
-	fn drop(&mut self,) {
+impl<P: Protocol,> Drop for ProtocolInterface<P,>
+{
+	fn drop(&mut self,)
+	{
 		let bt = boot_services();
 		let _rslt = unsafe {
 			(bt.close_protocol)(
@@ -264,28 +288,34 @@ impl<P: Protocol,> Drop for ProtocolInterface<P,> {
 	}
 }
 
-pub struct OpenProtoNecessity {
+pub struct OpenProtoNecessity
+{
 	handle:     Handle,
 	agent:      Handle,
 	controller: Option<Handle,>,
 }
 
-impl OpenProtoNecessity {
-	pub fn for_app(handle: Handle,) -> Self {
+impl OpenProtoNecessity
+{
+	pub fn for_app(handle: Handle,) -> Self
+	{
 		let agent = image_handle();
 		Self { handle, agent, controller: None, }
 	}
 
-	pub fn handle_ptr(&self,) -> UnsafeHandle {
+	pub fn handle_ptr(&self,) -> UnsafeHandle
+	{
 		self.handle.as_ptr()
 	}
 
-	pub fn agent_ptr(&self,) -> UnsafeHandle {
+	pub fn agent_ptr(&self,) -> UnsafeHandle
+	{
 		self.agent.as_ptr()
 	}
 
 	/// may null
-	pub fn controller_ptr(&self,) -> UnsafeHandle {
+	pub fn controller_ptr(&self,) -> UnsafeHandle
+	{
 		Handle::opt_to_ptr(self.controller.clone(),)
 	}
 }

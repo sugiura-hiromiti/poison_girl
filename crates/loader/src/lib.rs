@@ -74,7 +74,8 @@ pub mod raw;
 /// instead of terminating the program, which is appropriate for a UEFI
 /// application.
 #[panic_handler]
-fn panic(panic: &core::panic::PanicInfo,) -> ! {
+fn panic(panic: &core::panic::PanicInfo,) -> !
+{
 	println!("{panic:#?}");
 	wfe()
 }
@@ -128,7 +129,8 @@ macro_rules! on_error {
 /// - The system table is null or invalid
 /// - Console clearing fails
 /// - Handle location fails during device connection
-pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
+pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,)
+{
 	// Clear console output for clean startup
 	clear_console(syst,);
 
@@ -160,7 +162,8 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,) {
 	},);
 }
 
-fn clear_console(syst: *const SystemTable,) {
+fn clear_console(syst: *const SystemTable,)
+{
 	unsafe { syst.as_ref().unwrap().stdout.as_mut().unwrap().clear().unwrap() };
 }
 
@@ -176,7 +179,8 @@ fn clear_console(syst: *const SystemTable,) {
 /// # Returns
 ///
 /// A vector containing the UTF-16 representation with null terminator
-fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
+fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,>
+{
 	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
 	utf16_repr.push(0,);
 	utf16_repr
@@ -197,7 +201,8 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,> {
 ///
 /// Returns `UefiError::Custom` if the device tree is not available in the
 /// UEFI configuration tables.
-pub fn get_device_tree() -> PoisonGirlB<NonNull<ConfigTable,>,> {
+pub fn get_device_tree() -> PoisonGirlB<NonNull<ConfigTable,>,>
+{
 	match unsafe { system_table().as_ref() }.device_tree() {
 		X(Some(dt,),) => X(dt,),
 		X(None,) => {
@@ -242,7 +247,8 @@ pub fn get_device_tree() -> PoisonGirlB<NonNull<ConfigTable,>,> {
 /// - Direct kernel execution
 ///
 /// The function never returns under normal circumstances.
-pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,) {
+pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,)
+{
 	// Convert entry point to function pointer
 	let kernel_entry = kernel_entry as *const ();
 

@@ -52,7 +52,8 @@ use {
 ///
 /// Panics if ELF parsing fails with an unrecoverable error, as this indicates
 /// a fundamental problem with the kernel file that cannot be resolved.
-pub fn kernel() -> PoisonGirlB<PhysicalAddress,> {
+pub fn kernel() -> PoisonGirlB<PhysicalAddress,>
+{
 	// Open and read the kernel ELF file
 	let mut kernel_file = open_kernel_file()?;
 	let contents = unsafe { kernel_file.as_mut() }.read_as_bytes()?;
@@ -105,7 +106,8 @@ pub fn kernel() -> PoisonGirlB<PhysicalAddress,> {
 /// - No simple file system protocol is available
 /// - The volume cannot be opened
 /// - The kernel file does not exist or cannot be opened
-fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,> {
+fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,>
+{
 	let open_mode = OpenMode::READ;
 	let attrs = FileAttributes(0,);
 
@@ -149,7 +151,8 @@ fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,> {
 ///
 /// Only program headers with type `ProgramHeaderType::Load` are considered,
 /// as these are the segments that need to be loaded into memory.
-fn elf_address_range(elf: &Elf,) -> (usize, usize,) {
+fn elf_address_range(elf: &Elf,) -> (usize, usize,)
+{
 	let mut pair = (usize::MAX, 0,);
 
 	// Examine each program header
@@ -192,7 +195,8 @@ fn elf_address_range(elf: &Elf,) -> (usize, usize,) {
 /// This function uses unsafe operations to write directly to virtual memory
 /// addresses specified in the ELF program headers. The caller must ensure
 /// that the target memory has been properly allocated.
-fn copy_load_segment(elf: &Elf, src: &[u8],) {
+fn copy_load_segment(elf: &Elf, src: &[u8],)
+{
 	for ph in &elf.program_headers {
 		if ph.ty != ProgramHeaderType::Load {
 			continue;
@@ -243,7 +247,8 @@ fn copy_load_segment(elf: &Elf, src: &[u8],) {
 ///
 /// The returned configuration is typically passed to the kernel during
 /// initialization to enable graphics output capabilities.
-pub fn graphic_config() -> PoisonGirlB<FrameBufConf,> {
+pub fn graphic_config() -> PoisonGirlB<FrameBufConf,>
+{
 	let bs = boot_services();
 
 	// Open Graphics Output Protocol

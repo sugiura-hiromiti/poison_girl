@@ -1,30 +1,37 @@
 use std::path::PathBuf;
 
-pub trait StrEnhanced: CaseConvert + StringKind {}
+pub trait StrEnhanced: CaseConvert + StringKind
+{
+}
 
-pub trait CaseConvert {
+pub trait CaseConvert
+{
 	type _Marker;
 	fn is_camel(&self,) -> bool;
 	fn is_snake(&self,) -> bool;
 	fn is_screaming_snake(&self,) -> bool;
 	fn is_kebab(&self,) -> bool;
 
-	fn to_camel<S1: StringKind,>(&self,) -> S1 {
+	fn to_camel<S1: StringKind,>(&self,) -> S1
+	{
 		self.case_transit(
 			|s| format!("{}{}", s[..1].to_ascii_uppercase(), &s[1..]),
 			None,
 		)
 	}
 
-	fn to_snake<S1: StringKind,>(&self,) -> S1 {
+	fn to_snake<S1: StringKind,>(&self,) -> S1
+	{
 		self.case_transit(|s| s.to_ascii_lowercase(), Some('_',),)
 	}
 
-	fn to_screaming_snake<S1: StringKind,>(&self,) -> S1 {
+	fn to_screaming_snake<S1: StringKind,>(&self,) -> S1
+	{
 		self.case_transit(|s| s.to_ascii_uppercase(), Some('_',),)
 	}
 
-	fn to_kebab<S1: StringKind,>(&self,) -> S1 {
+	fn to_kebab<S1: StringKind,>(&self,) -> S1
+	{
 		self.case_transit(|s| s.to_ascii_lowercase(), Some('-',),)
 	}
 
@@ -32,7 +39,8 @@ pub trait CaseConvert {
 		&self,
 		converter: impl FnMut(String,) -> String,
 		spacer: Option<char,>,
-	) -> S {
+	) -> S
+	{
 		let converted: Vec<_,> =
 			self.words().into_iter().map(converter,).collect();
 		let spacer = spacer.map_or("".to_string(), |c| c.to_string(),);
@@ -45,34 +53,43 @@ pub trait CaseConvert {
 	fn as_string_kind(&self,) -> Option<&impl StringKind,>;
 }
 
-pub trait StringKind {
+pub trait StringKind
+{
 	fn dump_string(&self,) -> String;
 	fn from(s: impl Into<String,>,) -> Self;
 	fn as_case_convert(&self,) -> Option<&impl CaseConvert,>;
 }
 
-impl StrEnhanced for String {}
+impl StrEnhanced for String
+{
+}
 
-impl CaseConvert for String {
+impl CaseConvert for String
+{
 	type _Marker = String;
 
-	fn is_camel(&self,) -> bool {
+	fn is_camel(&self,) -> bool
+	{
 		is_xxx_format_with_case(self.clone(), None, Form::StartWithUpper,)
 	}
 
-	fn is_snake(&self,) -> bool {
+	fn is_snake(&self,) -> bool
+	{
 		is_xxx_format_with_case(self.clone(), Some('_',), Form::Lower,)
 	}
 
-	fn is_screaming_snake(&self,) -> bool {
+	fn is_screaming_snake(&self,) -> bool
+	{
 		is_xxx_format_with_case(self.clone(), Some('_',), Form::Upper,)
 	}
 
-	fn is_kebab(&self,) -> bool {
+	fn is_kebab(&self,) -> bool
+	{
 		is_xxx_format_with_case(self.clone(), Some('-',), Form::Lower,)
 	}
 
-	fn find_spacer<S1: StringKind,>(&self,) -> Option<S1,> {
+	fn find_spacer<S1: StringKind,>(&self,) -> Option<S1,>
+	{
 		let s: String = self.clone();
 		if s.contains("_",) {
 			Some(S1::from("_".to_string(),),)
@@ -83,7 +100,8 @@ impl CaseConvert for String {
 		}
 	}
 
-	fn words(&self,) -> Vec<String,> {
+	fn words(&self,) -> Vec<String,>
+	{
 		let s: String = self.clone();
 		if self.is_camel() {
 			let mut rslt = vec![];
@@ -114,27 +132,33 @@ impl CaseConvert for String {
 	}
 
 	#[allow(refining_impl_trait)]
-	fn as_string_kind(&self,) -> Option<&Self,> {
+	fn as_string_kind(&self,) -> Option<&Self,>
+	{
 		Some(self,)
 	}
 }
 
-impl StringKind for String {
-	fn dump_string(&self,) -> String {
+impl StringKind for String
+{
+	fn dump_string(&self,) -> String
+	{
 		self.clone()
 	}
 
-	fn from(s: impl Into<String,>,) -> Self {
+	fn from(s: impl Into<String,>,) -> Self
+	{
 		s.into()
 	}
 
 	#[allow(refining_impl_trait)]
-	fn as_case_convert(&self,) -> Option<&Self,> {
+	fn as_case_convert(&self,) -> Option<&Self,>
+	{
 		Some(self,)
 	}
 }
 
-enum Form {
+enum Form
+{
 	StartWithUpper,
 	Upper,
 	Lower,
@@ -144,7 +168,8 @@ fn is_xxx_format_with_case(
 	s: impl Into<String,> + Clone,
 	spacer: Option<char,>,
 	form: Form,
-) -> bool {
+) -> bool
+{
 	let s: String = s.into();
 
 	let spacer_checker = || -> Box<dyn Fn(char,) -> bool,> {
@@ -179,43 +204,55 @@ fn is_xxx_format_with_case(
 	checker()(&s,)
 }
 
-impl StrEnhanced for PathBuf {}
+impl StrEnhanced for PathBuf
+{
+}
 
-impl CaseConvert for PathBuf {
+impl CaseConvert for PathBuf
+{
 	type _Marker = PathBuf;
 
-	fn is_camel(&self,) -> bool {
+	fn is_camel(&self,) -> bool
+	{
 		self.dump_string().is_camel()
 	}
 
-	fn is_snake(&self,) -> bool {
+	fn is_snake(&self,) -> bool
+	{
 		self.dump_string().is_snake()
 	}
 
-	fn is_screaming_snake(&self,) -> bool {
+	fn is_screaming_snake(&self,) -> bool
+	{
 		self.dump_string().is_screaming_snake()
 	}
 
-	fn is_kebab(&self,) -> bool {
+	fn is_kebab(&self,) -> bool
+	{
 		self.dump_string().is_kebab()
 	}
 
-	fn find_spacer<S: StringKind,>(&self,) -> Option<S,> {
+	fn find_spacer<S: StringKind,>(&self,) -> Option<S,>
+	{
 		self.dump_string().find_spacer()
 	}
 
-	fn words(&self,) -> Vec<String,> {
+	fn words(&self,) -> Vec<String,>
+	{
 		self.dump_string().words()
 	}
 
 	#[allow(refining_impl_trait)]
-	fn as_string_kind(&self,) -> Option<&Self,> {
+	fn as_string_kind(&self,) -> Option<&Self,>
+	{
 		Some(self,)
 	}
 }
 
-impl StringKind for PathBuf {
-	fn dump_string(&self,) -> String {
+impl StringKind for PathBuf
+{
+	fn dump_string(&self,) -> String
+	{
 		self.file_prefix()
 			.expect("failed to get file/dir name",)
 			.to_str()
@@ -223,7 +260,8 @@ impl StringKind for PathBuf {
 			.to_string()
 	}
 
-	fn from(_: impl Into<String,>,) -> Self {
+	fn from(_: impl Into<String,>,) -> Self
+	{
 		unimplemented!("you should not use `PathBuf::from`")
 		// let s: String = s.into();
 		// let s = s.as_str();
@@ -232,18 +270,21 @@ impl StringKind for PathBuf {
 	}
 
 	#[allow(refining_impl_trait)]
-	fn as_case_convert(&self,) -> Option<&Self,> {
+	fn as_case_convert(&self,) -> Option<&Self,>
+	{
 		Some(self,)
 	}
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use super::*;
 
 	// Test String case detection
 	#[test]
-	fn test_string_is_camel() {
+	fn test_string_is_camel()
+	{
 		assert!("CamelCase".to_string().is_camel());
 		assert!("PascalCase".to_string().is_camel());
 		assert!("A".to_string().is_camel());
@@ -257,7 +298,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_is_snake() {
+	fn test_string_is_snake()
+	{
 		assert!("snake_case".to_string().is_snake());
 		assert!("lower_snake_case".to_string().is_snake());
 		assert!("a_b_c".to_string().is_snake());
@@ -270,7 +312,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_is_screaming_snake() {
+	fn test_string_is_screaming_snake()
+	{
 		assert!("SCREAMING_SNAKE_CASE".to_string().is_screaming_snake());
 		assert!("UPPER_CASE".to_string().is_screaming_snake());
 		assert!("A_B_C".to_string().is_screaming_snake());
@@ -283,7 +326,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_is_kebab() {
+	fn test_string_is_kebab()
+	{
 		assert!("kebab-case".to_string().is_kebab());
 		assert!("lower-kebab-case".to_string().is_kebab());
 		assert!("a-b-c".to_string().is_kebab());
@@ -297,7 +341,8 @@ mod tests {
 
 	// Test String case conversion
 	#[test]
-	fn test_string_to_camel() {
+	fn test_string_to_camel()
+	{
 		let snake_case = "hello_world_test".to_string();
 		let camel: String = snake_case.to_camel();
 		// The case_transit method preserves the original spacer
@@ -313,7 +358,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_to_snake() {
+	fn test_string_to_snake()
+	{
 		let camel_case = "HelloWorldTest".to_string();
 		let snake: String = camel_case.to_snake();
 		// The actual behavior produces "helloworldtest" because camel case
@@ -330,7 +376,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_to_screaming_snake() {
+	fn test_string_to_screaming_snake()
+	{
 		let snake_case = "hello_world_test".to_string();
 		let screaming: String = snake_case.to_screaming_snake();
 		assert_eq!(screaming, "HELLO_WORLD_TEST");
@@ -347,7 +394,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_to_kebab() {
+	fn test_string_to_kebab()
+	{
 		let snake_case = "hello_world_test".to_string();
 		let kebab: String = snake_case.to_kebab();
 		assert_eq!(kebab, "hello-world-test"); // Uses original spacer
@@ -367,7 +415,8 @@ mod tests {
 
 	// Test find_spacer functionality
 	#[test]
-	fn test_string_find_spacer() {
+	fn test_string_find_spacer()
+	{
 		let snake_case = "hello_world".to_string();
 		let spacer: Option<String,> = snake_case.find_spacer();
 		assert_eq!(spacer, Some("_".to_string()));
@@ -387,7 +436,8 @@ mod tests {
 
 	// Test words extraction
 	#[test]
-	fn test_string_words() {
+	fn test_string_words()
+	{
 		let snake_case = "hello_world_test".to_string();
 		let words = snake_case.words();
 		assert_eq!(words, vec!["hello", "world", "test"]);
@@ -410,7 +460,8 @@ mod tests {
 
 	// Test StringKind trait implementation for String
 	#[test]
-	fn test_string_kind_for_string() {
+	fn test_string_kind_for_string()
+	{
 		let s = "test_string".to_string();
 		assert_eq!(s.dump_string(), "test_string");
 
@@ -422,7 +473,8 @@ mod tests {
 
 	// Test edge cases
 	#[test]
-	fn test_empty_string_cases() {
+	fn test_empty_string_cases()
+	{
 		let empty = "".to_string();
 		assert!(!empty.is_camel());
 		assert!(empty.is_snake()); // Empty string passes snake case check
@@ -437,7 +489,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_single_character_cases() {
+	fn test_single_character_cases()
+	{
 		let upper = "A".to_string();
 		assert!(upper.is_camel());
 		assert!(!upper.is_snake()); // Single uppercase fails snake case
@@ -452,7 +505,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_mixed_separators() {
+	fn test_mixed_separators()
+	{
 		let mixed = "hello_world-test".to_string();
 		// Should find the first separator it encounters
 		let spacer: Option<String,> = mixed.find_spacer();
@@ -461,7 +515,8 @@ mod tests {
 
 	// Test is_xxx_format_with_case helper function
 	#[test]
-	fn test_is_xxx_format_with_case() {
+	fn test_is_xxx_format_with_case()
+	{
 		// Test snake case (lowercase with underscores)
 		assert!(is_xxx_format_with_case("hello_world", Some('_'), Form::Lower));
 		assert!(!is_xxx_format_with_case(
@@ -526,7 +581,8 @@ mod tests {
 
 	// Test PathBuf implementations
 	#[test]
-	fn test_pathbuf_case_detection() {
+	fn test_pathbuf_case_detection()
+	{
 		// Test with file extension - dots break case detection
 		let snake_path =
 			<std::path::PathBuf as std::convert::From<&str,>>::from(
@@ -553,7 +609,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_dump_string() {
+	fn test_pathbuf_dump_string()
+	{
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
 			"/path/to/test_file.txt",
 		);
@@ -566,7 +623,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_find_spacer() {
+	fn test_pathbuf_find_spacer()
+	{
 		let snake_path =
 			<std::path::PathBuf as std::convert::From<&str,>>::from(
 				"/path/to/snake_case_file.txt",
@@ -583,7 +641,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_words() {
+	fn test_pathbuf_words()
+	{
 		let snake_path =
 			<std::path::PathBuf as std::convert::From<&str,>>::from(
 				"/path/to/snake_case_file.txt",
@@ -593,7 +652,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_as_string_kind() {
+	fn test_pathbuf_as_string_kind()
+	{
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
 			"/path/to/test.txt",
 		);
@@ -601,7 +661,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_as_case_convert() {
+	fn test_pathbuf_as_case_convert()
+	{
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
 			"/path/to/test.txt",
 		);
@@ -610,13 +671,15 @@ mod tests {
 
 	#[test]
 	#[should_panic(expected = "you should not use `PathBuf::from`")]
-	fn test_pathbuf_from_unimplemented() {
+	fn test_pathbuf_from_unimplemented()
+	{
 		let _: PathBuf = <PathBuf as StringKind>::from("test",);
 	}
 
 	// Test trait implementations
 	#[test]
-	fn test_str_enhanced_trait() {
+	fn test_str_enhanced_trait()
+	{
 		let s = "test_string".to_string();
 		// StrEnhanced is a marker trait that combines CaseConvert + StringKind
 		// We can test that it's implemented by using its methods
@@ -706,7 +769,8 @@ mod tests {
 
 	// Integration tests combining multiple traits
 	#[test]
-	fn test_string_enhanced_integration() {
+	fn test_string_enhanced_integration()
+	{
 		let snake_str = "hello_world_test".to_string();
 
 		// Test that we can use both CaseConvert and StringKind methods
@@ -726,7 +790,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_enhanced_integration() {
+	fn test_pathbuf_enhanced_integration()
+	{
 		let snake_path =
 			<std::path::PathBuf as std::convert::From<&str,>>::from(
 				"/path/to/hello_world_test.txt",
@@ -747,7 +812,8 @@ mod tests {
 	// Error condition tests
 	#[test]
 	#[should_panic(expected = "failed to get file/dir name")]
-	fn test_pathbuf_dump_string_no_filename() {
+	fn test_pathbuf_dump_string_no_filename()
+	{
 		let path =
 			<std::path::PathBuf as std::convert::From<&str,>>::from("/",);
 		let _ = path.dump_string();
@@ -755,7 +821,8 @@ mod tests {
 
 	// Test special characters and edge cases
 	#[test]
-	fn test_special_characters_in_strings() {
+	fn test_special_characters_in_strings()
+	{
 		let with_numbers = "test123_case456".to_string();
 		// Numbers are allowed in snake case according to the implementation
 		assert!(with_numbers.is_snake());
@@ -765,7 +832,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_case_conversion_with_numbers() {
+	fn test_case_conversion_with_numbers()
+	{
 		let snake_with_nums = "hello123_world456".to_string();
 		let camel: String = snake_with_nums.to_camel();
 		// The case_transit method preserves the original spacer
@@ -777,7 +845,8 @@ mod tests {
 
 	// Test boundary conditions
 	#[test]
-	fn test_very_long_strings() {
+	fn test_very_long_strings()
+	{
 		let long_snake = "a".repeat(100,) + "_" + &"b".repeat(100,);
 		assert!(long_snake.is_snake()); // Long snake case string is valid
 
@@ -788,7 +857,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_unicode_handling() {
+	fn test_unicode_handling()
+	{
 		// Test that the functions handle basic ASCII properly
 		// (Unicode support might be limited in the current implementation)
 		let ascii_snake = "hello_world".to_string();
@@ -799,7 +869,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_extreme_edge_cases() {
+	fn test_extreme_edge_cases()
+	{
 		// Test with extreme edge cases
 		let single_char = "a".to_string();
 		assert!(!single_char.is_camel()); // Single lowercase is not camel
@@ -815,7 +886,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_numeric_only_strings() {
+	fn test_numeric_only_strings()
+	{
 		// Test with numeric-only strings
 		let numbers = "123456".to_string();
 		assert!(!numbers.is_camel()); // Numbers don't start with uppercase
@@ -829,7 +901,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_special_character_combinations() {
+	fn test_special_character_combinations()
+	{
 		// Test various special character combinations
 		let underscore_only = "___".to_string();
 		assert!(underscore_only.is_snake()); // Only underscores is actually valid snake case
@@ -846,7 +919,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_case_conversion_edge_cases() {
+	fn test_case_conversion_edge_cases()
+	{
 		// Test case conversion with edge cases
 		let empty = "".to_string();
 		let words = empty.words();
@@ -862,7 +936,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_words_method_edge_cases() {
+	fn test_words_method_edge_cases()
+	{
 		// Test the words method with various edge cases
 		let consecutive_separators = "hello__world".to_string();
 		let words = consecutive_separators.words();
@@ -878,7 +953,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_camel_case_variations() {
+	fn test_camel_case_variations()
+	{
 		// Test various camel case patterns
 		let pascal_case = "PascalCase".to_string();
 		assert!(pascal_case.is_camel());
@@ -894,7 +970,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_snake_case_variations() {
+	fn test_snake_case_variations()
+	{
 		// Test various snake case patterns
 		let standard_snake = "hello_world".to_string();
 		assert!(standard_snake.is_snake());
@@ -913,7 +990,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_screaming_snake_case_variations() {
+	fn test_screaming_snake_case_variations()
+	{
 		// Test various screaming snake case patterns
 		let standard_screaming = "HELLO_WORLD".to_string();
 		assert!(standard_screaming.is_screaming_snake());
@@ -929,7 +1007,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_kebab_case_variations() {
+	fn test_kebab_case_variations()
+	{
 		// Test various kebab case patterns
 		let standard_kebab = "hello-world".to_string();
 		assert!(standard_kebab.is_kebab());
@@ -948,7 +1027,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_case_transit_method() {
+	fn test_case_transit_method()
+	{
 		// Test the case_transit method directly
 		let snake_case = "hello_world".to_string();
 		let upper_converter = |s: String| s.to_uppercase();
@@ -963,7 +1043,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_is_xxx_format_with_case_edge_cases() {
+	fn test_is_xxx_format_with_case_edge_cases()
+	{
 		// Test the helper function with edge cases
 		assert!(!is_xxx_format_with_case("", None, Form::StartWithUpper)); // Empty string doesn't start with uppercase
 		assert!(is_xxx_format_with_case("", Some('_'), Form::Lower)); // Empty string with separator
@@ -977,7 +1058,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_edge_cases() {
+	fn test_pathbuf_edge_cases()
+	{
 		// Test PathBuf implementations with edge cases
 		let root_path =
 			<std::path::PathBuf as std::convert::From<&str,>>::from("/",);
@@ -994,7 +1076,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_case_detection_edge_cases() {
+	fn test_pathbuf_case_detection_edge_cases()
+	{
 		// Test PathBuf case detection with various filename patterns
 		let snake_file =
 			<std::path::PathBuf as std::convert::From<&str,>>::from(
@@ -1022,7 +1105,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_with_extensions() {
+	fn test_pathbuf_with_extensions()
+	{
 		// Test PathBuf behavior with various file extensions
 		let extensions = vec![
 			".txt", ".rs", ".toml", ".md", ".json", ".xml", ".html", ".css",
@@ -1048,7 +1132,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_concurrent_case_operations() {
+	fn test_concurrent_case_operations()
+	{
 		// Test concurrent case operations
 		use std::thread;
 
@@ -1086,7 +1171,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_memory_efficiency() {
+	fn test_memory_efficiency()
+	{
 		// Test that operations don't cause excessive memory usage
 		let large_string = "a".repeat(10000,) + "_" + &"b".repeat(10000,);
 
@@ -1105,7 +1191,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_kind_trait_completeness() {
+	fn test_string_kind_trait_completeness()
+	{
 		// Test StringKind trait implementation completeness
 		let s = "test_string".to_string();
 
@@ -1124,7 +1211,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pathbuf_string_kind_trait() {
+	fn test_pathbuf_string_kind_trait()
+	{
 		// Test StringKind trait implementation for PathBuf
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
 			"/path/to/test.txt",
@@ -1141,7 +1229,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_error_conditions() {
+	fn test_error_conditions()
+	{
 		// Test various error conditions and edge cases
 		let problematic_strings = vec![
 			"\0".to_string(), // Null character

@@ -11,7 +11,8 @@ use {
 };
 
 #[repr(C)]
-pub struct TextInputProtocol {
+pub struct TextInputProtocol
+{
 	reset: unsafe extern "efiapi" fn(
 		this: *mut Self,
 		extended_verif: Boolean,
@@ -24,7 +25,8 @@ pub struct TextInputProtocol {
 }
 
 #[repr(C)]
-pub struct TextOutputProtocol {
+pub struct TextOutputProtocol
+{
 	reset: unsafe extern "efiapi" fn(
 		this: *mut Self,
 		extended_verif: Boolean,
@@ -60,24 +62,28 @@ pub struct TextOutputProtocol {
 	mode:          TextOutputModePtr,
 }
 
-impl TextOutputProtocol {
+impl TextOutputProtocol
+{
 	/// # Params
 	///
 	/// this function expects `s` to be encoded as utf8
-	pub fn output(&mut self, s: impl AsRef<str,>,) -> PoisonGirlB<Status,> {
+	pub fn output(&mut self, s: impl AsRef<str,>,) -> PoisonGirlB<Status,>
+	{
 		let utf16_repr = into_null_terminated_utf16(s,);
 		let utf16_repr = utf16_repr.as_ptr();
 		unsafe { (self.output)(self, utf16_repr,) }.x_or()
 	}
 
 	/// wrapper function of `(TextOutputProtocol.test)(ptr_of_u16)` call
-	pub fn test(&mut self, s: impl AsRef<str,>,) -> bool {
+	pub fn test(&mut self, s: impl AsRef<str,>,) -> bool
+	{
 		let utf16_repr = into_null_terminated_utf16(s,);
 		let utf16_repr = utf16_repr.as_ptr();
 		unsafe { (self.test)(self, utf16_repr,) }.is_success()
 	}
 
-	pub fn clear(&mut self,) -> PoisonGirlB<Status,> {
+	pub fn clear(&mut self,) -> PoisonGirlB<Status,>
+	{
 		unsafe { (self.clear)(self,) }.x_or()
 	}
 }

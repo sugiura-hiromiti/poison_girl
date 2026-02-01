@@ -9,16 +9,19 @@
 
 extern crate alloc;
 
-use poison_girl_error::Rslt;
-use poison_girl_loader::chibi_uefi::service::exit_boot_services;
-use poison_girl_loader::exec_kernel;
-use poison_girl_loader::get_device_tree;
-use poison_girl_loader::init;
-use poison_girl_loader::load::kernel;
-use poison_girl_loader::raw::table::SystemTable;
-use poison_girl_loader::raw::types::Status;
-use poison_girl_loader::raw::types::UnsafeHandle;
-use poison_girl_no_std::bridge::device_tree::DeviceTreeAddress;
+use {
+	poison_girl_loader::{
+		chibi_uefi::service::exit_boot_services,
+		exec_kernel, get_device_tree, init,
+		load::kernel,
+		raw::{
+			table::SystemTable,
+			types::{Status, UnsafeHandle},
+		},
+	},
+	poison_girl_no_std::bridge::device_tree::DeviceTreeAddress,
+	poison_girl_no_std_error::{PoisonGirlB, X},
+};
 
 /// UEFI application entry point
 ///
@@ -56,7 +59,8 @@ use poison_girl_no_std::bridge::device_tree::DeviceTreeAddress;
 pub extern "efiapi" fn efi_image_entry_point(
 	image_handle: UnsafeHandle,
 	system_table: *const SystemTable,
-) -> Status {
+) -> Status
+{
 	// Initialize UEFI environment and connect devices
 	init(image_handle, system_table,);
 
@@ -95,7 +99,8 @@ pub extern "efiapi" fn efi_image_entry_point(
 /// - The ELF parsing fails
 /// - Memory allocation for kernel loading fails
 /// - Device tree cannot be retrieved from UEFI
-fn app() -> Rslt<(u64, DeviceTreeAddress,),> {
+fn app() -> Rslt<(u64, DeviceTreeAddress,),>
+{
 	// Load kernel ELF file and get entry point
 	let kernel_addr = kernel()?;
 
@@ -105,5 +110,5 @@ fn app() -> Rslt<(u64, DeviceTreeAddress,),> {
 	// Convert device tree pointer for kernel handoff
 	let device_tree_ptr = device_tree.as_ptr().cast_const().cast();
 
-	Ok((kernel_addr, device_tree_ptr,),)
+	X((kernel_addr, device_tree_ptr,),)
 }

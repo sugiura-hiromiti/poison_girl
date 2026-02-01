@@ -2,7 +2,8 @@ use super::Guid;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,)]
 #[repr(C)]
-pub struct CapsuleHeader {
+pub struct CapsuleHeader
+{
 	pub capsule_guid:       Guid,
 	pub header_size:        u32,
 	pub flags:              CapsuleFlags,
@@ -12,7 +13,8 @@ pub struct CapsuleHeader {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash,)]
 #[repr(transparent)]
 pub struct CapsuleFlags(pub u32,);
-impl CapsuleFlags {
+impl CapsuleFlags
+{
 	/// Trigger a system reset after passing the capsule to the firmware.
 	///
 	/// If this flag is set, [`PERSIST_ACROSS_RESET`] must be set as well.

@@ -12,7 +12,8 @@ use {
 };
 
 #[test]
-fn test_gen_wrapper_fn_integration() {
+fn test_gen_wrapper_fn_integration()
+{
 	use syn::parse_quote;
 
 	// Test with various function signatures
@@ -43,7 +44,8 @@ fn test_gen_wrapper_fn_integration() {
 
 #[test]
 #[ignore = "requires font file"]
-fn test_fonts_data_integration() {
+fn test_fonts_data_integration()
+{
 	// Create a temporary font file
 	let temp_file = NamedTempFile::new().expect("Failed to create temp file",);
 
@@ -77,7 +79,8 @@ fn test_fonts_data_integration() {
 }
 
 #[test]
-fn test_impl_init_integration() {
+fn test_impl_init_integration()
+{
 	use quote::quote;
 
 	// Test parsing and implementation generation for multiple types
@@ -101,7 +104,8 @@ fn test_impl_init_integration() {
 }
 
 #[test]
-fn test_status_from_spec_html_parsing_integration() {
+fn test_status_from_spec_html_parsing_integration()
+{
 	// Test the HTML parsing functions with a complete example
 	let test_html = r#"
 <!DOCTYPE html>
@@ -169,7 +173,8 @@ fn test_status_from_spec_html_parsing_integration() {
 }
 
 #[test]
-fn test_type_conversions_integration() -> Rslt<(),> {
+fn test_type_conversions_integration() -> Rslt<(),>
+{
 	// Test that different modules can work with the same data types
 	use test_program_headers_parse::*;
 
@@ -188,7 +193,8 @@ fn test_type_conversions_integration() -> Rslt<(),> {
 }
 
 #[test]
-fn test_proc_macro_dependencies_integration() {
+fn test_proc_macro_dependencies_integration()
+{
 	// Test that proc macro dependencies work correctly together
 	use {
 		proc_macro2::TokenStream,
@@ -213,7 +219,8 @@ fn test_proc_macro_dependencies_integration() {
 }
 
 #[test]
-fn test_html_parsing_dependencies_integration() {
+fn test_html_parsing_dependencies_integration()
+{
 	// Test that HTML parsing dependencies work together
 	use {
 		html5ever::{QualName, local_name, ns, parse_fragment},
@@ -237,7 +244,8 @@ fn test_html_parsing_dependencies_integration() {
 }
 
 #[test]
-fn test_string_processing_integration() {
+fn test_string_processing_integration()
+{
 	// Test string processing across different modules
 
 	// Test that we can handle various string formats used in different modules
@@ -266,7 +274,8 @@ fn test_string_processing_integration() {
 }
 
 #[test]
-fn test_file_system_integration() {
+fn test_file_system_integration()
+{
 	// Test file system operations used across modules
 	use std::env::current_dir;
 

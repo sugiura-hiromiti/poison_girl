@@ -7,7 +7,8 @@ use {
 };
 
 #[test]
-fn test_basic_functionality() {
+fn test_basic_functionality()
+{
 	// Test basic enum functionality
 	let build_mode = BuildMode::Debug;
 	assert!(build_mode.is_debug());
@@ -19,7 +20,8 @@ fn test_basic_functionality() {
 }
 
 #[test]
-fn test_cli_conversion() {
+fn test_cli_conversion()
+{
 	let cli = Cli {
 		build_mode:    Some(BuildMode::Debug,),
 		feature_flags: None,
@@ -32,7 +34,8 @@ fn test_cli_conversion() {
 }
 
 #[test]
-fn test_compile_opt_trait() {
+fn test_compile_opt_trait()
+{
 	let opts = Opts {
 		build_mode:    BuildMode::Release,
 		feature_flags: vec![],
@@ -47,7 +50,8 @@ fn test_compile_opt_trait() {
 }
 
 #[test]
-fn test_fs_functions_exist() {
+fn test_fs_functions_exist()
+{
 	// Test that fs functions exist and return Results
 	let _project_result = project_root();
 	let _current_result = current_crate();
@@ -56,7 +60,8 @@ fn test_fs_functions_exist() {
 }
 
 #[test]
-fn test_firmware_struct() {
+fn test_firmware_struct()
+{
 	let firmware = Firmware {
 		code: PathBuf::from("/test/code",),
 		vars: PathBuf::from("/test/vars",),
@@ -67,7 +72,8 @@ fn test_firmware_struct() {
 }
 
 #[test]
-fn test_assets_struct() {
+fn test_assets_struct()
+{
 	let assets = Assets {
 		firmware: Firmware {
 			code: PathBuf::from("/ovmf/code",),
@@ -81,13 +87,15 @@ fn test_assets_struct() {
 }
 
 #[test]
-fn test_enum_defaults() {
+fn test_enum_defaults()
+{
 	assert!(BuildMode::default().is_debug());
 	assert!(Arch::default().is_aarch_64());
 }
 
 #[test]
-fn test_enum_cloning() {
+fn test_enum_cloning()
+{
 	let build_mode = BuildMode::Release;
 	let cloned = build_mode;
 	assert_eq!(build_mode, cloned);
@@ -98,7 +106,8 @@ fn test_enum_cloning() {
 }
 
 #[test]
-fn test_enum_equality() {
+fn test_enum_equality()
+{
 	assert_eq!(BuildMode::Debug, BuildMode::Debug);
 	assert_ne!(BuildMode::Debug, BuildMode::Release);
 
@@ -107,7 +116,8 @@ fn test_enum_equality() {
 }
 
 #[test]
-fn test_string_conversions() {
+fn test_string_conversions()
+{
 	use std::str::FromStr;
 
 	// Test AsRefStr
@@ -120,7 +130,8 @@ fn test_string_conversions() {
 }
 
 #[test]
-fn test_is_methods() {
+fn test_is_methods()
+{
 	// BuildMode
 	assert!(BuildMode::Debug.is_debug());
 	assert!(!BuildMode::Release.is_debug());
@@ -133,7 +144,8 @@ fn test_is_methods() {
 }
 
 #[test]
-fn test_comprehensive_enum_combinations() {
+fn test_comprehensive_enum_combinations()
+{
 	// Test all possible combinations of enums
 	use clap::ValueEnum;
 
@@ -157,7 +169,8 @@ fn test_comprehensive_enum_combinations() {
 }
 
 #[test]
-fn test_cli_all_combinations() {
+fn test_cli_all_combinations()
+{
 	// Test CLI with all possible combinations
 
 	for build_mode in
@@ -183,7 +196,8 @@ fn test_cli_all_combinations() {
 }
 
 #[test]
-fn test_error_cases() {
+fn test_error_cases()
+{
 	// Test error handling in string parsing
 	use std::str::FromStr;
 
@@ -199,7 +213,8 @@ fn test_error_cases() {
 }
 
 #[test]
-fn test_memory_efficiency() {
+fn test_memory_efficiency()
+{
 	// Test that enums are memory efficient
 	use std::mem;
 
@@ -209,7 +224,8 @@ fn test_memory_efficiency() {
 }
 
 #[test]
-fn test_thread_safety() {
+fn test_thread_safety()
+{
 	// Test that enums can be used across threads
 	use std::{sync::Arc, thread};
 
@@ -240,7 +256,8 @@ fn test_thread_safety() {
 }
 
 #[test]
-fn test_fs_integration() {
+fn test_fs_integration()
+{
 	// Test filesystem functions integration
 	let project_result = project_root();
 	let current_result = current_crate();
@@ -278,7 +295,8 @@ fn test_fs_integration() {
 }
 
 #[test]
-fn test_debug_formatting() {
+fn test_debug_formatting()
+{
 	// Test that all types have useful Debug output
 	let build_mode = BuildMode::Debug;
 	let debug_str = format!("{:?}", build_mode);
@@ -301,7 +319,8 @@ fn test_debug_formatting() {
 }
 
 #[test]
-fn test_value_enum_completeness() {
+fn test_value_enum_completeness()
+{
 	// Test that ValueEnum implementations are complete
 	use clap::ValueEnum;
 
@@ -318,7 +337,8 @@ fn test_value_enum_completeness() {
 }
 
 #[test]
-fn test_feature_flags_empty_enum() {
+fn test_feature_flags_empty_enum()
+{
 	// Test that Feature enum is properly empty
 	// Note: Feature enum doesn't implement ValueEnum since it's empty
 
@@ -338,7 +358,8 @@ fn test_feature_flags_empty_enum() {
 }
 
 #[test]
-fn test_path_handling() {
+fn test_path_handling()
+{
 	// Test PathBuf handling in Firmware and Assets
 	let code_path = PathBuf::from("/usr/share/ovmf/OVMF_CODE.fd",);
 	let vars_path = PathBuf::from("/usr/share/ovmf/OVMF_VARS.fd",);

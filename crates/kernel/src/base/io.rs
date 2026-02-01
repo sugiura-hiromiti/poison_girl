@@ -97,8 +97,8 @@ use {
 		fmt::Write,
 		ops::{Add, Div, Mul, Sub},
 	},
+	poison_girl_macro::{font, impl_int},
 	poison_girl_no_std_error::{PoisonGirlB, X, Y},
-	poison_girl_proc_macro_def::{font, impl_int},
 };
 
 // TODO: Implement dynamic font loading
@@ -191,7 +191,8 @@ static CONSOLE: TextBuf<(usize, usize,),> = TextBuf::new((0, 0,), 8, 16,);
 /// text_buf.put_char(b'i')?;
 /// text_buf.put_char(b'\n')?; // New line
 /// ```
-pub struct TextBuf<C: Coordinal,> {
+pub struct TextBuf<C: Coordinal,>
+{
 	/// Initial position for text rendering
 	init_pos:        C,
 	/// Current row position (in character units)
@@ -204,7 +205,8 @@ pub struct TextBuf<C: Coordinal,> {
 	pub font_height: usize,
 }
 
-impl<C: Coordinal,> TextBuf<C,> {
+impl<C: Coordinal,> TextBuf<C,>
+{
 	/// Creates a new text buffer with the specified parameters
 	///
 	/// This constructor initializes a text buffer at the given position with
@@ -231,10 +233,9 @@ impl<C: Coordinal,> TextBuf<C,> {
 	/// let text_buf = TextBuf::new((100, 200), 12, 20);
 	/// ```
 	pub const fn new(
-		init_pos: C,
-		font_width: usize,
-		font_height: usize,
-	) -> Self {
+		init_pos: C, font_width: usize, font_height: usize,
+	) -> Self
+	{
 		Self { init_pos, row: 0, col: 0, font_width, font_height, }
 	}
 
@@ -253,7 +254,8 @@ impl<C: Coordinal,> TextBuf<C,> {
 	/// ```text
 	/// pixel_row = init_pos.y + (font_height * current_row)
 	/// ```
-	fn row_pixel(&self,) -> usize {
+	fn row_pixel(&self,) -> usize
+	{
 		self.init_pos.y() + self.font_height * self.row
 	}
 
@@ -272,7 +274,8 @@ impl<C: Coordinal,> TextBuf<C,> {
 	/// ```text
 	/// pixel_col = init_pos.x + (font_width * current_col)
 	/// ```
-	fn col_pixel(&self,) -> usize {
+	fn col_pixel(&self,) -> usize
+	{
 		self.init_pos.x() + self.font_width * self.col
 	}
 
@@ -287,7 +290,8 @@ impl<C: Coordinal,> TextBuf<C,> {
 	/// ```rust,ignore
 	/// text_buf.clear(); // Reset cursor to (0, 0)
 	/// ```
-	pub fn clear(&mut self,) {
+	pub fn clear(&mut self,)
+	{
 		self.row = 0;
 		self.col = 0;
 	}
@@ -334,7 +338,8 @@ impl<C: Coordinal,> TextBuf<C,> {
 	/// - Re-enable pixel rendering (currently commented out)
 	/// - Add color support for characters
 	/// - Implement proper error handling for rendering failures
-	fn put_char(&mut self, char: u8,) -> PoisonGirlB<(),> {
+	fn put_char(&mut self, char: u8,) -> PoisonGirlB<(),>
+	{
 		// Handle newline character
 		if char == b'\n' {
 			self.row += 1;
@@ -379,7 +384,8 @@ impl<C: Coordinal,> TextBuf<C,> {
 	}
 }
 
-impl<C: Coordinal,> Write for TextBuf<C,> {
+impl<C: Coordinal,> Write for TextBuf<C,>
+{
 	/// Implements the `Write` trait for formatted output support
 	///
 	/// This implementation allows the text buffer to be used with Rust's
@@ -409,7 +415,8 @@ impl<C: Coordinal,> Write for TextBuf<C,> {
 	/// write!(text_buf, "Hello, World!")?;
 	/// writeln!(text_buf, "Value: {}", 42)?;
 	/// ```
-	fn write_str(&mut self, s: &str,) -> core::fmt::Result {
+	fn write_str(&mut self, s: &str,) -> core::fmt::Result
+	{
 		for c in s.as_bytes() {
 			if let Y(_,) = self.put_char(*c,) {
 				return Err(core::fmt::Error,);
@@ -528,7 +535,8 @@ macro_rules! print {
 /// print!("Hello");
 /// println!("World");
 /// ```
-pub fn print(args: core::fmt::Arguments,) {
+pub fn print(args: core::fmt::Arguments,)
+{
 	use core::fmt::Write;
 	unsafe {
 		// SAFETY: We're obtaining a mutable reference to the static CONSOLE

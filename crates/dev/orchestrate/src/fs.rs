@@ -4,26 +4,30 @@ use {
 	poison_girl_dev_fs::fs::{current_crate_path, project_root_path},
 };
 
-pub fn project_root() -> PoisonGirlB<OsoCrate,> {
+pub fn project_root() -> PoisonGirlB<OsoCrate,>
+{
 	let pr = project_root_path()?;
 	X(OsoCrate::from(pr,),)
 }
 
-pub fn current_crate() -> PoisonGirlB<OsoCrate,> {
+pub fn current_crate() -> PoisonGirlB<OsoCrate,>
+{
 	let ccp = current_crate_path()?;
 
 	X(OsoCrate::from(ccp,),)
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {
 		super::*, crate::decl_manage::crate_::CrateInfo,
 		poison_girl_dev_error::Y,
 	};
 
 	#[test]
-	fn test_project_root_function_exists() {
+	fn test_project_root_function_exists()
+	{
 		// Test that the project_root function exists and returns a Result
 		let result = project_root();
 
@@ -44,7 +48,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_current_crate_function_exists() {
+	fn test_current_crate_function_exists()
+	{
 		// Test that the current_crate function exists and returns a Result
 		let result = current_crate();
 
@@ -65,7 +70,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_project_root_returns_oso_crate() {
+	fn test_project_root_returns_oso_crate()
+	{
 		// Test that project_root returns an OsoCrate type
 		let result = project_root();
 
@@ -76,7 +82,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_current_crate_returns_oso_crate() {
+	fn test_current_crate_returns_oso_crate()
+	{
 		// Test that current_crate returns an OsoCrate type
 		let result = current_crate();
 
@@ -87,7 +94,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_function_integration() {
+	fn test_function_integration()
+	{
 		// Test that both functions use the same underlying helper functions
 		// This is more of an integration test
 
@@ -108,7 +116,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_result_type_consistency() {
+	fn test_result_type_consistency()
+	{
 		// Test that both functions return the same Result type
 		let project_result = project_root();
 		let current_result = current_crate();
@@ -122,7 +131,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_function_signatures() {
+	fn test_function_signatures()
+	{
 		// Test that function signatures are as expected
 
 		// project_root should take no parameters and return Rslt<OsoCrate>
@@ -132,7 +142,8 @@ mod tests {
 		let _: fn() -> PoisonGirlB<OsoCrate,> = current_crate;
 	}
 	#[test]
-	fn test_oso_crate_conversion() {
+	fn test_oso_crate_conversion()
+	{
 		// Test that PathBuf to OsoCrate conversion works correctly
 
 		let project_result = project_root();
@@ -162,7 +173,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_path_properties() {
+	fn test_path_properties()
+	{
 		// Test properties of returned paths
 		let project_result = project_root();
 		let current_result = current_crate();
@@ -197,7 +209,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_thread_safety() {
+	fn test_thread_safety()
+	{
 		// Test that functions can be called from multiple threads
 		use std::thread;
 
@@ -221,7 +234,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_return_type_traits() {
+	fn test_return_type_traits()
+	{
 		// Test that returned OsoCrate implements expected traits
 		if let X(project_crate,) = project_root() {
 			// Test Clone

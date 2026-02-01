@@ -21,7 +21,8 @@ c_style_enum! {
 #[repr(transparent)]
 pub struct DeviceSubType(pub u8,);
 
-impl DeviceSubType {
+impl DeviceSubType
+{
 	/// ACPI Device Path.
 	pub const ACPI: Self = Self(1,);
 	/// ACPI _ADR Device Path.

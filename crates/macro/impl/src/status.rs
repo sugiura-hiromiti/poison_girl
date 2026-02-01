@@ -6,36 +6,37 @@ use {
 	markup5ever_rcdom::{Node, NodeData, RcDom},
 	poison_girl_proc_macro_helper::{diagnostic::Diag, rslt::Rslt},
 	proc_macro2::{Span, TokenStream},
-	std::rc::Rc,
+	std::{path::PathBuf, rc::Rc},
 };
 
 /// HTML element ID of the main status codes section in the UEFI specification
 const MAIN_SECTION_ID: &str = "status-codes";
-
 /// HTML element ID of the success codes table in the UEFI specification
 const SUCCESS_CODE_TABLE_ID: &str =
 	"efi-status-success-codes-high-bit-clear-apx-d-status-codes";
-
 /// HTML element ID of the error codes table in the UEFI specification
 const ERROR_CODE_TABLE_ID: &str =
 	"efi-status-error-codes-high-bit-set-apx-d-status-codes";
-
 /// HTML element ID of the warning codes table in the UEFI specification
 const WARN_CODE_TABLE_ID: &str =
 	"efi-status-warning-codes-high-bit-clear-apx-d-status-codes";
+const CRATE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
-trait TokenParts {
+trait TokenParts
+{
 	fn token_parts(
 		&self,
 		is_err: bool,
 	) -> Vec<(proc_macro2::TokenStream, proc_macro2::TokenStream,),>;
 }
 
-impl TokenParts for Vec<StatusCodeInfo,> {
+impl TokenParts for Vec<StatusCodeInfo,>
+{
 	fn token_parts(
 		&self,
 		is_err: bool,
-	) -> Vec<(proc_macro2::TokenStream, proc_macro2::TokenStream,),> {
+	) -> Vec<(proc_macro2::TokenStream, proc_macro2::TokenStream,),>
+	{
 		self.iter()
 			.map(|sci| {
 				// Create identifier from the status code mnemonic
@@ -65,7 +66,8 @@ impl TokenParts for Vec<StatusCodeInfo,> {
 }
 
 #[derive(Debug,)]
-pub struct StatusCode {
+pub struct StatusCode
+{
 	/// Success status codes (high bit clear)
 	pub success: Vec<StatusCodeInfo,>,
 	/// Error status codes (high bit set)
@@ -75,7 +77,8 @@ pub struct StatusCode {
 }
 
 #[derive(Debug,)]
-pub struct StatusCodeInfo {
+pub struct StatusCodeInfo
+{
 	/// The mnemonic name of the status code (e.g., "EFI_SUCCESS")
 	pub mnemonic: String,
 	/// The numeric value of the status code
@@ -84,7 +87,8 @@ pub struct StatusCodeInfo {
 	pub desc:     String,
 }
 
-impl StatusCodeInfo {
+impl StatusCodeInfo
+{
 	/// Bit mask for error status codes (high bit set)
 	///
 	/// UEFI error codes have the most significant bit set to 1,
@@ -92,41 +96,57 @@ impl StatusCodeInfo {
 	pub const ERROR_BIT: usize = 1 << (usize::BITS - 1);
 }
 
-pub fn status(version: syn::Lit,) -> Rslt<TokenStream,> {
+struct HtmlSource
+{
+	version: syn::LitFloat,
+}
+
+impl HtmlSource
+{
+	fn new(version: syn::LitFloat,) -> Self
+	{
+		Self { version, }
+	}
+
+	fn fetch(&self,) -> Rslt<String,>
+	{
+		let local_path = PathBuf::from(CRATE_ROOT,)
+			.join(format!("status_{}.html", self.version),);
+
+		if !std::fs::exists(&local_path,)? {
+			panic!("file: {} not found", local_path.display());
+		}
+
+		Rslt::new(std::fs::read_to_string(local_path,)?,)
+	}
+}
+
+pub fn status(version: syn::Lit,) -> Rslt<TokenStream,>
+{
 	let syn::Lit::Float(version,) = version else {
 		return Rslt::new_err(format!(
 			"version is floating point literal. found {version:?}"
 		),);
 	};
 
-	// Construct the URL for the UEFI specification page
-	let status_spec_url = format!(
-		"https://uefi.org/specs/UEFI/{version}/Apx_D_Status_Codes.html"
-	);
-
 	// Fetch and parse the specification page
-	let spec_page = status_spec_page(&status_spec_url,)??;
-	// Generate the Status struct implementation using the helper
-	let c_enum_impl = impl_status(&spec_page,);
+	status_spec_page(version,).replace_by(|spec_page| {
+		let c_enum_impl = impl_status(&spec_page,);
+		// Generate the complete Status struct with all implementations
+		let enum_def = quote::quote! {
+				#[repr(transparent)]
+				#[derive(Eq, PartialEq, Clone, Debug,)]
+				pub struct Status(pub usize);
 
-	// Generate the complete Status struct with all implementations
-	let enum_def = quote::quote! {
-			#[repr(transparent)]
-			#[derive(Eq, PartialEq, Clone, Debug,)]
-			pub struct Status(pub usize);
-
-			#c_enum_impl
-	};
-
-	Rslt::new(enum_def,)
+				#c_enum_impl
+		};
+		Rslt::new(enum_def,)
+	},)
 }
 
-pub fn status_spec_page(
-	status_spec_url: impl Into<String,>,
-) -> Rslt<StatusCode,> {
-	// Fetch the specification page
-	let mut rsp = ureq::get(status_spec_url.into(),).call()?;
-	let rsp_body = rsp.body_mut().read_to_string()?;
+pub fn status_spec_page(version: syn::LitFloat,) -> Rslt<StatusCode,>
+{
+	let rsp_body = HtmlSource::new(version,).fetch()??;
 
 	// Parse the HTML document
 	let dom = html5ever::parse_document(RcDom::default(), Default::default(),)
@@ -184,7 +204,8 @@ pub fn status_spec_page(
 	},)
 }
 
-pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
+pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream
+{
 	// Generate token parts for success status codes (non-error)
 	let (success_match, success_assoc,): (Vec<_,>, Vec<_,>,) =
 		spec_page.success.token_parts(false,).into_iter().unzip();
@@ -234,13 +255,15 @@ pub fn impl_status(spec_page: &StatusCode,) -> proc_macro2::TokenStream {
 	}
 }
 
-fn ok_match(mnemonic: &syn::Ident,) -> proc_macro2::TokenStream {
+fn ok_match(mnemonic: &syn::Ident,) -> proc_macro2::TokenStream
+{
 	quote::quote! {
 		Self::#mnemonic => poison_girl_no_std_error::X(Self::#mnemonic,),
 	}
 }
 
-fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream {
+fn err_match(mnemonic: &syn::Ident, msg: &String,) -> proc_macro2::TokenStream
+{
 	let mnemonic_str = mnemonic.to_string();
 	quote::quote! {
 	Self::#mnemonic => {
@@ -254,14 +277,16 @@ fn assoc_const(
 	mnemonic: &syn::Ident,
 	value: &syn::Lit,
 	msg: &String,
-) -> proc_macro2::TokenStream {
+) -> proc_macro2::TokenStream
+{
 	quote::quote! {
 		#[doc = #msg]
 		pub const #mnemonic: Self = Self(#value);
 	}
 }
 
-pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,> {
+pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,>
+{
 	// Check if current node has the target ID
 	let found = if let NodeData::Element { attrs, .. } = &node.data {
 		let attrs_borrow = attrs.borrow();
@@ -297,7 +322,8 @@ fn get_elements_by_attribute(
 	node: Rc<Node,>,
 	attr: &str,
 	value: &str,
-) -> Vec<Rc<Node,>,> {
+) -> Vec<Rc<Node,>,>
+{
 	let mut rslt = vec![];
 
 	// Check if current node matches the attribute criteria
@@ -324,7 +350,8 @@ fn get_elements_by_attribute(
 	rslt
 }
 
-fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,> {
+fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,>
+{
 	let mut rslt = vec![];
 
 	// Check if current node matches the tag name
@@ -350,12 +377,14 @@ fn get_elements_by_name(node: Rc<Node,>, tag_name: &str,) -> Vec<Rc<Node,>,> {
 	rslt
 }
 
-fn table_rows(node: Rc<Node,>,) -> Vec<Rc<Node,>,> {
+fn table_rows(node: Rc<Node,>,) -> Vec<Rc<Node,>,>
+{
 	// Get all <tr> elements and skip the first one (header)
 	get_elements_by_name(node.clone(), "tr",)[1..].to_vec()
 }
 
-fn table_data(node: Rc<Node,>,) -> Vec<String,> {
+fn table_data(node: Rc<Node,>,) -> Vec<String,>
+{
 	let mut rslt = vec![];
 
 	// Find all paragraph elements in the row (should be 3)
@@ -388,7 +417,8 @@ fn table_data(node: Rc<Node,>,) -> Vec<String,> {
 	rslt
 }
 
-fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
+fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,>
+{
 	rows.into_iter()
 		.map(|row| StatusCodeInfo {
 			mnemonic: row[0].clone(),
@@ -402,7 +432,8 @@ fn status_codes_info(rows: Vec<Vec<String,>,>,) -> Vec<StatusCodeInfo,> {
 }
 
 #[allow(dead_code)]
-fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,> {
+fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,>
+{
 	// Iterate through all child nodes and emit diagnostic info
 	node.children
 		.borrow()
@@ -437,12 +468,14 @@ fn inspect_children(node: Rc<Node,>,) -> Vec<Diag,> {
 }
 
 #[allow(dead_code)]
-fn inspect_node(node: Rc<Node,>,) -> Diag {
+fn inspect_node(node: Rc<Node,>,) -> Diag
+{
 	Diag::note(format!("{node:#?}"),)
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use {
 		super::*,
 		html5ever::{QualName, ns},
@@ -459,7 +492,8 @@ mod tests {
 </section>"#;
 
 	/// this fn converts text input into node representation
-	fn parse_text(txt: impl Into<String,>,) -> Rc<Node,> {
+	fn parse_text(txt: impl Into<String,>,) -> Rc<Node,>
+	{
 		let dom = html5ever::parse_fragment(
 			RcDom::default(),
 			Default::default(),
@@ -472,13 +506,15 @@ mod tests {
 	}
 
 	#[test]
-	fn test_parse_text() {
+	fn test_parse_text()
+	{
 		let node = parse_text(BASIC_HTML,);
 		eprintln!("{node:#?}")
 	}
 
 	#[test]
-	fn test_get_element_by_id() -> Rslt<(),> {
+	fn test_get_element_by_id() -> Rslt<(),>
+	{
 		let node = parse_text(BASIC_HTML,);
 		get_element_by_id(node.clone(), "identical",)
 			.ok_or("failed to get element with id identical",)?;
@@ -491,7 +527,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_elements_by_attribute() {
+	fn test_get_elements_by_attribute()
+	{
 		let node = parse_text(BASIC_HTML,);
 		let class_wow =
 			get_elements_by_attribute(node.clone(), "class", "wow",);
@@ -507,7 +544,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_elements_by_name() {
+	fn test_get_elements_by_name()
+	{
 		let node = parse_text(BASIC_HTML,);
 		let div = get_elements_by_name(node.clone(), "div",);
 		assert_eq!(div.len(), 1);
@@ -523,7 +561,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_status_code_info_error_bit() {
+	fn test_status_code_info_error_bit()
+	{
 		// Test the ERROR_BIT constant
 		assert_eq!(StatusCodeInfo::ERROR_BIT, 1 << (usize::BITS - 1));
 
@@ -532,7 +571,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_status_code_info_creation() {
+	fn test_status_code_info_creation()
+	{
 		let info = StatusCodeInfo {
 			mnemonic: "EFI_SUCCESS".to_string(),
 			value:    0,
@@ -545,7 +585,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_status_code_creation() {
+	fn test_status_code_creation()
+	{
 		let status_code = StatusCode {
 			success: vec![StatusCodeInfo {
 				mnemonic: "EFI_SUCCESS".to_string(),
@@ -573,7 +614,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_table_rows_filtering() {
+	fn test_table_rows_filtering()
+	{
 		// Create a simple table structure
 		let table_html = r#"
 <table>
@@ -592,7 +634,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_table_data_extraction() {
+	fn test_table_data_extraction()
+	{
 		// Create a table row with paragraph elements
 		let row_html = r#"
 <table>
@@ -615,7 +658,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_status_codes_info_conversion() {
+	fn test_status_codes_info_conversion()
+	{
 		let raw_data = vec![
 			vec![
 				"EFI_SUCCESS".to_string(),
@@ -640,7 +684,8 @@ mod tests {
 
 	#[test]
 	#[should_panic(expected = "value expected being parsable to integer")]
-	fn test_status_codes_info_invalid_value() {
+	fn test_status_codes_info_invalid_value()
+	{
 		let raw_data = vec![vec![
 			"EFI_SUCCESS".to_string(),
 			"invalid_number".to_string(),
@@ -651,7 +696,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_elements_by_name_nested() {
+	fn test_get_elements_by_name_nested()
+	{
 		let nested_html = r#"
 <div>
 	<p>Outer paragraph</p>
@@ -672,7 +718,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_elements_by_attribute_partial_match() {
+	fn test_get_elements_by_attribute_partial_match()
+	{
 		let html_with_classes = r#"
 <div class="status-code-table">Table 1</div>
 <div class="status-code-list">List 1</div>
@@ -688,7 +735,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_element_by_id_not_found() {
+	fn test_get_element_by_id_not_found()
+	{
 		let simple_html = r#"
 <div id="existing">Content</div>
 <div>No ID</div>"#;
@@ -700,7 +748,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_get_element_by_id_nested() {
+	fn test_get_element_by_id_nested()
+	{
 		let nested_html = r#"
 <div>
 	<section>
@@ -715,7 +764,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_constants_values() {
+	fn test_constants_values()
+	{
 		// Test that the HTML element ID constants are correct
 		assert_eq!(MAIN_SECTION_ID, "status-codes");
 		assert_eq!(
@@ -733,7 +783,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_debug_implementations() {
+	fn test_debug_implementations()
+	{
 		let status_info = StatusCodeInfo {
 			mnemonic: "TEST".to_string(),
 			value:    42,
@@ -756,7 +807,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_empty_html_parsing() {
+	fn test_empty_html_parsing()
+	{
 		let empty_html = "";
 		let node = parse_text(empty_html,);
 
@@ -765,7 +817,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_malformed_html_parsing() {
+	fn test_malformed_html_parsing()
+	{
 		let malformed_html =
 			r#"<div><p>Unclosed paragraph<div>Nested without closing</div>"#;
 		let node = parse_text(malformed_html,);
@@ -776,7 +829,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_html_with_attributes() {
+	fn test_html_with_attributes()
+	{
 		let html_with_attrs = r#"
 <div id="test-id" class="test-class" data-value="123">
 	<p style="color: red;" title="Test paragraph">Content</p>

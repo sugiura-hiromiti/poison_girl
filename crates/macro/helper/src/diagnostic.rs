@@ -1,27 +1,34 @@
 #[derive(Debug, PartialEq, Eq, Clone,)]
-pub enum Diag {
+pub enum Diag
+{
 	Err(ErrDiag,),
 	Notation(NotationDiag,),
 }
 
-impl Diag {
-	pub fn err(s: impl Into<String,>,) -> Self {
+impl Diag
+{
+	pub fn err(s: impl Into<String,>,) -> Self
+	{
 		Self::Err(ErrDiag(s.into(),),)
 	}
 
-	pub fn warn(s: impl Into<String,>,) -> Self {
+	pub fn warn(s: impl Into<String,>,) -> Self
+	{
 		Self::Notation(NotationDiag::Warn(s.into(),),)
 	}
 
-	pub fn note(s: impl Into<String,>,) -> Self {
+	pub fn note(s: impl Into<String,>,) -> Self
+	{
 		Self::Notation(NotationDiag::Note(s.into(),),)
 	}
 
-	pub fn help(s: impl Into<String,>,) -> Self {
+	pub fn help(s: impl Into<String,>,) -> Self
+	{
 		Self::Notation(NotationDiag::Help(s.into(),),)
 	}
 
-	pub fn flat(self,) -> FlatDiag {
+	pub fn flat(self,) -> FlatDiag
+	{
 		match self {
 			Self::Err(ErrDiag(msg,),) => FlatDiag::Err(msg,),
 			Self::Notation(notation_diag,) => match notation_diag {
@@ -33,31 +40,38 @@ impl Diag {
 	}
 }
 
-pub enum FlatDiag {
+pub enum FlatDiag
+{
 	Err(String,),
 	Warn(String,),
 	Note(String,),
 	Help(String,),
 }
 
-impl FlatDiag {
-	pub fn err(s: impl Into<String,>,) -> Self {
+impl FlatDiag
+{
+	pub fn err(s: impl Into<String,>,) -> Self
+	{
 		Self::Err(s.into(),)
 	}
 
-	pub fn warn(s: impl Into<String,>,) -> Self {
+	pub fn warn(s: impl Into<String,>,) -> Self
+	{
 		Self::Warn(s.into(),)
 	}
 
-	pub fn note(s: impl Into<String,>,) -> Self {
+	pub fn note(s: impl Into<String,>,) -> Self
+	{
 		Self::Note(s.into(),)
 	}
 
-	pub fn help(s: impl Into<String,>,) -> Self {
+	pub fn help(s: impl Into<String,>,) -> Self
+	{
 		Self::Help(s.into(),)
 	}
 
-	pub fn deflat(self,) -> Diag {
+	pub fn deflat(self,) -> Diag
+	{
 		match self {
 			Self::Err(msg,) => Diag::Err(ErrDiag(msg,),),
 			Self::Warn(msg,) => Diag::Notation(NotationDiag::Warn(msg,),),
@@ -67,14 +81,18 @@ impl FlatDiag {
 	}
 }
 
-impl From<FlatDiag,> for Diag {
-	fn from(value: FlatDiag,) -> Self {
+impl From<FlatDiag,> for Diag
+{
+	fn from(value: FlatDiag,) -> Self
+	{
 		value.deflat()
 	}
 }
 
-impl From<Diag,> for FlatDiag {
-	fn from(value: Diag,) -> Self {
+impl From<Diag,> for FlatDiag
+{
+	fn from(value: Diag,) -> Self
+	{
 		value.flat()
 	}
 }
@@ -82,25 +100,30 @@ impl From<Diag,> for FlatDiag {
 #[derive(Debug, PartialEq, Eq, Clone,)]
 pub struct ErrDiag(String,);
 
-impl ErrDiag {
-	pub fn new(s: impl Into<String,>,) -> Self {
+impl ErrDiag
+{
+	pub fn new(s: impl Into<String,>,) -> Self
+	{
 		Self(s.into(),)
 	}
 }
 
 #[derive(Debug, PartialEq, Eq, Clone,)]
-pub enum NotationDiag {
+pub enum NotationDiag
+{
 	Warn(String,),
 	Note(String,),
 	Help(String,),
 }
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
 	use super::*;
 
 	#[test]
-	fn test_diag_enum_variants() {
+	fn test_diag_enum_variants()
+	{
 		// Test that all Diag variants can be created
 		let err = Diag::err("Error message",);
 		let warn = Diag::warn("Warning message",);
@@ -136,7 +159,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_string_content() {
+	fn test_diag_string_content()
+	{
 		let test_messages = vec![
 			"Simple error",
 			"Error with numbers: 123",
@@ -182,7 +206,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_debug_representation() {
+	fn test_diag_debug_representation()
+	{
 		let err = Diag::err("test error",);
 		let debug_str = format!("{:?}", err);
 
@@ -192,7 +217,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_clone_if_possible() {
+	fn test_diag_clone_if_possible()
+	{
 		// Test that Diag can be created with same content (since String is
 		// Clone)
 		let original = Diag::err("original message",);
@@ -208,7 +234,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_pattern_matching_exhaustive() {
+	fn test_diag_pattern_matching_exhaustive()
+	{
 		let diags = vec![
 			Diag::err("error",),
 			Diag::warn("warning",),
@@ -232,7 +259,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_with_borrowed_vs_owned_strings() {
+	fn test_diag_with_borrowed_vs_owned_strings()
+	{
 		let borrowed_str = "borrowed message";
 		let owned_string = String::from("owned message",);
 
@@ -252,7 +280,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_empty_messages() {
+	fn test_diag_empty_messages()
+	{
 		let empty_diags = vec![
 			Diag::err(String::new(),),
 			Diag::warn(String::new(),),
@@ -272,7 +301,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_with_long_messages() {
+	fn test_diag_with_long_messages()
+	{
 		let long_message = "a".repeat(10000,); // Very long message
 		let diag = Diag::err(long_message.clone(),);
 
@@ -286,7 +316,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_with_special_characters() {
+	fn test_diag_with_special_characters()
+	{
 		let special_chars = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~\n\t\r\\";
 		let diag = Diag::note(special_chars.to_string(),);
 
@@ -297,7 +328,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_message_modification() {
+	fn test_diag_message_modification()
+	{
 		let mut message = String::from("initial",);
 		message.push_str(" modified",);
 
@@ -309,7 +341,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_all_variants_different() {
+	fn test_diag_all_variants_different()
+	{
 		let err = Diag::err("msg",);
 		let warn = Diag::warn("msg",);
 		let note = Diag::note("msg",);
@@ -332,7 +365,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_enum_size() {
+	fn test_diag_enum_size()
+	{
 		// Test that the enum size is reasonable
 		let size = std::mem::size_of::<Diag,>();
 
@@ -343,7 +377,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_memory_efficiency() {
+	fn test_diag_memory_efficiency()
+	{
 		// Test that creating many Diag instances doesn't cause issues
 		let mut diags = Vec::new();
 
@@ -372,7 +407,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_macro_definitions_exist() {
+	fn test_macro_definitions_exist()
+	{
 		// This test verifies that the macros are defined and accessible
 		// We can't easily test macro expansion in unit tests, but we can
 		// verify they exist by checking they compile
@@ -383,7 +419,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_string_operations_used_in_diag() {
+	fn test_string_operations_used_in_diag()
+	{
 		// Test various string operations that might be used with Diag
 		let base_msg = "base message";
 
@@ -411,7 +448,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_macro_syntax_validation() {
+	fn test_macro_syntax_validation()
+	{
 		// Test that macro syntax is valid by checking compilation
 		// This is more of a compilation test - if it compiles, the macros are
 		// syntactically correct
@@ -423,7 +461,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_with_unicode_content() {
+	fn test_diag_with_unicode_content()
+	{
 		// Test Diag with Unicode content
 		let unicode_msg = "Unicode test: 🦀 Rust 中文 العربية 🚀";
 		let diag = Diag::note(unicode_msg.to_string(),);
@@ -441,7 +480,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_message_length_variations() {
+	fn test_diag_message_length_variations()
+	{
 		// Test with various message lengths
 		let lengths = vec![0, 1, 10, 100, 1000];
 
@@ -460,7 +500,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_with_control_characters() {
+	fn test_diag_with_control_characters()
+	{
 		// Test with control characters
 		let control_chars =
 			"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F";
@@ -476,7 +517,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_memory_layout() {
+	fn test_diag_memory_layout()
+	{
 		// Test memory layout properties
 		use std::mem;
 
@@ -492,7 +534,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_variant_ordering() {
+	fn test_diag_variant_ordering()
+	{
 		// Test that we can create all variants in any order
 		let variants = vec![
 			Diag::help("Help first",),
@@ -526,7 +569,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_diag_string_ownership() {
+	fn test_diag_string_ownership()
+	{
 		// Test string ownership behavior
 		let original_string = String::from("original",);
 		let diag = Diag::err(original_string,);
@@ -544,7 +588,8 @@ mod tests {
 	}
 
 	#[test]
-	fn test_macro_token_handling() {
+	fn test_macro_token_handling()
+	{
 		// Test that macros can handle various token types
 		// This is a compilation test - if it compiles, token handling works
 

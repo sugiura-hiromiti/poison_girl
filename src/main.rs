@@ -38,7 +38,8 @@ use {
 ///
 /// Creates a new Builder instance, builds the OSO loader and kernel,
 /// and runs QEMU with the appropriate configuration.
-fn main() -> PoisonGirlB<(),> {
+fn main() -> PoisonGirlB<(),>
+{
 	let poison_girl = Xtask::new()?;
 
 	let app = || {
@@ -60,7 +61,8 @@ fn main() -> PoisonGirlB<(),> {
 	X((),)
 }
 
-fn print_workspace() -> PoisonGirlB<(),> {
+fn print_workspace() -> PoisonGirlB<(),>
+{
 	Command::new("eza",)
 		.args(
 			"-ahlF --icons --group-directories-first --sort=extension \

@@ -26,7 +26,8 @@ const BOOT_DIR: &str = "efi/boot";
 /// mounting point path under target/
 const MOUNT_DIR: &str = "xtask/mnt";
 
-impl Xtask {
+impl Xtask
+{
 	/// Creates a new Builder instance with the specified options
 	///
 	/// This constructor initializes all the necessary components for the build
@@ -77,22 +78,26 @@ impl Xtask {
 	///   (Windows)
 	/// - **Network Error**: If firmware download requires internet access and
 	///   fails
-	pub fn new() -> PoisonGirlB<Self,> {
+	pub fn new() -> PoisonGirlB<Self,>
+	{
 		let opts = Opts::new();
 		let ws = project_root()?;
 		let assets = Assets::new(opts.arch,)?;
 		X(Self { opts, ws, assets, },)
 	}
 
-	pub(crate) fn disk_img_path(&self,) -> &PathBuf {
+	pub(crate) fn disk_img_path(&self,) -> &PathBuf
+	{
 		todo!()
 	}
 
-	pub fn build(&self,) -> PoisonGirlB<(),> {
+	pub fn build(&self,) -> PoisonGirlB<(),>
+	{
 		todo!()
 	}
 
-	pub fn run(&self,) -> PoisonGirlB<(),> {
+	pub fn run(&self,) -> PoisonGirlB<(),>
+	{
 		todo!()
 	}
 }

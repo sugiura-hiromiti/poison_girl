@@ -1,6 +1,4 @@
-use crate::data::tree::NodeValue;
-use crate::data::tree::coord::Coordinate;
-use crate::data::tree::walker::TreeWalker;
+use crate::data::tree::{NodeValue, coord::Coordinate, walker::TreeWalker};
 
 /// Trait for representing the result of tree walk operations.
 ///
@@ -12,7 +10,8 @@ use crate::data::tree::walker::TreeWalker;
 /// - `N`: Node value type
 /// - `T`: Tree walker type
 /// - `C`: Coordinate type for position tracking
-pub trait WalkTried {
+pub trait WalkTried
+{
 	/// The node value type
 	type N: NodeValue;
 	/// The tree walker type
@@ -36,7 +35,8 @@ pub trait WalkTried {
 	/// # Returns
 	///
 	/// `true` if the operation failed, `false` otherwise
-	fn has_failed(&self,) -> bool {
+	fn has_failed(&self,) -> bool
+	{
 		!self.has_success()
 	}
 
@@ -94,7 +94,8 @@ pub trait WalkTried {
 /// - `tree`: Optional tree walker (Some if successful, None if failed)
 /// - `coord`: The coordinate position associated with this result
 /// - `__constraint`: PhantomData to maintain type parameter `N`
-pub struct WalkRslt<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> {
+pub struct WalkRslt<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,>
+{
 	/// PhantomData to maintain the node value type parameter
 	__constraint: core::marker::PhantomData<N,>,
 	/// The tree walker result (None if operation failed)
@@ -110,23 +111,28 @@ impl<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> WalkTried
 	type N = N;
 	type T = T;
 
-	fn has_success(&self,) -> bool {
+	fn has_success(&self,) -> bool
+	{
 		self.tree.is_some()
 	}
 
-	fn last_valid_coordinate(&self,) -> &Self::C {
+	fn last_valid_coordinate(&self,) -> &Self::C
+	{
 		&self.coord
 	}
 
-	fn current_tree(&self,) -> &Option<T,> {
+	fn current_tree(&self,) -> &Option<T,>
+	{
 		&self.tree
 	}
 
-	fn current_tree_mut(&mut self,) -> &mut Option<T,> {
+	fn current_tree_mut(&mut self,) -> &mut Option<T,>
+	{
 		&mut self.tree
 	}
 
-	fn from(tn: T, coord: Self::C,) -> Self {
+	fn from(tn: T, coord: Self::C,) -> Self
+	{
 		Self {
 			__constraint: core::marker::PhantomData::<N,>,
 			tree: Some(tn,),

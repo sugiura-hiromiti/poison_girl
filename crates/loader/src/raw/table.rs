@@ -12,7 +12,8 @@ use {
 };
 
 #[repr(C)]
-pub struct SystemTable {
+pub struct SystemTable
+{
 	pub header: Header,
 
 	pub firmware_vendor:   *const Char16,
@@ -36,18 +37,22 @@ pub struct SystemTable {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy,)]
 #[repr(C)]
-pub struct ConfigTable {
+pub struct ConfigTable
+{
 	vendor_guid:  Guid,
 	vendor_table: *mut c_void,
 }
 
-pub struct ConfigTableStream {
+pub struct ConfigTableStream
+{
 	max_index:     usize,
 	config_tables: Option<NonNull<ConfigTable,>,>,
 }
 
-impl ConfigTableStream {
-	fn config_table_with(&self, guid: Guid,) -> Option<NonNull<ConfigTable,>,> {
+impl ConfigTableStream
+{
+	fn config_table_with(&self, guid: Guid,) -> Option<NonNull<ConfigTable,>,>
+	{
 		let config_tables = self.config_tables?;
 
 		for i in 0..self.max_index {
@@ -71,8 +76,10 @@ impl ConfigTableStream {
 pub const DEVICE_TREE_TABLE_GUID: Guid =
 	guid!("b1b621d5-f19c-41a5-830b-d9152c69aae0");
 
-impl SystemTable {
-	pub fn get_config_tables(&self,) -> PoisonGirlB<ConfigTableStream,> {
+impl SystemTable
+{
+	pub fn get_config_tables(&self,) -> PoisonGirlB<ConfigTableStream,>
+	{
 		let config_tables = NonNull::new(self.config_tables,);
 		X(ConfigTableStream {
 			max_index: self.config_table_count,
@@ -83,11 +90,13 @@ impl SystemTable {
 	pub fn config_table_with(
 		&self,
 		guid: Guid,
-	) -> PoisonGirlB<Option<NonNull<ConfigTable,>,>,> {
+	) -> PoisonGirlB<Option<NonNull<ConfigTable,>,>,>
+	{
 		X(self.get_config_tables()?.config_table_with(guid,),)
 	}
 
-	pub fn device_tree(&self,) -> PoisonGirlB<Option<NonNull<ConfigTable,>,>,> {
+	pub fn device_tree(&self,) -> PoisonGirlB<Option<NonNull<ConfigTable,>,>,>
+	{
 		self.config_table_with(DEVICE_TREE_TABLE_GUID,)
 	}
 }

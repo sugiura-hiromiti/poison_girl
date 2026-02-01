@@ -11,22 +11,27 @@ use poison_girl_dev_orchestrate::{
 pub mod builder;
 pub mod qemu;
 
-pub struct Xtask {
+pub struct Xtask
+{
 	opts:   Opts,
 	ws:     OsoCrate,
 	assets: Assets,
 }
 
-impl Xtask {
-	fn arch(&self,) -> Arch {
+impl Xtask
+{
+	fn arch(&self,) -> Arch
+	{
 		self.opts.arch
 	}
 
-	fn firmware_code(&self,) -> &PathBuf {
+	fn firmware_code(&self,) -> &PathBuf
+	{
 		&self.assets.firmware.code
 	}
 
-	fn firmware_vars(&self,) -> &PathBuf {
+	fn firmware_vars(&self,) -> &PathBuf
+	{
 		&self.assets.firmware.vars
 	}
 }

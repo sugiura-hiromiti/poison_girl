@@ -9,7 +9,8 @@ pub const PAGE_SIZE: usize = 4096;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,)]
-pub struct MemoryDescriptor {
+pub struct MemoryDescriptor
+{
 	pub memory_type:    MemoryType,
 	pub physical_start: u64,
 	pub virtual_start:  u64,
@@ -48,13 +49,15 @@ c_style_enum! {
 	}
 }
 
-impl MemoryType {
+impl MemoryType
+{
 	pub const RESERVED_FOR_OEM: RangeInclusive<u32,> =
 		0x7000_0000..=0x7fff_ffff;
 	pub const RESERVED_FOR_OS_LOADER: RangeInclusive<u32,> =
 		0x8000_0000..=0xffff_ffff;
 
-	pub const fn custom(value: u32,) -> Self {
+	pub const fn custom(value: u32,) -> Self
+	{
 		assert!(value >= 0x8000_0000);
 		Self(value,)
 	}
@@ -64,7 +67,8 @@ impl MemoryType {
 #[repr(transparent)]
 pub struct MemoryAttribute(pub u64,);
 
-impl MemoryAttribute {
+impl MemoryAttribute
+{
 	pub const EFI_MEMORY_CPU_CRYPTO: u64 = 0x0000000000080000;
 	pub const EFI_MEMORY_HOT_PLUGGABLE: u64 = 0x0000000000100000;
 	pub const EFI_MEMORY_ISA_MASK: u64 = 0x0FFFF00000000000;
@@ -85,15 +89,18 @@ impl MemoryAttribute {
 }
 
 #[derive(Clone,)]
-pub struct MemoryMapInfo {
+pub struct MemoryMapInfo
+{
 	pub map_size:  usize,
 	pub desc_size: usize,
 	pub map_key:   usize,
 	pub desc_ver:  u32,
 }
 
-impl MemoryMapInfo {
-	pub fn assert_sanity_check(&self,) {
+impl MemoryMapInfo
+{
+	pub fn assert_sanity_check(&self,)
+	{
 		assert!(self.desc_size > 0);
 		assert!(self.desc_size >= size_of::<MemoryDescriptor,>());
 
@@ -102,13 +109,16 @@ impl MemoryMapInfo {
 		assert!(self.map_size <= ONE_GB);
 	}
 
-	pub fn entry_count(&self,) -> usize {
+	pub fn entry_count(&self,) -> usize
+	{
 		self.map_size / self.desc_size
 	}
 }
 
-impl core::fmt::Debug for MemoryMapInfo {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result {
+impl core::fmt::Debug for MemoryMapInfo
+{
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result
+	{
 		f.debug_struct("MemoryMapInfo",)
 			.field("map_size", &format!("{:#x}", self.map_size),)
 			.field("desc_size", &format!("{:#x}", self.desc_size),)
@@ -121,8 +131,10 @@ impl core::fmt::Debug for MemoryMapInfo {
 #[derive(Clone,)]
 pub struct MemoryMapBackingMemory(NonNull<[u8],>,);
 
-impl MemoryMapBackingMemory {
-	pub fn new(mem_ty: MemoryType,) -> PoisonGirlB<Self,> {
+impl MemoryMapBackingMemory
+{
+	pub fn new(mem_ty: MemoryType,) -> PoisonGirlB<Self,>
+	{
 		let bs = boot_services();
 		let (map_size, desc_size,) = bs.memory_map_size();
 		let len = Self::safe_allocation_size_hint(map_size, desc_size,);
@@ -135,7 +147,8 @@ impl MemoryMapBackingMemory {
 		unsafe { X(Self::from_raw(alloc_pos, len,),) }
 	}
 
-	unsafe fn from_raw(alloc_pos: *mut u8, len: usize,) -> Self {
+	unsafe fn from_raw(alloc_pos: *mut u8, len: usize,) -> Self
+	{
 		assert_eq!(alloc_pos.align_offset(align_of::<MemoryDescriptor,>()), 0);
 
 		let ptr = NonNull::new(alloc_pos,)
@@ -145,29 +158,34 @@ impl MemoryMapBackingMemory {
 		Self(slice,)
 	}
 
-	fn safe_allocation_size_hint(map_size: usize, desc_size: usize,) -> usize {
+	fn safe_allocation_size_hint(map_size: usize, desc_size: usize,) -> usize
+	{
 		const EXTRA_ENTRIES: usize = 8;
 
 		let extra_size = desc_size * EXTRA_ENTRIES;
 		map_size + extra_size
 	}
 
-	pub fn as_mut_slice(&mut self,) -> &mut [u8] {
+	pub fn as_mut_slice(&mut self,) -> &mut [u8]
+	{
 		unsafe { self.0.as_mut() }
 	}
 }
 
-pub struct MemoryMapOwned {
+pub struct MemoryMapOwned
+{
 	pub buf:  MemoryMapBackingMemory,
 	pub info: MemoryMapInfo,
 	pub len:  usize,
 }
 
-impl MemoryMapOwned {
+impl MemoryMapOwned
+{
 	pub fn from_initialized_memory(
 		buf: MemoryMapBackingMemory,
 		info: MemoryMapInfo,
-	) -> Self {
+	) -> Self
+	{
 		assert!(info.desc_size >= size_of::<MemoryDescriptor,>());
 
 		let len = info.entry_count();

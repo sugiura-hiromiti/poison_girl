@@ -1,11 +1,8 @@
-use super::Boolean;
-use super::Char16;
-use super::Event;
-use super::Status;
-use super::time::Time;
-use crate::c_style_enum;
-use crate::chibi_uefi::protocol::Protocol;
-use core::ffi::c_void;
+use {
+	super::{Boolean, Char16, Event, time::Time},
+	crate::{c_style_enum, chibi_uefi::protocol::Protocol, raw::types::Status},
+	core::ffi::c_void,
+};
 
 c_style_enum! {
 	pub enum OpenMode : u64 => {
@@ -28,20 +25,28 @@ c_style_enum! {
 }
 
 #[repr(C)]
-pub struct FileIoToken {
+pub struct FileIoToken
+{
 	event:    Event,
 	status:   Status,
 	buf_size: usize,
 	buf:      *mut c_void,
 }
 
-pub trait FileInformation: Protocol + Copy {}
-impl FileInformation for FileInfo {}
-impl FileInformation for FileSystemInfo {}
+pub trait FileInformation: Protocol + Copy
+{
+}
+impl FileInformation for FileInfo
+{
+}
+impl FileInformation for FileSystemInfo
+{
+}
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug,)]
-pub struct FileInfo {
+pub struct FileInfo
+{
 	pub size:             u64,
 	pub file_size:        u64,
 	pub physical_size:    u64,
@@ -55,7 +60,8 @@ pub struct FileInfo {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug,)]
-pub struct FileSystemInfo {
+pub struct FileSystemInfo
+{
 	size:         u64,
 	read_only:    Boolean,
 	volume_size:  u64,
@@ -65,6 +71,7 @@ pub struct FileSystemInfo {
 }
 
 #[repr(C)]
-pub struct FileSystemVolumeLabel {
+pub struct FileSystemVolumeLabel
+{
 	volume_label: [Char16; 0],
 }

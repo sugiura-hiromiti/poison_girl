@@ -13,7 +13,8 @@ use {
 };
 
 #[repr(C)]
-pub struct GraphicsOutputProtocol {
+pub struct GraphicsOutputProtocol
+{
 	pub query_mode: unsafe extern "efiapi" fn(
 		*const Self,
 		mode_number: u32,
@@ -37,8 +38,10 @@ pub struct GraphicsOutputProtocol {
 	pub mode:       *mut GraphicsOutputProtocolMode,
 }
 
-impl GraphicsOutputProtocol {
-	pub fn query_mode(&self, index: u32,) {
+impl GraphicsOutputProtocol
+{
+	pub fn query_mode(&self, index: u32,)
+	{
 		let mut info_size = 0;
 		let mut info_heap_ptr = core::ptr::null();
 		let _ = unsafe {
@@ -56,7 +59,8 @@ impl GraphicsOutputProtocol {
 		},);
 	}
 
-	pub fn mode(&self,) -> &GraphicsOutputProtocolMode {
+	pub fn mode(&self,) -> &GraphicsOutputProtocolMode
+	{
 		unsafe { &*self.mode }
 	}
 }

@@ -105,7 +105,8 @@ pub const SHT_LOUSER: u32 = 0x8000_0000;
 /// End of application-specific.
 pub const SHT_HIUSER: u32 = 0x8fff_ffff;
 
-pub struct SectionHeader {
+pub struct SectionHeader
+{
 	pub name:          u32,
 	pub ty:            u32,
 	pub flags:         u64,
@@ -118,14 +119,16 @@ pub struct SectionHeader {
 	pub entry_size:    u64,
 }
 
-impl SectionHeader {
+impl SectionHeader
+{
 	const SIZE_64: usize = 64;
 
 	pub fn parse(
 		binary: &[u8],
 		offset: &mut usize,
 		count: usize,
-	) -> PoisonGirlB<Vec<Self,>,> {
+	) -> PoisonGirlB<Vec<Self,>,>
+	{
 		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
 
 		let mut section_headers = Vec::with_capacity(count,);
@@ -139,7 +142,8 @@ impl SectionHeader {
 		X(section_headers,)
 	}
 
-	fn parse_fields(binary: &[u8], offset: &mut usize,) -> PoisonGirlB<Self,> {
+	fn parse_fields(binary: &[u8], offset: &mut usize,) -> PoisonGirlB<Self,>
+	{
 		macro_rules! fields {
 			($field:ident) => {
 				let Some($field,) = read_le_bytes(offset, binary,) else {
@@ -185,11 +189,13 @@ impl SectionHeader {
 		X(section_header,)
 	}
 
-	pub fn empty_section(_offset: &mut usize,) -> Self {
+	pub fn empty_section(_offset: &mut usize,) -> Self
+	{
 		todo!()
 	}
 
-	pub fn check_size(&self, size: usize,) -> PoisonGirlB<(),> {
+	pub fn check_size(&self, size: usize,) -> PoisonGirlB<(),>
+	{
 		if self.ty == SHT_NOBITS || self.size == 0 {
 			return X((),);
 		}
@@ -220,8 +226,10 @@ impl SectionHeader {
 	}
 }
 
-impl core::fmt::Debug for SectionHeader {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result {
+impl core::fmt::Debug for SectionHeader
+{
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_,>,) -> core::fmt::Result
+	{
 		f.debug_struct("SectionHeader",)
 			.field("name", &format!("{:#x}", self.name),)
 			.field("ty", &format!("{:#x}", self.ty),)
@@ -241,7 +249,8 @@ pub fn get_string_table(
 	section_headers: &[SectionHeader],
 	mut idx: usize,
 	binary: &[u8],
-) -> PoisonGirlB<StringTable,> {
+) -> PoisonGirlB<StringTable,>
+{
 	if idx == SHN_XINDEX as usize {
 		if section_headers.is_empty() {
 			return X(StringTable::default(),);
