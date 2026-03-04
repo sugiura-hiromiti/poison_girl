@@ -300,7 +300,7 @@ pub fn get_element_by_id(node: Rc<Node,>, id: &str,) -> Option<Rc<Node,>,>
 			let local_name = local_name!("id");
 
 			// Check if this attribute is an ID with the target value
-			*a.name.local == *local_name && a.value == value
+			*a.name.local == *local_name && *a.value == *value
 		},)
 	} else {
 		false

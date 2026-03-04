@@ -1,4 +1,5 @@
 # flake.nix
+# TODO: introduce crane
 {
   description = "mogok dev env";
   inputs = {

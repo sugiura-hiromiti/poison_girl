@@ -7,7 +7,7 @@ aquamarine = "*"
 clap = { version = "*", features = ["derive"] }
 clap_derive = { version = "*" }
 colored = "*"
-html5ever = "0.36"
+html5ever = "*"
 itertools = "*"
 markup5ever_rcdom = "*"
 ovmf-prebuilt = "*"

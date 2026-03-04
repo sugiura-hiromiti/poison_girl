@@ -2,16 +2,12 @@
 #![feature(proc_macro_hygiene)]
 #![feature(if_let_guard)]
 
-use poison_girl_dev_error::{PathNotFound, Y};
-
 use {
+	crate::decl_manage::{
+		CargoCrate, PoisonGirlCargoInterface, crate_::PoisonGirlCrateChart,
+	},
 	poison_girl_dev_cargo::{Arch, BuildMode},
-	poison_girl_dev_error::X,
-};
-
-use crate::decl_manage::{
-	CargoCrate, PoisonGirlCargoInterface,
-	crate_::{PoisonGirlCrate, PoisonGirlCrateChart},
+	poison_girl_dev_error::{PathNotFound, PoisonGirlB, X, Y},
 };
 
 #[cfg_attr(doc, aquamarine::aquamarine)]
