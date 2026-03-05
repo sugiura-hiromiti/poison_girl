@@ -10,3 +10,5 @@ mnt/
 .direnv/
 **/*.txt
 **/Cargo.lock
+!Cargo.lock
+.serena/

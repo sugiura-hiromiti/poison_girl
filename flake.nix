@@ -20,6 +20,9 @@
         };
       };
     };
+    crane = {
+      url = "github:ipetkov/crane";
+    };
   };
 
   outputs =
@@ -28,6 +31,7 @@
       flake-parts,
       systems,
       fenix,
+      crane,
       self,
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -46,16 +50,57 @@
         let
           fx = fenix.packages.${system};
           rust = fx.latest;
-          pkgs = import nixpkgs {
-            inherit system;
-            config = {
-              allowUnfree = true;
-            };
+          # pkgs = import nixpkgs {
+          #   inherit system;
+          #   config = {
+          #     allowUnfree = true;
+          #   };
+          # };
+          craneLib = (crane.mkLib pkgs).overrideToolchain rust.toolchain;
+          src = lib.cleanSourceWith {
+            src = craneLib.path ./.;
           };
+          commonArgs = {
+            inherit src;
+            strictDeps = true;
+            cargoLock = ./Cargo.lock;
+          };
+          deps = craneLib.buildDepsOnly (
+            commonArgs
+            // {
+              cargoExtraArgs = "--workspace --locked";
+            }
+          );
+          myWorkspace = craneLib.cargoBuild (
+            commonArgs
+            // {
+              cargoArtifacts = deps;
+              cargoExtraArgs = "--workspace --locked";
+            }
+          );
         in
         {
+          packages = {
+            default = myWorkspace;
+          };
+          checks = {
+            build = myWorkspace;
+            clippy = craneLib.cargoClippy {
+              inherit src;
+              cargoArtifacts = deps;
+              cargoClippyExtraArgs = "--workspace -- -D warnings";
+            };
+            test = craneLib.cargoNextest {
+              inherit src;
+              cargoArtifacts = deps;
+              partitions = 1;
+              partitionType = "count";
+              cargoNextestExtraArgs = "--workspace";
+            };
+            fmt = craneLib.cargoFmt { inherit src; };
+          };
           devShells = {
-            default = pkgs.mkShell {
+            default = craneLib.devShell {
               buildInputs =
                 with pkgs;
                 [
@@ -65,6 +110,8 @@
                   binutils
                   dosfstools
                   qemu
+                  dprint
+                  cargo-nextest
                 ]
                 ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
                 ]

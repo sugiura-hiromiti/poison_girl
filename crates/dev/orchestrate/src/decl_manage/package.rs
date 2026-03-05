@@ -31,7 +31,10 @@ pub trait PackageInfo: Sized + CrateInfo
 #[cfg(test)]
 mod tests
 {
-	use {super::*, crate::decl_manage::crate_::PoisonGirlCrate, std::path::PathBuf};
+	use {
+		super::*, crate::decl_manage::crate_::PoisonGirlCrate,
+		std::path::PathBuf,
+	};
 
 	// Note: Working around FromPathBuf macro validation by using current
 	// directory
