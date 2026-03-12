@@ -1,6 +1,8 @@
 #![feature(string_from_utf8_lossy_owned)]
 #![feature(exit_status_error)]
 
+// TODO: workspace内の未使用クレーとを検出
+
 use {
 	poison_girl_dev_cargo::{Arch, Assets, Opts},
 	poison_girl_dev_orchestrate::decl_manage::crate_::PoisonGirlCrate,

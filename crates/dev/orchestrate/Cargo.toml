@@ -13,7 +13,7 @@ poison_girl_dev_cargo = { workspace = true }
 poison_girl_dev_cli = { workspace = true }
 poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
-poison_girl_macro = { workspace = true }
+poison_girl_macro_def_from_path_buf = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 toml = { workspace = true }

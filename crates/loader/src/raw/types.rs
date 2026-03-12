@@ -97,7 +97,7 @@ impl Guid
 	}
 }
 
-poison_girl_macro::status!(2.11);
+poison_girl_macro_def_status::status!(2.11);
 
 // #[repr(usize)]
 // #[derive(Eq, PartialEq, Clone, Debug,)]

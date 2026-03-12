@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-this_is_b = { workspace = true }
+poison_girl_this_is_b_wrapper_no_std = { workspace = true }

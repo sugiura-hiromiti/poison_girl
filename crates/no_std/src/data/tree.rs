@@ -60,6 +60,7 @@ pub trait TreePart
 ///     parent: None,
 /// };
 /// ```
+#[allow(dead_code)]
 pub struct Tree<'a, N: NodeValue,>
 {
 	/// The value stored in this node

@@ -12,7 +12,7 @@ use {
 		CARGO_CONFIG, CARGO_MANIFEST, all_crates_in, read_toml,
 		search_upstream_at,
 	},
-	poison_girl_macro::FromPathBuf,
+	poison_girl_macro_def_from_path_buf::FromPathBuf,
 	std::{ffi::OsStr, fmt::Debug, path::PathBuf, process::Command},
 };
 

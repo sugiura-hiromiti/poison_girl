@@ -1,15 +1,18 @@
 #![no_std]
 
-use core::{
-	fmt::{Debug, Display},
-	panic::Location,
-};
-pub use this_is_b::{
+pub use poison_girl_this_is_b_wrapper_no_std::{
 	B::{X, Y},
 	Container,
 };
+use {
+	core::{
+		fmt::{Debug, Display},
+		panic::Location,
+	},
+	poison_girl_this_is_b_wrapper_no_std::B,
+};
 
-pub type PoisonGirlB<T,> = this_is_b::B<T, PoisonGirlError,>;
+pub type PoisonGirlB<T,> = B<T, PoisonGirlError,>;
 
 #[derive(Debug,)]
 pub struct PoisonGirlError

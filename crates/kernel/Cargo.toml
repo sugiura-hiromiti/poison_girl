@@ -5,6 +5,8 @@ edition = "2024"
 
 [dependencies]
 poison_girl_macro = { workspace = true }
+poison_girl_macro_def_font = { workspace = true }
+poison_girl_macro_def_impl_int = { workspace = true }
 poison_girl_no_std = { workspace = true }
 poison_girl_no_std_error = { workspace = true }
 

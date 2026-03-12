@@ -19,8 +19,27 @@ poison_girl_dev_orchestrate = { path = "./crates/dev/orchestrate/" }
 poison_girl_dev_util = { path = "./crates/dev/util/" }
 poison_girl_kernel = { path = "./crates/kernel/" }
 poison_girl_macro = { path = "./crates/macro/macro/" }
+poison_girl_macro_def_features = { path = "./crates/macro/features/def/" }
+poison_girl_macro_def_font = { path = "./crates/macro/font/def/" }
+poison_girl_macro_def_from_path_buf = { path = "./crates/macro/from_path_buf/def/" }
+poison_girl_macro_def_impl_int = { path = "./crates/macro/impl_int/def/" }
+poison_girl_macro_def_status = { path = "./crates/macro/status/def/" }
+poison_girl_macro_def_test_elf_header_parse = { path = "./crates/macro/test_elf_header_parse/def/" }
+poison_girl_macro_def_test_program_headers_parse = { path = "./crates/macro/test_program_headers_parse/def/" }
+poison_girl_macro_def_wrapper = { path = "./crates/macro/wrapper/macro/" }
+poison_girl_macro_impl_features = { path = "./crates/macro/features/impl/" }
+poison_girl_macro_impl_font = { path = "./crates/macro/font/impl/" }
+poison_girl_macro_impl_from_path_buf = { path = "./crates/macro/from_path_buf/impl/" }
+poison_girl_macro_impl_impl_int = { path = "./crates/macro/impl_int/impl/" }
+poison_girl_macro_impl_status = { path = "./crates/macro/status/impl/" }
+poison_girl_macro_impl_test_elf_header_parse = { path = "./crates/macro/test_elf_header_parse/impl/" }
+poison_girl_macro_impl_test_program_headers_parse = { path = "./crates/macro/test_program_headers_parse/impl/" }
+poison_girl_macro_impl_wrapper = { path = "./crates/macro/wrapper/impl/" }
 poison_girl_no_std = { path = "./crates/no_std/" }
 poison_girl_no_std_error = { path = "./crates/error/no_std/" }
+poison_girl_proc_macro_helper = { path = "./crates/macro/helper/" }
+poison_girl_this_is_b_wrapper_dev = { path = "./crates/error/this_is_b_wrapper_dev/" }
+poison_girl_this_is_b_wrapper_no_std = { path = "./crates/error/this_is_b_wrapper_no_std/" }
 proc-macro2 = "*"
 quickcheck = "*"
 quote = "*"
@@ -29,7 +48,6 @@ strum = "*"
 strum_macros = "*"
 syn = { version = "*", features = ["full", "extra-traits"] }
 tempfile = "*"
-this_is_b = { version = "*", default-features = false }
 toml = { version = "*", features = ["parse"] }
 ureq = { version = "*", features = ["cookies"] }
 

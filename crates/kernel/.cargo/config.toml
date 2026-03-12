@@ -5,3 +5,4 @@ target = "aarch64-unknown-none-elf.json"
 # build-std = ["core", "alloc"]
 build-std = ["core"]
 build-std-features = ["compiler-builtins-mem"]
+json-target-spec = true

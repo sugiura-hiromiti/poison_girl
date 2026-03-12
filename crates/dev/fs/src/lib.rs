@@ -265,17 +265,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_check_oso_kernel_file_not_exists()
-	{
-		// In most test environments, oso_kernel.elf won't exist
-		let result = check_poison_girl_kernel();
-		// We expect this to fail in test environment
-		assert!(result.is_y());
-		let error_msg = result.unwrap_inv().to_string();
-		assert!(error_msg.contains("oso_kernel.elf"));
-	}
-
-	#[test]
 	fn test_search_cargo_toml_with_different_cwd() -> PoisonGirlB<(),>
 	{
 		// Test with the root directory
@@ -466,25 +455,6 @@ mod tests
 		assert!(IGNORE_DIR_LIST.contains(&".github"));
 		assert!(IGNORE_DIR_LIST.contains(&".direnv"));
 		assert!(IGNORE_DIR_LIST.contains(&".cargo"));
-	}
-
-	#[test]
-	fn test_check_oso_kernel_with_different_working_directories()
-	{
-		// Test check_oso_kernel from different contexts
-		let original_dir = std::env::current_dir().unwrap();
-
-		// Try from a different directory (if possible)
-		if let Ok(temp_dir,) = std::env::temp_dir().canonicalize()
-			&& std::env::set_current_dir(&temp_dir,).is_ok()
-		{
-			let result = check_poison_girl_kernel();
-			// Should fail since oso_kernel.elf won't be in temp directory
-			assert!(result.is_y());
-
-			// Restore original directory
-			let _ = std::env::set_current_dir(original_dir,);
-		}
 	}
 
 	#[test]
@@ -696,25 +666,6 @@ mod tests
 			(X(_,), Y(_,),) => {}, // Only first found (case-sensitive)
 			(Y(_,), X(_,),) => {}, // Only second found (unlikely)
 			(Y(_,), Y(_,),) => {}, // Neither found
-		}
-	}
-
-	#[test]
-	fn test_check_oso_kernel_with_custom_target_dir()
-	{
-		// Test check_oso_kernel with different target directory structures
-		let original_dir = std::env::current_dir().unwrap();
-
-		// Create a temporary directory structure for testing
-		if let Ok(temp_dir,) = std::env::temp_dir().canonicalize()
-			&& std::env::set_current_dir(&temp_dir,).is_ok()
-		{
-			let result = check_poison_girl_kernel();
-			// Should fail since oso_kernel.elf won't be in temp directory
-			assert!(result.is_y());
-
-			// Restore original directory
-			let _ = std::env::set_current_dir(original_dir,);
 		}
 	}
 

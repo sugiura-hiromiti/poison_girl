@@ -67,15 +67,15 @@
           };
           deps = craneLib.buildDepsOnly (
             commonArgs
-            // {
-              cargoExtraArgs = "--workspace --locked";
-            }
+            # // {
+            #   cargoExtraArgs = "--workspace --locked";
+            # }
           );
           myWorkspace = craneLib.cargoBuild (
             commonArgs
             // {
               cargoArtifacts = deps;
-              cargoExtraArgs = "--workspace --locked";
+              # cargoExtraArgs = "--workspace --locked";
             }
           );
         in
@@ -97,6 +97,18 @@
               partitionType = "count";
               cargoNextestExtraArgs = "--workspace";
             };
+            udeps = pkgs.stdenv.mkDerivation {
+              name = "cargo-udeps";
+              src = ./.;
+              nativeBuildInputs = [
+                rust.toolchain
+                pkgs.cargo-udeps
+              ];
+              buildPhase = ''
+                cargo udeps --all-targets
+              '';
+              installPhase = "mkdir -p $out";
+            };
             fmt = craneLib.cargoFmt { inherit src; };
           };
           devShells = {
@@ -112,6 +124,7 @@
                   qemu
                   dprint
                   cargo-nextest
+                  cargo-udeps
                 ]
                 ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
                 ]

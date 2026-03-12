@@ -1,6 +1,7 @@
 use {
 	crate::elf::read_le_bytes,
 	alloc::{format, vec::Vec},
+	poison_girl_macro::cfg_if,
 	poison_girl_no_std_error::{
 		ElfParseError, PoisonGirlB, PoisonGirlError, X, poison_girl_err,
 	},
@@ -17,6 +18,49 @@ pub struct ProgramHeader
 	pub file_size:        u64,
 	pub memory_size:      u64,
 	pub align:            u64,
+}
+
+macro_rules! tphp_arch {
+	($arg:ident) => {
+		cfg_if! {
+			if #[cfg(target_arch = "aarch64")] {
+				tphp_arch_mode!(
+					$arg,
+					aarch64
+				);
+			} else if #[cfg(target_arch = "x86_64")] {
+				tphp_arch_mode!(
+					$arch,
+					x86_64
+				);
+			} else {
+				tphp_arch_mode!(
+					$arch,
+					riscv
+				);
+			}
+		}
+	};
+}
+
+macro_rules! tphp_arch_mode {
+	($arg:ident, $arch:tt) => {
+		cfg_if! {
+			if #[cfg(debug_assertions)] {
+				poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
+					$arg,
+					$arch,
+					debug
+				);
+			} else {
+				poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
+					$arg,
+					$arch,
+					release
+				);
+			}
+		}
+	};
 }
 
 impl ProgramHeader
@@ -60,7 +104,25 @@ impl ProgramHeader
 			program_headers.push(program_header,);
 		}
 
-		poison_girl_macro::test_program_headers_parse!(program_headers);
+		tphp_arch!(program_headers);
+		// cfg_if! {
+		// 	if #[cfg(target_arch = "aarch64")] {
+		// 		poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
+		// 			program_headers,
+		// 			aarch64
+		// 		);
+		// 	} else if #[cfg(target_arch = "x86_64")] {
+		// 		poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
+		// 			program_headers,
+		// 			x86_64
+		// 		);
+		// 	} else {
+		// 		poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
+		// 			program_headers,
+		// 			riscv
+		// 		);
+		// 	}
+		// }
 
 		X(program_headers,)
 	}

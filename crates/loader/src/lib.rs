@@ -32,16 +32,15 @@
 #![no_std]
 #![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
-#![feature(ptr_as_ref_unchecked)]
 #![feature(iter_next_chunk)]
 #![feature(const_trait_impl)]
 #![feature(generic_const_exprs)]
 #![feature(associated_type_defaults)]
-#![feature(assert_matches)]
 // #![feature(nonzero_internals)]
 //#![feature(stdarch_arm_hints)]
 
 extern crate alloc;
+#[cfg(test)] extern crate std;
 
 use {
 	crate::{chibi_uefi::table::system_table, raw::table::ConfigTable},
@@ -283,4 +282,15 @@ pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,)
 
 	// If we reach here, kernel execution failed
 	wfi();
+}
+
+#[cfg(test)]
+mod tests
+{
+	use super::*;
+
+	#[test]
+	fn test_name()
+	{
+	}
 }

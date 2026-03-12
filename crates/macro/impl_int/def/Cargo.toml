@@ -1,0 +1,15 @@
+[package]
+name = "poison_girl_macro_def_impl_int"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+poison_girl_macro_impl_impl_int = { workspace = true }
+poison_girl_proc_macro_helper = { workspace = true }
+syn = { workspace = true }
+
+[lints]
+workspace = true

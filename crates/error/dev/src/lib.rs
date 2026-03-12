@@ -1,15 +1,16 @@
 #![feature(exit_status_error)]
 
-pub use this_is_b::{
+pub use poison_girl_this_is_b_wrapper_dev::{
 	B::{X, Y},
 	Container, ReShape,
 };
 use {
 	core::{fmt::Debug, panic::Location},
+	poison_girl_this_is_b_wrapper_dev::B,
 	std::fmt::Display,
 };
 
-pub type PoisonGirlB<T,> = this_is_b::B<T, PoisonGirlError,>;
+pub type PoisonGirlB<T,> = B<T, PoisonGirlError,>;
 
 #[derive(Debug,)]
 pub struct PoisonGirlError

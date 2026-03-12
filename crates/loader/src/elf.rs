@@ -86,7 +86,9 @@ impl Elf
 	pub fn parse(binary: &[u8],) -> PoisonGirlB<Self,>
 	{
 		let header = ElfHeader::parse(binary,)?;
-		poison_girl_macro::test_elf_header_parse!(header);
+		poison_girl_macro_def_test_elf_header_parse::test_elf_header_parse!(
+			header
+		);
 
 		let mut offset = header.program_header_offset as usize;
 		let program_headers = ProgramHeader::parse(

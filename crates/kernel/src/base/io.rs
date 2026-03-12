@@ -5,7 +5,8 @@ use {
 		fmt::Write,
 		ops::{Add, Div, Mul, Sub},
 	},
-	poison_girl_macro::{font, impl_int},
+	poison_girl_macro_def_font::font,
+	poison_girl_macro_def_impl_int::impl_int,
 	poison_girl_no_std_error::{PoisonGirlB, X, Y},
 };
 

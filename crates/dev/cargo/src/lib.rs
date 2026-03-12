@@ -2,7 +2,7 @@ use {
 	clap::Parser,
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{HostTupleNotFound, PoisonGirlB, ReShape, X},
-	poison_girl_macro::features,
+	poison_girl_macro_def_features::features,
 	std::{path::PathBuf, process::Command, str::FromStr},
 	strum_macros::Display,
 };
@@ -100,6 +100,7 @@ impl Cli
 	Debug,
 	Display,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum BuildMode
 {
 	Release,
@@ -236,6 +237,7 @@ impl From<Arch,> for ovmf_prebuilt::Arch
 	Debug,
 	Display,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum Arch
 {
 	#[default]

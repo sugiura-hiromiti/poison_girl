@@ -1,0 +1,16 @@
+[package]
+name = "poison_girl_macro_def_test_elf_header_parse"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+poison_girl_macro_impl_test_elf_header_parse = { workspace = true }
+poison_girl_proc_macro_helper = { workspace = true }
+proc-macro2 = { workspace = true }
+syn = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,10 @@
+[package]
+name = "poison_girl_this_is_b_wrapper_dev"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+this_is_b = { version = "*", features = ["std"] }
+
+[lints]
+workspace = true
