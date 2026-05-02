@@ -1,5 +1,5 @@
 use {
-	crate::elf::read_le_bytes,
+	crate::elf::{StringContext, read_le_bytes},
 	alloc::{format, vec::Vec},
 	poison_girl_macro::cfg_if,
 	poison_girl_no_std_error::{
@@ -226,4 +226,27 @@ impl TryFrom<u32,> for ProgramHeaderType
 		};
 		Ok(ty,)
 	}
+}
+
+/// elfにおけるinterpreterは通常動的linkerのことを指す
+pub fn interpreter<'a,>(
+	program_headers: &[ProgramHeader],
+	binary: &'a [u8],
+) -> PoisonGirlB<Option<&'a [u8],>,>
+{
+	let mut interpreter = None;
+	for program_header in program_headers {
+		if program_header.ty == ProgramHeaderType::Interp
+			&& program_header.file_size != 0
+		{
+			let count = program_header.file_size as usize - 1;
+			let offset = program_header.offset as usize;
+
+			interpreter = Some(
+				StringContext::Length(count,).read_bytes(&binary[offset..],)?,
+			);
+		}
+	}
+
+	X(interpreter,)
 }

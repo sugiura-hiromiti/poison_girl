@@ -1,34 +1,3 @@
-//! # OSO Loader
-//!
-//! A UEFI-based bootloader for the OSO operating system that handles ELF kernel
-//! loading and system initialization across multiple architectures (x86_64,
-//! aarch64, riscv64).
-//!
-//! ## Features
-//!
-//! - **ELF Kernel Loading**: Parses and loads ELF format kernels into memory
-//! - **Multi-architecture Support**: Supports x86_64, aarch64, and riscv64
-//!   architectures
-//! - **UEFI Integration**: Provides a lightweight UEFI interface wrapper
-//! - **Device Tree Support**: Handles device tree configuration for kernel
-//!   handoff
-//! - **Graphics Configuration**: Sets up frame buffer configuration for kernel
-//!   graphics
-//! - **Memory Management**: Manages memory allocation and MMU configuration
-//!
-//! ## Architecture-specific Features
-//!
-//! The loader includes architecture-specific code for:
-//! - MMU disabling (aarch64)
-//! - Cache management (aarch64)
-//! - Calling conventions (different for each architecture)
-//!
-//! ## Usage
-//!
-//! This crate is designed to be compiled as a UEFI application. The main entry
-//! point is `efi_main` which initializes the system, loads the kernel, and
-//! transfers control.
-
 #![no_std]
 #![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
@@ -67,24 +36,6 @@ pub mod load;
 /// Raw UEFI types and protocol definitions
 pub mod raw;
 
-/// Macro for handling errors that cannot be processed with the `?` operator
-///
-/// This macro logs error information when an unrecoverable error occurs.
-/// It's particularly useful for debugging loader issues.
-///
-/// # Arguments
-///
-/// * `$e` - The error variable to log
-/// * `$situation` - A string describing the situation where the error occurred
-///
-/// # Example
-///
-/// ```rust,ignore
-/// let result = some_operation();
-/// if let Err(e,) = result {
-///    on_error!(e, "during kernel loading");
-/// }
-/// ```
 #[macro_export]
 macro_rules! on_error {
 	($e:ident, $situation:expr) => {{
@@ -94,28 +45,6 @@ macro_rules! on_error {
 	}};
 }
 
-/// Initializes the UEFI loader environment
-///
-/// This function performs essential initialization tasks:
-/// - Clears the console output
-/// - Sets up the system table and image handle
-/// - Connects all available UEFI devices
-///
-/// Device connection is performed by iterating through all handles and calling
-/// `connect_controller` on each one. This ensures that device path protocols
-/// are properly installed on connected devices.
-///
-/// # Arguments
-///
-/// * `image_handle` - The UEFI image handle for this application
-/// * `syst` - Pointer to the UEFI system table
-///
-/// # Panics
-///
-/// Panics if:
-/// - The system table is null or invalid
-/// - Console clearing fails
-/// - Handle location fails during device connection
 pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,)
 {
 	// Clear console output for clean startup
@@ -154,18 +83,6 @@ fn clear_console(syst: *const SystemTable,)
 	unsafe { syst.as_ref().unwrap().stdout.as_mut().unwrap().clear().unwrap() };
 }
 
-/// Converts a string to null-terminated UTF-16 format
-///
-/// This utility function is used for UEFI string operations which require
-/// null-terminated UTF-16 strings.
-///
-/// # Arguments
-///
-/// * `s` - String-like input to convert
-///
-/// # Returns
-///
-/// A vector containing the UTF-16 representation with null terminator
 fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,>
 {
 	let mut utf16_repr: Vec<u16,> = s.as_ref().encode_utf16().collect();
@@ -173,21 +90,6 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,>
 	utf16_repr
 }
 
-/// Retrieves the device tree configuration table from UEFI
-///
-/// The device tree is essential for kernel initialization on ARM and RISC-V
-/// architectures, providing hardware configuration information.
-///
-/// # Returns
-///
-/// * `Ok(NonNull<ConfigTable>)` - Pointer to the device tree configuration
-///   table
-/// * `Err(UefiError)` - If the device tree cannot be found or accessed
-///
-/// # Errors
-///
-/// Returns `UefiError::Custom` if the device tree is not available in the
-/// UEFI configuration tables.
 pub fn get_device_tree() -> PoisonGirlB<NonNull<ConfigTable,>,>
 {
 	match unsafe { system_table().as_ref() }.device_tree() {
@@ -199,41 +101,6 @@ pub fn get_device_tree() -> PoisonGirlB<NonNull<ConfigTable,>,>
 	}
 }
 
-/// Executes the loaded kernel with proper architecture-specific setup
-///
-/// This function performs the final handoff to the kernel:
-/// 1. Disables MMU (on aarch64)
-/// 2. Clears caches (on aarch64)
-/// 3. Calls the kernel entry point with the device tree address
-/// 4. Falls back to wait-for-interrupt if kernel returns
-///
-/// # Arguments
-///
-/// * `kernel_entry` - Physical address of the kernel entry point
-/// * `device_tree_ptr` - Address of the device tree for kernel initialization
-///
-/// # Architecture-specific Behavior
-///
-/// ## AArch64
-/// - Performs data synchronization barrier
-/// - Invalidates instruction cache
-/// - Disables MMU by clearing SCTLR_EL1 bit 0
-/// - Uses ARM calling convention
-///
-/// ## x86_64
-/// - Uses System V AMD64 calling convention
-///
-/// ## RISC-V 64
-/// - Uses standard C calling convention
-///
-/// # Safety
-///
-/// This function performs low-level system operations including:
-/// - Memory management unit manipulation
-/// - Cache operations
-/// - Direct kernel execution
-///
-/// The function never returns under normal circumstances.
 pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,)
 {
 	// Convert entry point to function pointer
