@@ -12,3 +12,4 @@ mnt/
 **/Cargo.lock
 !Cargo.lock
 .serena/
+/.agent-shell/

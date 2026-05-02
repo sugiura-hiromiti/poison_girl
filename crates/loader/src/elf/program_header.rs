@@ -1,5 +1,5 @@
 use {
-	crate::elf::{StringContext, read_le_bytes},
+	crate::elf::{Interpreter, StringContext, read_le_bytes},
 	alloc::{format, vec::Vec},
 	poison_girl_macro::cfg_if,
 	poison_girl_no_std_error::{
@@ -232,7 +232,7 @@ impl TryFrom<u32,> for ProgramHeaderType
 pub fn interpreter<'a,>(
 	program_headers: &[ProgramHeader],
 	binary: &'a [u8],
-) -> PoisonGirlB<Option<&'a [u8],>,>
+) -> PoisonGirlB<Interpreter,>
 {
 	let mut interpreter = None;
 	for program_header in program_headers {
@@ -243,10 +243,12 @@ pub fn interpreter<'a,>(
 			let offset = program_header.offset as usize;
 
 			interpreter = Some(
-				StringContext::Length(count,).read_bytes(&binary[offset..],)?,
+				StringContext::Length(count,)
+					.read_bytes(&binary[offset..],)?
+					.to_vec(),
 			);
 		}
 	}
 
-	X(interpreter,)
+	X(Interpreter(interpreter,),)
 }
