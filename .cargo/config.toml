@@ -1,2 +1,2 @@
 [alias]
-xt = "run -q --package xtask --"
+xt = "run -q --package poison_girl --"

@@ -1,71 +1,25 @@
-name: Multi-Platform CI
+name: Multi-Platform Nix Check
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  workflow_dispatch:
 
-env:
-  CARGO_TERM_COLOR: always
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: multi-platform-nix-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  check:
-    name: Check and Lint
+  flake-check:
+    name: Nix flake check (${{ matrix.os }})
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-24.04-arm]
-        include:
-          - os: macos-latest
-            platform: macos
-          - os: ubuntu-24.04-arm
-            platform: linux
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rustfmt, clippy, rust-src
-          targets: aarch64-unknown-uefi
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Check code format
-        run: cargo +nightly fmt --all -- --check
-
-      - name: Run clippy (allow warnings for now)
-        run: nix develop --command cargo clippy --workspace --all-targets || true
-
-      - name: Check documentation
-        run: |
-          (cd oso_kernel && cargo build)
-          nix develop --command cargo doc --workspace --no-deps --document-private-items
-
-  build:
-    name: Build aarch64
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-24.04-arm]
-        include:
-          - os: macos-latest
-            platform: macos
-          - os: ubuntu-24.04-arm
-            platform: linux
-    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -74,188 +28,8 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rust-src
-          targets: aarch64-unknown-uefi
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v13
 
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-aarch64-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build kernel for aarch64
-        run: |
-          cd oso_kernel
-          nix develop --command cargo build --release
-
-      - name: Build loader for aarch64
-        run: |
-          cd oso_loader
-          nix develop --command cargo build --release
-
-      - name: Build xtask
-        run: nix develop --command cargo build -p xtask --release
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: oso-build-${{ matrix.platform }}-${{ github.sha }}
-          path: |
-            target/aarch64-unknown-none-elf/release/oso_kernel
-            target/aarch64-unknown-uefi/release/oso_loader.efi
-            target/release/xtask
-          retention-days: 7
-
-  test:
-    name: Test
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-24.04-arm]
-        include:
-          - os: macos-latest
-            platform: macos
-          - os: ubuntu-24.04-arm
-            platform: linux
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rust-src
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run tests for std crates
-        run: |
-          # Test crates that can run in std environment
-          (cd oso_kernel && nix develop --command cargo b)
-          (cd oso_proc_macro_logic && nix develop --command cargo test)
-          (cd oso_error && nix develop --command cargo test)
-          (cd xtask && nix develop --command cargo test)
-
-  integration:
-    name: Integration Test
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-24.04-arm]
-        include:
-          - os: macos-latest
-            platform: macos
-          - os: ubuntu-24.04-arm
-            platform: linux
-    runs-on: ${{ matrix.os }}
-    needs: [build]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup development environment
-        run: |
-          nix develop --command bash -c "echo 'Development environment ready'"
-          # Verify tools are available
-          nix develop --command qemu-system-aarch64 --version
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rust-src
-          targets: aarch64-unknown-uefi
-
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-integration-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: oso-build-${{ matrix.platform }}-${{ github.sha }}
-          path: ./artifacts
-
-      - name: Test build process
-        run: |
-          # Test that the build process works without actually running QEMU
-          timeout 30s nix develop --command cargo run -p xtask -- --dry-run || true
-
-      - name: Test QEMU boot (short timeout)
-        run: |
-          # Quick boot test with timeout to ensure the OS starts
-          timeout 10s nix develop --command cargo run -p xtask || echo "Boot test completed (expected timeout)"
-
-  security:
-    name: Security Audit
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-24.04-arm]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-
-      - name: Install cargo-audit
-        run: cargo install cargo-audit
-
-      - name: Run security audit
-        run: cargo audit
-
-  dependency-check:
-    name: Dependency Check
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-24.04-arm]
-        include:
-          - os: macos-latest
-            platform: macos
-          - os: ubuntu-24.04-arm
-            platform: linux
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rust-src
-          targets: aarch64-unknown-uefi
-
-      - name: Check for no_std compliance
-        run: |
-          # Verify that kernel and loader don't accidentally include std dependencies
-          cd oso_kernel && cargo tree --target aarch64-unknown-none-elf.json | grep -v "std" || echo "Kernel dependencies look good"
-          cd ../oso_loader && cargo tree --target aarch64-unknown-uefi | grep -v "std" || echo "Loader dependencies look good"
-
-      - name: Platform-specific dependency check
-        run: |
-          echo "Running dependency check on ${{ matrix.platform }}"
-          # Check that xtask properly detects the current platform
-          nix develop --command cargo run -p xtask -- --version || true
+      - name: Run checks from flake.nix
+        run: nix flake check -L

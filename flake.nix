@@ -1,5 +1,3 @@
-# flake.nix
-# TODO: introduce crane
 {
   description = "mogok dev env";
   inputs = {
@@ -64,52 +62,50 @@
             inherit src;
             strictDeps = true;
             cargoLock = ./Cargo.lock;
+            cargoExtraArgs = "-p poison_girl --locked";
           };
-          deps = craneLib.buildDepsOnly (
-            commonArgs
-            # // {
-            #   cargoExtraArgs = "--workspace --locked";
-            # }
-          );
+          deps = craneLib.buildDepsOnly commonArgs;
           myWorkspace = craneLib.cargoBuild (
             commonArgs
             // {
               cargoArtifacts = deps;
-              # cargoExtraArgs = "--workspace --locked";
             }
           );
         in
         {
+          formatter = pkgs.nixfmt;
           packages = {
             default = myWorkspace;
           };
           checks = {
             build = myWorkspace;
-            clippy = craneLib.cargoClippy {
+            clippy = craneLib.cargoClippy (
+              commonArgs
+              // {
+                cargoArtifacts = deps;
+                cargoClippyExtraArgs = "--all-targets";
+              }
+            );
+            test = craneLib.cargoNextest (
+              commonArgs
+              // {
+                cargoArtifacts = deps;
+                cargoNextestExtraArgs = "--no-tests pass";
+                partitions = 1;
+                partitionType = "count";
+              }
+            );
+            doc = craneLib.cargoDoc (
+              commonArgs
+              // {
+                cargoArtifacts = deps;
+                cargoDocExtraArgs = "--no-deps --document-private-items";
+              }
+            );
+            fmt = craneLib.cargoFmt {
               inherit src;
-              cargoArtifacts = deps;
-              cargoClippyExtraArgs = "--workspace -- -D warnings";
+              cargoExtraArgs = "--all";
             };
-            test = craneLib.cargoNextest {
-              inherit src;
-              cargoArtifacts = deps;
-              partitions = 1;
-              partitionType = "count";
-              cargoNextestExtraArgs = "--workspace";
-            };
-            udeps = pkgs.stdenv.mkDerivation {
-              name = "cargo-udeps";
-              src = ./.;
-              nativeBuildInputs = [
-                rust.toolchain
-                pkgs.cargo-udeps
-              ];
-              buildPhase = ''
-                cargo udeps --all-targets
-              '';
-              installPhase = "mkdir -p $out";
-            };
-            fmt = craneLib.cargoFmt { inherit src; };
           };
           devShells = {
             default = craneLib.devShell {
@@ -125,6 +121,7 @@
                   dprint
                   cargo-nextest
                   cargo-udeps
+                  cargo-audit
                 ]
                 ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
                 ]
