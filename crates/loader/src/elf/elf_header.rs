@@ -189,3 +189,9 @@ fn header_flag_fields(
 		section_header_index_of_section_name_string_table,
 	},)
 }
+
+#[cfg(test)]
+mod tests
+{
+	use super::*;
+}
