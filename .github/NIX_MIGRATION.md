@@ -5,15 +5,16 @@ The repository now treats `flake.nix` as the source of truth for CI.
 ## What Moved Into Nix
 
 - Rust nightly toolchain selection
-- Package build arguments
-- Format, clippy, test, and doc checks
+- Workspace package build arguments
+- Workspace metadata, format, clippy, test, and doc checks
+- Kernel and loader target checks
 - QEMU/binutils/dev tools in the development shell
 
 ## What Remains In GitHub Actions
 
 - Installing Nix
 - Restoring and saving the Nix store cache
-- Running `nix flake check -L`
+- Running shared Nix command wrappers such as `nix flake check -L --show-trace`
 - Publishing docs and release artifacts
 - Manual platform/dev-shell smoke workflows
 

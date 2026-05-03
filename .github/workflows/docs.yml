@@ -22,24 +22,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
         with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache Nix store
-        uses: DeterminateSystems/magic-nix-cache-action@v13
+          github-token: ${{ github.token }}
 
       - name: Build docs from flake.nix
         run: |
           system="$(nix eval --raw --impure --expr builtins.currentSystem)"
-          nix build -L ".#checks.${system}.doc"
+          nix build -L --show-trace ".#checks.${system}.workspace_doc"
           mkdir -p pages
           cp -R result/share/doc/. pages/
           echo '<meta http-equiv="refresh" content="0; url=poison_girl/">' > pages/index.html
 
       - name: Setup Pages
-        uses: actions/configure-pages@v3
+        uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

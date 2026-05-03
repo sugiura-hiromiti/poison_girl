@@ -1,5 +1,17 @@
 [workspace]
-members = ["crates/kernel", "crates/loader"]
+default-members = ["crates/kernel", "crates/loader"]
+members = [
+  "crates/kernel",
+  "crates/loader",
+  "crates/no_std",
+  "crates/error/*",
+  "crates/dev/*",
+  "crates/macro/helper",
+  "crates/macro/macro",
+  "crates/macro/*/def",
+  "crates/macro/*/impl",
+  "crates/macro/wrapper/*",
+]
 resolver = "2"
 
 [workspace.dependencies]

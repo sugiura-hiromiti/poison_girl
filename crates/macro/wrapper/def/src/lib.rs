@@ -2,7 +2,7 @@
 
 use poison_girl_proc_macro_helper::atr;
 
-atr!{
+atr! {
 	wrapper,
 	[as syn::Ident,],
 	[as syn::ItemTrait,],

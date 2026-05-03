@@ -808,6 +808,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "poison_girl_macro_def_wrapper"
+version = "0.1.0"
+dependencies = [
+ "poison_girl_macro_impl_wrapper",
+ "poison_girl_proc_macro_helper",
+]
+
+[[package]]
 name = "poison_girl_macro_impl_features"
 version = "0.1.0"
 dependencies = [
@@ -889,6 +897,15 @@ dependencies = [
  "poison_girl_proc_macro_helper",
  "proc-macro2",
  "quote",
+ "syn",
+]
+
+[[package]]
+name = "poison_girl_macro_impl_wrapper"
+version = "0.1.0"
+dependencies = [
+ "poison_girl_proc_macro_helper",
+ "proc-macro2",
  "syn",
 ]
 

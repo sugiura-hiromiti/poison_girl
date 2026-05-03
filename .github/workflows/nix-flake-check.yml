@@ -1,0 +1,34 @@
+name: Reusable Nix Flake Check
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub Actions runner label.
+        required: true
+        type: string
+      timeout-minutes:
+        description: Job timeout in minutes.
+        required: false
+        type: number
+        default: 60
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  flake-check:
+    name: Nix flake check (${{ inputs.runner }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Run checks from flake.nix
+        run: nix flake check -L --show-trace

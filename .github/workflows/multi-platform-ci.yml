@@ -18,18 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache Nix store
-        uses: DeterminateSystems/magic-nix-cache-action@v13
-
-      - name: Run checks from flake.nix
-        run: nix flake check -L
+    uses: ./.github/workflows/nix-flake-check.yml
+    with:
+      runner: ${{ matrix.os }}
+      timeout-minutes: 60

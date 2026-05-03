@@ -17,18 +17,7 @@ concurrency:
 jobs:
   flake-check:
     name: Nix flake check
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
-        with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache Nix store
-        uses: DeterminateSystems/magic-nix-cache-action@v13
-
-      - name: Run checks from flake.nix
-        run: nix flake check -L
+    uses: ./.github/workflows/nix-flake-check.yml
+    with:
+      runner: ubuntu-latest
+      timeout-minutes: 60
