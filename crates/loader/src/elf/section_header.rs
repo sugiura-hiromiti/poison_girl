@@ -1,6 +1,8 @@
 use {
-	super::StringTable,
-	crate::elf::{Context, RelocationSection, read_le_bytes},
+	crate::elf::{
+		elf_context::ElfContext, read_le_bytes, relocation::RelocationSection,
+		string_table::StringTable,
+	},
 	alloc::{format, vec::Vec},
 	poison_girl_no_std_error::{
 		ElfParseError, ElfParseStage, PoisonGirlB, X, Y, poison_girl_err,
@@ -276,7 +278,7 @@ pub fn get_string_table(
 pub fn section_relocations(
 	section_headers: &[SectionHeader],
 	binary: &[u8],
-	ctx: &Context,
+	ctx: &ElfContext,
 ) -> PoisonGirlB<Vec<(usize, RelocationSection,),>,>
 {
 	section_headers

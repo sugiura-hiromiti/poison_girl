@@ -1,5 +1,5 @@
 use {
-	crate::elf::{Interpreter, StringContext, read_le_bytes},
+	crate::elf::{Interpreter, read_le_bytes, string_context::StringContext},
 	alloc::{format, vec::Vec},
 	poison_girl_macro::cfg_if,
 	poison_girl_no_std_error::{

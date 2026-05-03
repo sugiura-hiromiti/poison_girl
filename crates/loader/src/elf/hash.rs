@@ -1,6 +1,9 @@
 use {
-	super::{Context, read_le_bytes},
-	crate::elf::{Container, ElfHeader},
+	super::read_le_bytes,
+	crate::elf::{
+		ElfHeader, elf_container_size::ElfContainerSize,
+		elf_context::ElfContext,
+	},
 	poison_girl_no_std_error::{
 		ElfParseError, PoisonGirlB, X, Y, poison_girl_err,
 	},
@@ -9,7 +12,7 @@ use {
 pub fn gnu_hash_len(
 	binary: &[u8],
 	mut offset: usize,
-	context: &Context,
+	context: &ElfContext,
 ) -> PoisonGirlB<usize,>
 {
 	let buckets_count =
@@ -29,7 +32,7 @@ pub fn gnu_hash_len(
 	// find the last bucket
 	let buckets_offset = offset
 		+ 4 + bloom_size
-		* if context.container == Container::Big { 8 } else { 4 };
+		* if context.container == ElfContainerSize::Big { 8 } else { 4 };
 	let mut max_chain = 0;
 	for bucket in 0..buckets_count {
 		let chain =
@@ -61,13 +64,13 @@ pub fn hash_len(
 	binary: &[u8],
 	mut offset: usize,
 	machine: u16,
-	context: &Context,
+	context: &ElfContext,
 ) -> PoisonGirlB<usize,>
 {
 	offset = offset.saturating_add(4,);
 	let nchain = if (machine == ElfHeader::EM_FAKE_ALPHA
 		|| machine == ElfHeader::EM_S390)
-		&& context.container == Container::Big
+		&& context.container == ElfContainerSize::Big
 	{
 		read_le_bytes::<u64,>(&mut offset, binary,).unwrap() as usize
 	} else {

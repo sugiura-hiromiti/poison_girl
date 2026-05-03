@@ -1,14 +1,16 @@
 use {
 	crate::elf::{
-		Context, Dynamic, Elf, ElfHeader, RelocationSection, SHT_REL, SHT_RELA,
-		SHT_SYMTAB, SectionHeader, StringTable, SymbolTable,
-		SymbolVersionSection, VersionDefinitionSection, VersionNeededSection,
-		get_string_table,
-		hash::{gnu_hash_len, hash_len},
+		Elf, ElfHeader,
+		dynamic::dynamic::Dynamic,
+		elf_context::ElfContext,
 		program_header::interpreter,
 		section_header::section_relocations,
+		string_table::StringTable,
+		version_sections::{
+			SymbolVersionSection, VersionDefinitionSection,
+			VersionNeededSection,
+		},
 	},
-	core::cmp,
 	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
@@ -25,7 +27,7 @@ impl Elf
 		let interpreter = interpreter(&program_headers, binary,)?;
 		let section_headers = header.section_headers(binary,)?;
 
-		let ctx = &Context::default();
+		let ctx = &ElfContext::default();
 		let (
 			section_header_string_table,
 			symbol_table,
