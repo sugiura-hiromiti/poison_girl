@@ -54,7 +54,7 @@ impl Xtask
 		// args.push("-drive".to_string(),);
 		// args.push("format=raw,file=fat:rw:",);
 
-		let block_device = block_device(self.disk_img_path(),);
+		let block_device = block_device(&self.disk_img_path()?,);
 		args.extend(block_device,);
 
 		// setting the boot menu timeout to zero particularly speeds up the boot

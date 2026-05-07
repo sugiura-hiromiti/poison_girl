@@ -19,6 +19,10 @@ pub struct PoisonGirlError
 	src: DevError,
 }
 
+impl std::error::Error for PoisonGirlError
+{
+}
+
 impl Display for PoisonGirlError
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result
@@ -125,6 +129,18 @@ impl From<InvalidManifest,> for PoisonGirlError
 	}
 }
 
+impl From<PathIsNotValidUtf8,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: PathIsNotValidUtf8,) -> Self
+	{
+		Self {
+			loc: Location::caller(),
+			src: DevError::PathIsNotValidUtf8(value,),
+		}
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -138,6 +154,7 @@ enum DevError
 	PathNotFound(PathNotFound,),
 	HostTupleNotFound(HostTupleNotFound,),
 	InvalidManifest(InvalidManifest,),
+	PathIsNotValidUtf8(PathIsNotValidUtf8,),
 	Todo(String,),
 }
 
@@ -156,6 +173,9 @@ impl InvalidManifest
 		Self(s.into(),)
 	}
 }
+
+#[derive(Debug,)]
+pub struct PathIsNotValidUtf8;
 
 #[macro_export]
 macro_rules! poison_girl_err {

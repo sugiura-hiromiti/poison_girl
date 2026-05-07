@@ -14,7 +14,9 @@ use {
 	crate::Xtask,
 	poison_girl_dev_cargo::{Assets, Opts},
 	poison_girl_dev_cli::Run,
-	poison_girl_dev_error::{PoisonGirlB, X},
+	poison_girl_dev_error::{
+		PathIsNotValidUtf8, PoisonGirlB, X, poison_girl_err,
+	},
 	poison_girl_dev_orchestrate::decl_manage::{
 		crate_::CrateInfo, project_root,
 	},
@@ -99,9 +101,7 @@ impl Xtask
 	/// 起動用のディスクイメージをセットアップしpathを返す
 	pub(crate) fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		let mut path = self.ws.path();
-		path.push("target",);
-		path.push(XTASK_ASSETS_DIR,);
+		let mut path = self.asset_dir()?;
 		path.push(DISK_IMG_NAME,);
 		let path = path;
 
@@ -113,6 +113,22 @@ impl Xtask
 			format!("create {DISK_IMG_FMT} {} {DISK_IMG_SIZE}", path.display());
 		Command::new("qemu-img",).args(args.split_whitespace(),).run()?;
 		X(path,)
+	}
+
+	fn asset_dir(&self,) -> PoisonGirlB<PathBuf,>
+	{
+		let mut path = self.ws.path();
+		path.push("target",);
+		path.push(XTASK_ASSETS_DIR,);
+
+		if path.exists() {
+			X(path,)
+		} else {
+			let path_to_create =
+				path.to_str().ok_or(poison_girl_err!(PathIsNotValidUtf8),)?;
+			Command::new("mkdir",).args(["-p", path_to_create,],).run()?;
+			X(path,)
+		}
 	}
 
 	pub fn build(&self,) -> PoisonGirlB<(),>
