@@ -13,15 +13,28 @@
 use {
 	crate::Xtask,
 	poison_girl_dev_cargo::{Assets, Opts},
+	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{PoisonGirlB, X},
-	poison_girl_dev_orchestrate::decl_manage::project_root,
-	std::path::PathBuf,
+	poison_girl_dev_orchestrate::decl_manage::{
+		crate_::CrateInfo, project_root,
+	},
+	std::{path::PathBuf, process::Command},
 };
 
-/// Directory path for EFI boot files
+/// Directory path for EFI boot files from mounting point
 const BOOT_DIR: &str = "efi/boot";
+/// relative path to directory build assets are put from target/
+const XTASK_ASSETS_DIR: &str = "xtask";
 /// mounting point path under target/
-const MOUNT_DIR: &str = "xtask/mnt";
+const MOUNT_DIR: &str = "mnt";
+
+/// ディスクイメージのフォーマットをrawにする
+/// qemu-imgコマンドのオプション
+const DISK_IMG_FMT: &str = "-f raw";
+/// ディスクイメージのサイズ(200mb)
+const DISK_IMG_SIZE: &str = "200M";
+/// ディスクイメージのファイル名前
+const DISK_IMG_NAME: &str = "disk.img";
 
 impl Xtask
 {
@@ -83,9 +96,23 @@ impl Xtask
 		X(Self { opts, ws, assets, },)
 	}
 
-	pub(crate) fn disk_img_path(&self,) -> &PathBuf
+	/// 起動用のディスクイメージをセットアップしpathを返す
+	pub(crate) fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		todo!()
+		let mut path = self.ws.path();
+		path.push("target",);
+		path.push(XTASK_ASSETS_DIR,);
+		path.push(DISK_IMG_NAME,);
+		let path = path;
+
+		// NOTE: qemu-img create
+		// でディスクイメージを生成する際、
+		// 既存のディスクイメージが既に存在する場合は上書きする為、
+		// 上書きしたくない場合は注意
+		let args =
+			format!("create {DISK_IMG_FMT} {} {DISK_IMG_SIZE}", path.display());
+		Command::new("qemu-img",).args(args.split_whitespace(),).run()?;
+		X(path,)
 	}
 
 	pub fn build(&self,) -> PoisonGirlB<(),>
@@ -94,6 +121,16 @@ impl Xtask
 	}
 
 	pub fn run(&self,) -> PoisonGirlB<(),>
+	{
+		todo!()
+	}
+
+	pub fn check(&self,) -> PoisonGirlB<(),>
+	{
+		todo!()
+	}
+
+	pub fn fixture(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}

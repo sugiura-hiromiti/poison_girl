@@ -10,6 +10,7 @@ use {
 
 pub trait Run
 {
+	/// コマンドを実行し、出力を親プロセスにバイパスする
 	fn run(&mut self,) -> PoisonGirlB<(),>;
 }
 

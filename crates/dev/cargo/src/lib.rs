@@ -1,5 +1,5 @@
 use {
-	clap::Parser,
+	clap::{Parser, Subcommand},
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{HostTupleNotFound, PoisonGirlB, ReShape, X},
 	poison_girl_macro_def_features::features,
@@ -65,6 +65,7 @@ impl CompileOpt for Opts
 }
 
 #[derive(clap::Parser,)]
+#[command(version, about)]
 pub struct Cli
 {
 	#[arg(value_enum, short)]
@@ -73,6 +74,8 @@ pub struct Cli
 	pub feature_flags: Option<Vec<Feature,>,>,
 	#[arg(short)]
 	pub arch:          Option<Arch,>,
+	#[command(subcommand)]
+	pub command:       Option<CliCommand,>,
 }
 
 impl Cli
@@ -106,6 +109,17 @@ pub enum BuildMode
 	Release,
 	#[default]
 	Debug,
+}
+
+#[derive(Subcommand,)]
+pub enum CliCommand
+{
+	Build,
+	Test,
+	Run,
+	Check,
+	Fmt,
+	Fixture,
 }
 
 pub enum Runtime
