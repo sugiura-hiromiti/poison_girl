@@ -9,8 +9,16 @@ use {
 	std::path::PathBuf,
 };
 
+// each module are basically mapped to functionality of named subcommand
+
+/// orchestrate running qemu process
 pub mod builder;
+// just a wrapper of cargo check/clippy
+// just a wrapper of cargo fmt
+// detail implementation of qemu orchestration
 pub mod qemu;
+// difference from running default cargo t command is xtask version also runs
+// emulation tests with qemu
 
 pub struct Xtask
 {

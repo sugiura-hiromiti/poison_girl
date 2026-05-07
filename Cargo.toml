@@ -81,3 +81,4 @@ poison_girl_dev_cargo = { workspace = true }
 poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
 poison_girl_dev_orchestrate = { workspace = true }
+poison_girl_dev_cli = { workspace = true }
