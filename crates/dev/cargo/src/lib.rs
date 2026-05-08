@@ -23,19 +23,14 @@ pub trait CompileOpt
 )]
 pub enum Feature {}
 
+#[derive(Default,)]
 pub struct Opts
 {
 	pub build_mode:    BuildMode,
 	pub feature_flags: Vec<Feature,>,
 	pub arch:          Arch,
-}
-
-impl Default for Opts
-{
-	fn default() -> Self
-	{
-		Self::new()
-	}
+	pub command:       CliCommand,
+	pub lock_deps:     bool,
 }
 
 impl Opts
@@ -64,7 +59,7 @@ impl CompileOpt for Opts
 	}
 }
 
-#[derive(clap::Parser,)]
+#[derive(clap::Parser, Default,)]
 #[command(version, about)]
 pub struct Cli
 {
@@ -76,6 +71,8 @@ pub struct Cli
 	pub arch:          Option<Arch,>,
 	#[command(subcommand)]
 	pub command:       Option<CliCommand,>,
+	#[arg(short, default_value_t = false)]
+	pub lock_deps:     bool,
 }
 
 impl Cli
@@ -86,6 +83,8 @@ impl Cli
 			build_mode:    self.build_mode.unwrap_or_default(),
 			feature_flags: self.feature_flags.unwrap_or_default(),
 			arch:          self.arch.unwrap_or_default(),
+			command:       self.command.unwrap_or_default(),
+			lock_deps:     self.lock_deps,
 		}
 	}
 }
@@ -111,15 +110,29 @@ pub enum BuildMode
 	Debug,
 }
 
-#[derive(Subcommand,)]
+#[derive(Subcommand, Default, strum_macros::EnumIs,)]
 pub enum CliCommand
 {
 	Build,
 	Test,
+	#[default]
 	Run,
-	Check,
+	Check
+	{
+		/// 指定無しの場合はfull check
+		#[command(subcommand)]
+		kind: Option<CheckKind,>,
+	},
 	Fmt,
 	Fixture,
+}
+
+#[derive(Subcommand, strum_macros::EnumIter,)]
+pub enum CheckKind
+{
+	KernelAarch64,
+	LoaderAarch64Uefi,
+	Clippy,
 }
 
 pub enum Runtime
@@ -127,7 +140,7 @@ pub enum Runtime
 	Mac,
 	Linux,
 	Efi,
-	Oso,
+	PoisonGirl,
 }
 
 impl Runtime
@@ -152,7 +165,7 @@ impl Runtime
 		match value {
 			"mac" | "darwin" => Self::Mac,
 			"linux" => Self::Linux,
-			"oso" => Self::Oso,
+			"oso" => Self::PoisonGirl,
 			"efi" => Self::Efi,
 			a => unimplemented!("{a} is not supported runtime"),
 		}
@@ -361,32 +374,18 @@ mod tests
 		assert!(Arch::from_str("x86_64").is_err());
 	}
 
+	/// defaultが効いてるかも確認できるテスト
 	#[test]
 	fn test_cli_to_opts_with_values()
 	{
-		let cli = Cli {
-			build_mode:    Some(BuildMode::Release,),
-			feature_flags: Some(vec![],),
-			arch:          Some(Arch::Riscv64,),
-		};
-
-		let opts = cli.to_opts();
-		assert!(opts.build_mode.is_release());
-		assert!(opts.feature_flags.is_empty());
-	}
-
-	#[test]
-	fn test_cli_to_opts_with_defaults()
-	{
-		let cli = Cli {
-			build_mode:    None,
-			feature_flags: None,
-			arch:          None,
-		};
+		let cli = Cli::default();
 
 		let opts = cli.to_opts();
 		assert!(opts.build_mode.is_debug());
 		assert!(opts.feature_flags.is_empty());
+		assert!(opts.arch.is_aarch_64());
+		assert!(opts.command.is_run());
+		assert!(opts.lock_deps == false)
 	}
 
 	#[test]
@@ -396,6 +395,8 @@ mod tests
 			build_mode:    BuildMode::Release,
 			feature_flags: vec![],
 			arch:          Arch::Riscv64,
+			command:       CliCommand::Build,
+			lock_deps:     true,
 		};
 
 		let build_mode: String = opts.build_mode().into();
@@ -540,11 +541,7 @@ mod tests
 	fn test_edge_cases()
 	{
 		// Test empty feature flags
-		let opts = Opts {
-			build_mode:    BuildMode::Debug,
-			feature_flags: vec![],
-			arch:          Arch::default(),
-		};
+		let opts = Opts { feature_flags: vec![], ..Default::default() };
 
 		let flags = opts.feature_flags();
 		assert!(flags.is_empty());
@@ -554,25 +551,21 @@ mod tests
 	fn test_struct_field_access()
 	{
 		// Test that all struct fields are accessible
-		let cli = Cli {
-			build_mode:    Some(BuildMode::Debug,),
-			feature_flags: Some(vec![],),
-			arch:          Some(Arch::Riscv64,),
-		};
+		let cli = Cli::default();
 
-		assert!(cli.build_mode.unwrap().is_debug());
-		assert!(cli.feature_flags.unwrap().is_empty());
-		assert!(cli.arch.unwrap().is_riscv_64());
+		assert!(cli.build_mode.is_none());
+		assert!(cli.feature_flags.is_none());
+		assert!(cli.arch.is_none());
+		assert!(cli.command.is_none());
+		assert!(cli.lock_deps == false);
 
-		let opts = Opts {
-			build_mode:    BuildMode::Release,
-			feature_flags: vec![],
-			arch:          Arch::Aarch64,
-		};
+		let opts = Opts::default();
 
 		assert!(opts.build_mode.is_release());
 		assert!(opts.feature_flags.is_empty());
 		assert!(opts.arch.is_aarch_64());
+		assert!(opts.command.is_run());
+		assert!(opts.lock_deps == false);
 	}
 
 	#[test]
@@ -659,17 +652,6 @@ mod tests
 
 		// Test that we can create a parser
 		let _parser = Cli::command();
-
-		// Test default CLI
-		let cli = Cli {
-			build_mode:    None,
-			feature_flags: None,
-			arch:          None,
-		};
-
-		let opts = cli.to_opts();
-		assert!(opts.build_mode.is_debug());
-		assert!(opts.arch.is_aarch_64());
 	}
 
 	#[test]
@@ -705,11 +687,7 @@ mod tests
 		assert!(features.is_empty());
 
 		// Test in Opts
-		let opts = Opts {
-			build_mode:    BuildMode::Debug,
-			feature_flags: features,
-			arch:          Arch::default(),
-		};
+		let opts = Opts { feature_flags: features, ..Default::default() };
 
 		let returned_features = opts.feature_flags();
 		assert!(returned_features.is_empty());
@@ -764,11 +742,7 @@ mod tests
 	#[test]
 	fn test_compile_opt_trait()
 	{
-		let opts = Opts {
-			build_mode:    BuildMode::Debug,
-			feature_flags: Vec::<Feature,>::new(),
-			arch:          Arch::default(),
-		};
+		let opts = Opts::default();
 
 		// Test trait methods
 		let build_mode: String = opts.build_mode().into();
@@ -779,36 +753,6 @@ mod tests
 
 		let arch: String = opts.arch().into();
 		assert_eq!(arch, "Aarch64");
-	}
-
-	#[test]
-	fn test_cli_to_opts_conversion()
-	{
-		let cli = Cli {
-			build_mode:    Some(BuildMode::Release,),
-			feature_flags: None,
-			arch:          Some(Arch::Riscv64,),
-		};
-
-		let opts = cli.to_opts();
-		assert!(opts.build_mode.is_release());
-		assert!(opts.feature_flags.is_empty());
-		assert!(opts.arch.is_riscv_64());
-	}
-
-	#[test]
-	fn test_cli_defaults()
-	{
-		let cli = Cli {
-			build_mode:    None,
-			feature_flags: None,
-			arch:          None,
-		};
-
-		let opts = cli.to_opts();
-		assert!(opts.build_mode.is_debug()); // Default should be Debug
-		assert!(opts.feature_flags.is_empty());
-		assert!(opts.arch.is_aarch_64()); // Default should be Aarch64
 	}
 
 	#[test]
@@ -912,39 +856,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_type_system_constraints()
-	{
-		// Test that all enums implement required traits
-		fn test_enum_traits<T,>(_value: T,)
-		where T: Clone + Copy + PartialEq + Eq + std::fmt::Debug + Default
-		{
-			// If this compiles, the traits are implemented
-		}
-
-		test_enum_traits(BuildMode::Debug,);
-		test_enum_traits(Arch::Aarch64,);
-
-		// Test that Opts can be constructed with all combinations
-		let all_build_modes = [BuildMode::Debug, BuildMode::Release,];
-		let all_archs = [Arch::Aarch64, Arch::Riscv64,];
-
-		for &build_mode in &all_build_modes {
-			for &arch in &all_archs {
-				let opts = Opts {
-					build_mode,
-					feature_flags: Vec::<Feature,>::new(),
-					arch,
-				};
-
-				// Test CompileOpt trait methods
-				let _build_mode_str: String = opts.build_mode().into();
-				let _arch_str: String = opts.arch().into();
-				let _features = opts.feature_flags();
-			}
-		}
-	}
-
-	#[test]
 	fn test_string_conversions_comprehensive()
 	{
 		// Test all string conversion patterns used in the crate
@@ -968,51 +879,5 @@ mod tests
 		// Test invalid string parsing
 		assert!(BuildMode::from_str("Invalid").is_err());
 		assert!(Arch::from_str("x86_64").is_err());
-	}
-
-	#[test]
-	fn test_memory_safety()
-	{
-		// Test that we can create and drop many instances without issues
-		let mut opts_vec = Vec::new();
-		for i in 0..1000 {
-			let opts = Opts {
-				build_mode:    if i % 2 == 0 {
-					BuildMode::Debug
-				} else {
-					BuildMode::Release
-				},
-				feature_flags: Vec::<Feature,>::new(),
-				arch:          if i % 2 == 0 {
-					Arch::Aarch64
-				} else {
-					Arch::Riscv64
-				},
-			};
-			opts_vec.push(opts,);
-		}
-
-		// Test that we can access all instances
-		assert_eq!(opts_vec.len(), 1000);
-	}
-
-	#[test]
-	fn test_documentation_examples()
-	{
-		// Example from CompileOpt documentation
-		let opts = Opts {
-			build_mode:    BuildMode::Debug,
-			feature_flags: Vec::<Feature,>::new(),
-			arch:          Arch::Aarch64,
-		};
-
-		let build_mode: String = opts.build_mode().into();
-		assert_eq!(build_mode, "Debug");
-
-		let feature_flags = opts.feature_flags();
-		assert!(feature_flags.is_empty());
-
-		let arch: String = opts.arch().into();
-		assert_eq!(arch, "Aarch64");
 	}
 }

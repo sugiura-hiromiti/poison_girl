@@ -48,12 +48,6 @@
         let
           fx = fenix.packages.${system};
           rust = fx.latest;
-          # pkgs = import nixpkgs {
-          #   inherit system;
-          #   config = {
-          #     allowUnfree = true;
-          #   };
-          # };
           rustToolchain = fx.combine [
             rust.toolchain
             rust.rust-src

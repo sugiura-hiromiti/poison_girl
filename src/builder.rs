@@ -143,10 +143,37 @@ impl Xtask
 
 	pub fn check(&self,) -> PoisonGirlB<(),>
 	{
+		self.kernel_check()?;
+		self.loader_check()?;
+		self.clippy()
+	}
+
+	pub fn kernel_check(&self,) -> PoisonGirlB<(),>
+	{
 		todo!()
 	}
 
-	pub fn fixture(&self,) -> PoisonGirlB<(),>
+	pub fn loader_check(&self,) -> PoisonGirlB<(),>
+	{
+		todo!()
+	}
+
+	pub fn clippy(&self,) -> PoisonGirlB<(),>
+	{
+		todo!()
+	}
+
+	fn fixture(&self,) -> PoisonGirlB<(),>
+	{
+		todo!()
+	}
+
+	pub fn test(&self,) -> PoisonGirlB<(),>
+	{
+		todo!()
+	}
+
+	pub fn fmt(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}
