@@ -1,6 +1,9 @@
 #![feature(proc_macro_diagnostic)]
 
-use poison_girl_proc_macro_helper::atr;
+use {
+	poison_girl_macro_impl_wrapper as poison_girl_proc_macro_impl,
+	poison_girl_proc_macro_helper::atr,
+};
 
 atr! {
 	wrapper,
@@ -53,5 +56,5 @@ trait Display {
 This macro will cause a compile-time error if:
 - The attribute is not a valid identifier
 - The item is not a valid trait definition
-- Any trait method has an unsupported signature"#,
+- Any trait method has an unsupported signature"#
 }

@@ -12,7 +12,7 @@
 
 use {
 	crate::Xtask,
-	poison_girl_dev_cargo::{Assets, Opts},
+	poison_girl_dev_cargo::{AsCargoOpt, Assets, CheckKind, CliCommand, Opts},
 	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{
 		PathIsNotValidUtf8, PoisonGirlB, X, poison_girl_err,
@@ -98,6 +98,24 @@ impl Xtask
 		X(Self { opts, ws, assets, },)
 	}
 
+	pub fn runner(&self,) -> PoisonGirlB<(),>
+	{
+		match self.opts.command {
+			CliCommand::Build => self.build(),
+			CliCommand::Test => self.test(),
+			CliCommand::Run => self.run(),
+			CliCommand::Check { kind, } => match kind {
+				Some(CheckKind::KernelAarch64,) => self.kernel_check(),
+				Some(CheckKind::LoaderAarch64Uefi,) => self.loader_check(),
+				Some(CheckKind::Clippy,) => self.clippy(),
+				None => self.check(),
+			},
+			CliCommand::Fmt => todo!(),
+			CliCommand::Fixture => todo!(),
+			CliCommand::Fix => todo!(),
+		}
+	}
+
 	/// 起動用のディスクイメージをセットアップしpathを返す
 	pub(crate) fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
 	{
@@ -105,13 +123,17 @@ impl Xtask
 		path.push(DISK_IMG_NAME,);
 		let path = path;
 
+		let args = [
+			"create",
+			DISK_IMG_FMT,
+			path.to_str().ok_or(poison_girl_err!(PathIsNotValidUtf8),)?,
+			DISK_IMG_SIZE,
+		];
 		// NOTE: qemu-img create
 		// でディスクイメージを生成する際、
 		// 既存のディスクイメージが既に存在する場合は上書きする為、
 		// 上書きしたくない場合は注意
-		let args =
-			format!("create {DISK_IMG_FMT} {} {DISK_IMG_SIZE}", path.display());
-		Command::new("qemu-img",).args(args.split_whitespace(),).run()?;
+		Command::new("qemu-img",).args(args,).run()?;
 		X(path,)
 	}
 
@@ -133,16 +155,19 @@ impl Xtask
 
 	pub fn build(&self,) -> PoisonGirlB<(),>
 	{
+		let args = self.opts.as_cargo_opt();
 		todo!()
 	}
 
 	pub fn run(&self,) -> PoisonGirlB<(),>
 	{
+		let args = self.opts.as_cargo_opt();
 		todo!()
 	}
 
 	pub fn check(&self,) -> PoisonGirlB<(),>
 	{
+		let args = self.opts.as_cargo_opt();
 		self.kernel_check()?;
 		self.loader_check()?;
 		self.clippy()
@@ -174,6 +199,11 @@ impl Xtask
 	}
 
 	pub fn fmt(&self,) -> PoisonGirlB<(),>
+	{
+		todo!()
+	}
+
+	pub fn fix(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}

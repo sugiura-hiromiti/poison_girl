@@ -1,7 +1,7 @@
 #![feature(iter_array_chunks)]
 
 use {
-	poison_girl_dev_cargo::{Arch, BuildMode},
+	poison_girl_dev_cargo::{Arch, BuildMode, Opts},
 	poison_girl_dev_orchestrate::decl_manage::{
 		CargoCrate, PoisonGirlCargoInterface, crate_::PoisonGirlCrateChart,
 	},
@@ -175,8 +175,7 @@ fn readelf_l_out(arch: String, build_mode: String,) -> Rslt<Vec<String,>,>
 	let build_mode = BuildMode::from_str(&build_mode,)?;
 	let kernel_crate = PoisonGirlCargoInterface::new(
 		PoisonGirlCrateChart::Kernel,
-		arch,
-		build_mode,
+		Opts { arch, build_mode, ..Default::default() },
 	);
 	let kernel_bin_path = kernel_crate.build_artifact()?;
 
