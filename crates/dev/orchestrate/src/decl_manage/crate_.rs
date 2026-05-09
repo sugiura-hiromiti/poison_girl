@@ -552,12 +552,8 @@ mod tests
 		let _target_result = crate_obj.default_target();
 
 		// Test build_artifact with proper CompileOpt
-		use poison_girl_dev_cargo::{Arch, BuildMode, Feature, Opts};
-		let _opts = Opts {
-			build_mode:    BuildMode::Debug,
-			feature_flags: Vec::<Feature,>::new(),
-			arch:          Arch::Aarch64,
-		};
+		use poison_girl_dev_cargo::Opts;
+		let _opts = Opts::default();
 	}
 
 	#[test]

@@ -14,6 +14,12 @@ pub trait CompileOpt
 	fn arch(&self,) -> impl Into<String,>;
 }
 
+pub trait AsCargoOpt
+{
+	type Out;
+	fn as_cargo_opt(&self,) -> Self::Out;
+}
+
 #[features]
 #[derive(
 	strum_macros::AsRefStr,
@@ -21,15 +27,29 @@ pub trait CompileOpt
 	strum_macros::EnumString,
 	Clone,
 )]
+#[strum(serialize_all = "snake_case")]
 pub enum Feature {}
+
+impl AsCargoOpt for Vec<Feature,>
+{
+	type Out = Vec<String,>;
+
+	fn as_cargo_opt(&self,) -> Self::Out
+	{
+		vec![
+			"-F".to_string(),
+			self.iter().map(|f| f.as_ref(),).collect::<Vec<_,>>().join(",",),
+		]
+	}
+}
 
 #[derive(Default,)]
 pub struct Opts
 {
+	pub command:       CliCommand,
 	pub build_mode:    BuildMode,
 	pub feature_flags: Vec<Feature,>,
 	pub arch:          Arch,
-	pub command:       CliCommand,
 	pub lock_deps:     bool,
 }
 
@@ -38,6 +58,31 @@ impl Opts
 	pub fn new() -> Self
 	{
 		Cli::parse().to_opts()
+	}
+}
+
+impl AsCargoOpt for Opts
+{
+	type Out = Vec<String,>;
+
+	fn as_cargo_opt(&self,) -> Self::Out
+	{
+		let Self { command, build_mode, feature_flags, lock_deps, .. } = self;
+		let command = command.as_cargo_opt();
+		let build_mode = build_mode.as_cargo_opt();
+		let feature_flags = feature_flags.as_cargo_opt();
+		// single architecture info itself is useless
+		// target tuple is truth
+		// let arch = arch.as_cargo_opt();
+		let lock_deps =
+			if *lock_deps { Some("--locked".to_string(),) } else { None };
+
+		[command,]
+			.into_iter()
+			.chain(build_mode,)
+			.chain(feature_flags,)
+			.chain(lock_deps,)
+			.collect()
 	}
 }
 
@@ -110,7 +155,21 @@ pub enum BuildMode
 	Debug,
 }
 
-#[derive(Subcommand, Default, strum_macros::EnumIs,)]
+impl AsCargoOpt for BuildMode
+{
+	type Out = Option<String,>;
+
+	fn as_cargo_opt(&self,) -> Self::Out
+	{
+		match self {
+			Self::Release => Some("-r".to_string(),),
+			Self::Debug => None,
+		}
+	}
+}
+
+#[derive(Subcommand, Default, strum_macros::EnumIs, strum_macros::AsRefStr,)]
+#[strum(serialize_all = "snake_case")]
 pub enum CliCommand
 {
 	Build,
@@ -125,6 +184,24 @@ pub enum CliCommand
 	},
 	Fmt,
 	Fixture,
+	Fix,
+}
+
+impl AsCargoOpt for CliCommand
+{
+	type Out = String;
+
+	fn as_cargo_opt(&self,) -> Self::Out
+	{
+		match self {
+			Self::Check { .. } => unreachable!(
+				"check command in xtask do not connected usual cargo check \
+				 command"
+			),
+			Self::Fixture => unreachable!("fixture command is xtask only"),
+			_ => self.as_ref().to_string(),
+		}
+	}
 }
 
 #[derive(Subcommand, strum_macros::EnumIter,)]
@@ -385,7 +462,7 @@ mod tests
 		assert!(opts.feature_flags.is_empty());
 		assert!(opts.arch.is_aarch_64());
 		assert!(opts.command.is_run());
-		assert!(opts.lock_deps == false)
+		assert!(!opts.lock_deps);
 	}
 
 	#[test]
@@ -557,7 +634,7 @@ mod tests
 		assert!(cli.feature_flags.is_none());
 		assert!(cli.arch.is_none());
 		assert!(cli.command.is_none());
-		assert!(cli.lock_deps == false);
+		assert!(!cli.lock_deps);
 
 		let opts = Opts::default();
 
@@ -565,7 +642,7 @@ mod tests
 		assert!(opts.feature_flags.is_empty());
 		assert!(opts.arch.is_aarch_64());
 		assert!(opts.command.is_run());
-		assert!(opts.lock_deps == false);
+		assert!(!opts.lock_deps);
 	}
 
 	#[test]

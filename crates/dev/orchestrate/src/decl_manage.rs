@@ -3,7 +3,7 @@ use {
 		crate_::{Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart},
 		package::PackageSurvey,
 	},
-	poison_girl_dev_cargo::{Arch, BuildMode, CompileOpt, Opts},
+	poison_girl_dev_cargo::{CompileOpt, Opts},
 	poison_girl_dev_error::{PoisonGirlB, X, Y},
 	poison_girl_dev_fs::{
 		current_crate_path, project_root_path, search_in_with,
@@ -25,22 +25,15 @@ pub trait CargoCrate
 
 pub struct PoisonGirlCargoInterface
 {
-	ws:  PoisonGirlCrate,
-	opt: Opts,
+	ws:   PoisonGirlCrate,
+	opts: Opts,
 }
 
 impl PoisonGirlCargoInterface
 {
-	pub fn new(
-		chart: PoisonGirlCrateChart,
-		arch: Arch,
-		build_mode: BuildMode,
-	) -> Self
+	pub fn new(chart: PoisonGirlCrateChart, opts: Opts,) -> Self
 	{
-		Self {
-			ws:  PoisonGirlCrate::from(chart,),
-			opt: Opts { build_mode, feature_flags: vec![], arch, },
-		}
+		Self { ws: PoisonGirlCrate::from(chart,), opts, }
 	}
 }
 
@@ -55,7 +48,7 @@ impl CargoCrate for PoisonGirlCargoInterface
 				.file_name()
 				.to_string_lossy()
 				.to_string();
-			let arch = self.opt.arch().into();
+			let arch = self.opts.arch().into();
 
 			file_name.contains(&arch,) && file_name.ends_with(".json",)
 		},);
@@ -74,7 +67,7 @@ impl CargoCrate for PoisonGirlCargoInterface
 			.path()
 			.join("target",)
 			.join(self.specified_target()?.into(),)
-			.join(self.opt.build_mode().into(),),)
+			.join(self.opts.build_mode().into(),),)
 	}
 
 	fn as_crate(&self,) -> &impl Crate
@@ -84,7 +77,7 @@ impl CargoCrate for PoisonGirlCargoInterface
 
 	fn as_opts(&self,) -> &impl CompileOpt
 	{
-		&self.opt
+		&self.opts
 	}
 }
 
