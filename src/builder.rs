@@ -13,30 +13,11 @@
 use {
 	crate::Xtask,
 	poison_girl_dev_cargo::{AsCargoOpt, Assets, CheckKind, CliCommand, Opts},
-	poison_girl_dev_cli::Run,
-	poison_girl_dev_error::{
-		PathIsNotValidUtf8, PoisonGirlB, X, poison_girl_err,
-	},
+	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::decl_manage::{
-		crate_::CrateInfo, project_root,
+		crate_::CrateAction, project_root,
 	},
-	std::{path::PathBuf, process::Command},
 };
-
-/// Directory path for EFI boot files from mounting point
-const BOOT_DIR: &str = "efi/boot";
-/// relative path to directory build assets are put from target/
-const XTASK_ASSETS_DIR: &str = "xtask";
-/// mounting point path under target/
-const MOUNT_DIR: &str = "mnt";
-
-/// ディスクイメージのフォーマットをrawにする
-/// qemu-imgコマンドのオプション
-const DISK_IMG_FMT: &str = "-f raw";
-/// ディスクイメージのサイズ(200mb)
-const DISK_IMG_SIZE: &str = "200M";
-/// ディスクイメージのファイル名前
-const DISK_IMG_NAME: &str = "disk.img";
 
 impl Xtask
 {
@@ -100,7 +81,7 @@ impl Xtask
 
 	pub fn runner(&self,) -> PoisonGirlB<(),>
 	{
-		match self.opts.command {
+		match &self.opts.command {
 			CliCommand::Build => self.build(),
 			CliCommand::Test => self.test(),
 			CliCommand::Run => self.run(),
@@ -110,62 +91,25 @@ impl Xtask
 				Some(CheckKind::Clippy,) => self.clippy(),
 				None => self.check(),
 			},
-			CliCommand::Fmt => todo!(),
-			CliCommand::Fixture => todo!(),
-			CliCommand::Fix => todo!(),
+			CliCommand::Fmt => self.fmt(),
+			CliCommand::Fixture => self.fixture(),
+			CliCommand::Fix => self.fix(),
 		}
 	}
 
-	/// 起動用のディスクイメージをセットアップしpathを返す
-	pub(crate) fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
+	fn build(&self,) -> PoisonGirlB<(),>
 	{
-		let mut path = self.asset_dir()?;
-		path.push(DISK_IMG_NAME,);
-		let path = path;
-
-		let args = [
-			"create",
-			DISK_IMG_FMT,
-			path.to_str().ok_or(poison_girl_err!(PathIsNotValidUtf8),)?,
-			DISK_IMG_SIZE,
-		];
-		// NOTE: qemu-img create
-		// でディスクイメージを生成する際、
-		// 既存のディスクイメージが既に存在する場合は上書きする為、
-		// 上書きしたくない場合は注意
-		Command::new("qemu-img",).args(args,).run()?;
-		X(path,)
+		let args = self.opts.as_cargo_opt();
+		self.ws.build_with(&args,)
 	}
 
-	fn asset_dir(&self,) -> PoisonGirlB<PathBuf,>
-	{
-		let mut path = self.ws.path();
-		path.push("target",);
-		path.push(XTASK_ASSETS_DIR,);
-
-		if path.exists() {
-			X(path,)
-		} else {
-			let path_to_create =
-				path.to_str().ok_or(poison_girl_err!(PathIsNotValidUtf8),)?;
-			Command::new("mkdir",).args(["-p", path_to_create,],).run()?;
-			X(path,)
-		}
-	}
-
-	pub fn build(&self,) -> PoisonGirlB<(),>
+	fn run(&self,) -> PoisonGirlB<(),>
 	{
 		let args = self.opts.as_cargo_opt();
 		todo!()
 	}
 
-	pub fn run(&self,) -> PoisonGirlB<(),>
-	{
-		let args = self.opts.as_cargo_opt();
-		todo!()
-	}
-
-	pub fn check(&self,) -> PoisonGirlB<(),>
+	fn check(&self,) -> PoisonGirlB<(),>
 	{
 		let args = self.opts.as_cargo_opt();
 		self.kernel_check()?;
@@ -173,17 +117,17 @@ impl Xtask
 		self.clippy()
 	}
 
-	pub fn kernel_check(&self,) -> PoisonGirlB<(),>
+	fn kernel_check(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}
 
-	pub fn loader_check(&self,) -> PoisonGirlB<(),>
+	fn loader_check(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}
 
-	pub fn clippy(&self,) -> PoisonGirlB<(),>
+	fn clippy(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}
@@ -193,17 +137,17 @@ impl Xtask
 		todo!()
 	}
 
-	pub fn test(&self,) -> PoisonGirlB<(),>
+	fn test(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}
 
-	pub fn fmt(&self,) -> PoisonGirlB<(),>
+	fn fmt(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}
 
-	pub fn fix(&self,) -> PoisonGirlB<(),>
+	fn fix(&self,) -> PoisonGirlB<(),>
 	{
 		todo!()
 	}

@@ -11,6 +11,7 @@ use {
 
 /// orchestrate running qemu process
 pub mod builder;
+mod disk_img;
 /// detail implementation of qemu orchestration
 pub mod qemu_command;
 

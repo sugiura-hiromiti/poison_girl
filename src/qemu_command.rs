@@ -10,18 +10,24 @@
 use {
 	crate::Xtask,
 	poison_girl_dev_cargo::Arch,
+	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{PoisonGirlB, X},
-	std::path::{Path, PathBuf},
+	std::{path::Path, process::Command},
 };
 
 impl Xtask
 {
+	pub fn qemu_run(&self,) -> PoisonGirlB<(),>
+	{
+		Command::new(self.qemu(),).args(self.qemu_args()?,).run()
+	}
+
 	/// Gets the QEMU executable name based on the target architecture
 	///
 	/// # Returns
 	///
 	/// The name of the QEMU executable (e.g., "qemu-system-aarch64")
-	pub fn qemu(&self,) -> String
+	fn qemu(&self,) -> String
 	{
 		format!("qemu-system-{}", self.arch())
 	}
@@ -32,7 +38,7 @@ impl Xtask
 	/// # Returns
 	///
 	/// A vector of command-line arguments for QEMU or an error if it fails
-	pub fn qemu_args(&self,) -> PoisonGirlB<Vec<String,>,>
+	fn qemu_args(&self,) -> PoisonGirlB<Vec<String,>,>
 	{
 		let mut args = basic_args(self.arch(),);
 
@@ -63,16 +69,6 @@ impl Xtask
 
 		X(args,)
 	}
-}
-
-/// Manages OVMF firmware files for UEFI boot
-#[derive(Debug,)]
-pub struct Firmware
-{
-	/// Path to the OVMF code file
-	code: PathBuf,
-	/// Path to the OVMF variables file
-	vars: PathBuf,
 }
 
 /// Defines the mode for persistent flash memory

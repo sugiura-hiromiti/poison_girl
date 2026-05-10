@@ -40,10 +40,7 @@ fn main() -> PoisonGirlB<(),>
 {
 	let poison_girl = Xtask::new()?;
 
-	let app = || {
-		poison_girl.build()?;
-		poison_girl.run()
-	};
+	let app = || poison_girl.runner();
 
 	match app() {
 		X(_,) => println!("\n\nprogram run successfully\nexit"),
