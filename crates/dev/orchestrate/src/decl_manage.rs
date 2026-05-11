@@ -62,6 +62,7 @@ impl CargoCrate for PoisonGirlCargoInterface
 
 	fn build_artifact(&self,) -> PoisonGirlB<PathBuf,>
 	{
+		todo!("cargo metadataを利用するように変更");
 		X(self
 			.ws
 			.path()

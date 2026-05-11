@@ -62,7 +62,7 @@ syn = { version = "*", features = ["full", "extra-traits"] }
 tempfile = "*"
 toml = { version = "*", features = ["parse"] }
 ureq = { version = "*", features = ["cookies"] }
-hadris-fat = "*"
+hadris-fat = { version = "*", features = ["sync"] }
 
 [workspace.lints.clippy]
 tabs_in_doc_comments = "allow"

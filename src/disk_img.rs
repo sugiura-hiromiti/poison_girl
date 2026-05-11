@@ -1,12 +1,18 @@
 //! TODO: CLI依存を無くす
 //!       hadris-fatクレートで置きかえる
+
 use {
 	crate::{Xtask, sudo},
+	hadris_fat::{
+		FatFs,
+		format::{FatTypeSelection, FatVolumeFormatter, FormatOptions},
+	},
 	poison_girl_dev_cargo::Arch,
 	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{NotObedientPath, PoisonGirlB, X, poison_girl_err},
 	poison_girl_dev_orchestrate::decl_manage::crate_::CrateInfo,
 	std::{
+		ffi::OsString,
 		path::{Path, PathBuf},
 		process::Command,
 	},
@@ -143,6 +149,94 @@ impl MountGuard
 		std::fs::create_dir_all(&boot_dir,)?;
 		X(boot_dir,)
 	}
+}
+
+struct DiskImageBuilder
+{
+	disk_img:              PathBuf,
+	boot_loader:           PathBuf,
+	boot_loader_file_name: OsString,
+}
+
+impl DiskImageBuilder
+{
+	/// 200MiB
+	const DISK_IMG_SIZE: u64 = 200 * 1024 * 1024;
+	/// FATテーブルの個数を指定
+	/// ファイルのクラスタ連鎖情報を持つ領域がfile allocation table,
+	/// FATテーブルと呼ばれている 冗長性のため複数である事が多く、デフォルトは2
+	/// 1にする意味は、理屈上メタデータ領域を減らせる
+	/// ただしメリットが薄いので特殊な組み込み、
+	/// 極小イメージを求められない限り2で良い
+	const FAT_COPIES: u8 = 2;
+	/// 1クラスタあたりのセクタ数を指定
+	/// 値は2の羃である必要がある
+	/// クラスタサイズ = 論理セクタサイズ * クラスタ毎のセクタ数
+	/// なので、セクタ数を増やせばクラスタのサイズが大きくなる
+	/// クラスタを大きくすると:
+	/// - fatテーブルが小さくなる
+	/// - 大きいファイル中心の時に効率が良い
+	///
+	/// クラスタを小さくすると:
+	/// - fatテーブルが大きくなる
+	/// - 小さいファイルの無駄が減る
+	/// - fat種別との兼ね合いで作成できない場合がある
+	///
+	/// NOTE: 指定しない場合は適切な値が自動選択される
+	const SECTORS_PER_CLUSTER: u8 = 2;
+	/// ラベルは最大11文字
+	const VOLUME_LABEL: &str = check_volume_label("POISON GIRL",);
+
+	pub fn new(
+		disk_img: impl Into<PathBuf,>,
+		boot_loader: impl Into<PathBuf,>,
+		boot_loader_file_name: impl Into<OsString,>,
+	) -> Self
+	{
+		Self {
+			disk_img:              disk_img.into(),
+			boot_loader:           boot_loader.into(),
+			boot_loader_file_name: boot_loader_file_name.into(),
+		}
+	}
+
+	/// ```
+	/// qemu-img create -f raw <disk image> 200M
+	/// mkfs.fat -n 'POISON GIRL' -s 2 -f 2 -F 32 <disk image>
+	/// mkdir -p mnt
+	/// sudo mount -o loop <disk image> mnt
+	/// sudo mkdir -p mnt/efi/boot
+	/// sudo cp <boot loader> mnt/efi/boot/<boot loader>
+	/// sudo umount mnt
+	/// ```
+	/// と同等の処理をする
+	pub fn build_boot_disk_img(&self,) -> PoisonGirlB<(),>
+	{
+		let options = FormatOptions::new(Self::DISK_IMG_SIZE as u64,)
+			.with_fat_type(FatTypeSelection::Fat32,)
+			.with_label(Self::VOLUME_LABEL,)
+			.with_sectors_per_cluster(Self::SECTORS_PER_CLUSTER,)
+			.with_fat_copies(Self::FAT_COPIES,);
+		let disk_img_file = std::fs::OpenOptions::new()
+			.write(true,)
+			.read(true,)
+			.create(true,)
+			.truncate(true,)
+			.open(&self.disk_img,)?;
+		disk_img_file.set_len(Self::DISK_IMG_SIZE as u64,)?;
+		let fat_hndlr = FatVolumeFormatter::format(disk_img_file, options,)?;
+		let fat_root = fat_hndlr.root_dir();
+	}
+}
+
+/// TODO: 将来的にはascii/space padding/forbidden charsも検査する
+const fn check_volume_label(label: &str,) -> &str
+{
+	if label.len() > 11 {
+		panic!()
+	}
+
+	label
 }
 
 impl Xtask
