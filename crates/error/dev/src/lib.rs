@@ -154,6 +154,15 @@ impl From<NotObedientPath,> for PoisonGirlError
 	}
 }
 
+impl From<hadris_fat::error::FatError,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: hadris_fat::error::FatError,) -> Self
+	{
+		Self { loc: Location::caller(), src: DevError::FatError(value,), }
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -169,6 +178,7 @@ enum DevError
 	InvalidManifest(InvalidManifest,),
 	PathIsNotValidUtf8(PathIsNotValidUtf8,),
 	NotObedientPath(NotObedientPath,),
+	FatError(hadris_fat::error::FatError,),
 	Todo(String,),
 }
 

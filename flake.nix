@@ -166,8 +166,7 @@
                   rustToolchain
                   taplo
                   # Core build tools
-                  binutils
-                  dosfstools
+                  # binutils
                   qemu
                   dprint
                   cargo-nextest
@@ -177,7 +176,6 @@
                 ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
                 ]
                 ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
-                  util-linux # for losetup on Linux (no-op on macOS)
                 ];
               shellHook = "";
             };

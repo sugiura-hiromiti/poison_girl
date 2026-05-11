@@ -883,6 +883,7 @@ dependencies = [
 name = "poison_girl_dev_error"
 version = "0.1.0"
 dependencies = [
+ "hadris-fat",
  "ovmf-prebuilt",
  "poison_girl_this_is_b_wrapper_dev",
  "toml",

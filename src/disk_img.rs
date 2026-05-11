@@ -1,10 +1,7 @@
-//! TODO: CLI依存を無くす
-//!       hadris-fatクレートで置きかえる
-
 use {
 	crate::{Xtask, sudo},
 	hadris_fat::{
-		FatFs,
+		FatDir, FatFs, FatFsWriteExt, FileEntry,
 		format::{FatTypeSelection, FatVolumeFormatter, FormatOptions},
 	},
 	poison_girl_dev_cargo::Arch,
@@ -13,6 +10,8 @@ use {
 	poison_girl_dev_orchestrate::decl_manage::crate_::CrateInfo,
 	std::{
 		ffi::OsString,
+		fs::File,
+		io::Read,
 		path::{Path, PathBuf},
 		process::Command,
 	},
@@ -87,79 +86,17 @@ const MKFS_FAT_OPT_CAP_R: [&str; 2] = ["-R", "32",];
 /// ESPなら数百MiB確保して32bit指定するのが無難
 const MKFS_FAT_OPT_CAP_F: [&str; 2] = ["-F", "32",];
 
-/// RAII風のマウントポイント管理の責務を持つ
-/// NOTE: Resource Acquisition Is Initialization
-struct MountGuard
-{
-	mounted:     bool,
-	mount_point: PathBuf,
-}
-
-impl MountGuard
-{
-	/// Directory path for EFI boot files from mounting point
-	const BOOT_DIR: &str = "efi/boot";
-	/// mounting point path under target/
-	const MOUNT_DIR: &str = "mnt";
-
-	fn new(asset_dir: impl AsRef<Path,>,) -> PoisonGirlB<Self,>
-	{
-		let mount_point = asset_dir.as_ref().join(Self::MOUNT_DIR,);
-		std::fs::create_dir_all(&mount_point,)?;
-		X(Self { mounted: false, mount_point, },)
-	}
-
-	pub fn mount_disk_img(
-		&mut self,
-		disk_img_path: impl AsRef<Path,>,
-	) -> PoisonGirlB<(),>
-	{
-		sudo()
-		// - mountは基本的にblock deviceをマウントする
-		// - ディスクイメージはカーネルから見るとただのファイルなので
-		//   仮想的なブロックデバイスと対応付ける事でブロックデバイスとして扱う事が出来る
-	   // - その仮想的なブロックデバイスの事をloop deviceと呼ぶ
-			.args(["mount", "-o", "loop",],)
-			.arg(disk_img_path.as_ref(),)
-			.arg(&self.mount_point,)
-			.run()?;
-		self.mounted = true;
-		X((),)
-	}
-
-	/// uefiではboot_loaderへのデフォルトパスが決まっており、
-	/// boot loaderの名称はarchitecture毎に決まっている
-	/// boot loaderの名前解決は`MountGuard`の責務外なので外部から注入する
-	/// NOTE: https://uefi.org/specs/UEFI/2.10/03_Boot_Manager.html#uefi-image-types
-	pub fn copy_boot_loader(
-		&self,
-		boot_loader: impl AsRef<Path,>,
-		boot_file_name: &str,
-	) -> PoisonGirlB<(),>
-	{
-		let boot_dir = self.ensure_boot_dir()?;
-		let boot_loader = boot_loader.as_ref();
-		std::fs::copy(boot_loader, boot_dir.join(boot_file_name,),)?;
-		X((),)
-	}
-
-	fn ensure_boot_dir(&self,) -> PoisonGirlB<PathBuf,>
-	{
-		let boot_dir = self.mount_point.join(Self::BOOT_DIR,);
-		std::fs::create_dir_all(&boot_dir,)?;
-		X(boot_dir,)
-	}
-}
-
 struct DiskImageBuilder
 {
 	disk_img:              PathBuf,
 	boot_loader:           PathBuf,
-	boot_loader_file_name: OsString,
+	boot_loader_file_name: String,
 }
 
 impl DiskImageBuilder
 {
+	/// boot loaderが置かれる(fat内の)パス
+	const BOOT_DIR: &str = "efi/boot";
 	/// 200MiB
 	const DISK_IMG_SIZE: u64 = 200 * 1024 * 1024;
 	/// FATテーブルの個数を指定
@@ -190,7 +127,7 @@ impl DiskImageBuilder
 	pub fn new(
 		disk_img: impl Into<PathBuf,>,
 		boot_loader: impl Into<PathBuf,>,
-		boot_loader_file_name: impl Into<OsString,>,
+		boot_loader_file_name: impl Into<String,>,
 	) -> Self
 	{
 		Self {
@@ -212,11 +149,13 @@ impl DiskImageBuilder
 	/// と同等の処理をする
 	pub fn build_boot_disk_img(&self,) -> PoisonGirlB<(),>
 	{
-		let options = FormatOptions::new(Self::DISK_IMG_SIZE as u64,)
-			.with_fat_type(FatTypeSelection::Fat32,)
-			.with_label(Self::VOLUME_LABEL,)
-			.with_sectors_per_cluster(Self::SECTORS_PER_CLUSTER,)
-			.with_fat_copies(Self::FAT_COPIES,);
+		let disk_img_file = self.create_disk_img_file()?;
+		self.place_boot_loader(disk_img_file,)?;
+		X((),)
+	}
+
+	fn create_disk_img_file(&self,) -> PoisonGirlB<std::fs::File,>
+	{
 		let disk_img_file = std::fs::OpenOptions::new()
 			.write(true,)
 			.read(true,)
@@ -224,8 +163,50 @@ impl DiskImageBuilder
 			.truncate(true,)
 			.open(&self.disk_img,)?;
 		disk_img_file.set_len(Self::DISK_IMG_SIZE as u64,)?;
+
+		X(disk_img_file,)
+	}
+
+	fn place_boot_loader(&self, disk_img_file: File,) -> PoisonGirlB<(),>
+	{
+		let options = FormatOptions::new(Self::DISK_IMG_SIZE as u64,)
+			.with_fat_type(FatTypeSelection::Fat32,)
+			.with_label(Self::VOLUME_LABEL,)
+			.with_sectors_per_cluster(Self::SECTORS_PER_CLUSTER,)
+			.with_fat_copies(Self::FAT_COPIES,);
 		let fat_hndlr = FatVolumeFormatter::format(disk_img_file, options,)?;
 		let fat_root = fat_hndlr.root_dir();
+
+		let boot_loader_entry =
+			self.ensure_boot_loader_entry(&fat_hndlr, &fat_root,)?;
+		self.write_boot_loader(&fat_hndlr, &boot_loader_entry,)
+	}
+
+	fn ensure_boot_loader_entry(
+		&self,
+		fat_hndlr: &FatFs<File,>,
+		fat_root: &FatDir<File,>,
+	) -> PoisonGirlB<FileEntry,>
+	{
+		let boot_dir = Self::BOOT_DIR
+			.split("/",)
+			.try_fold(fat_root, |a, e| fat_hndlr.create_dir(a, e,),)?;
+		let boot_loader_entry =
+			fat_hndlr.create_file(&boot_dir, &self.boot_loader_file_name,)?;
+		X(boot_loader_entry,)
+	}
+
+	fn write_boot_loader(
+		&self,
+		fat_hndlr: &FatFs<File,>,
+		boot_loader_entry: &FileEntry,
+	) -> PoisonGirlB<(),>
+	{
+		let mut boot_loader_file =
+			std::fs::OpenOptions::new().read(true,).open(&self.boot_loader,)?;
+		let mut boot_loader_writer = fat_hndlr.write_file(boot_loader_entry,)?;
+		std::io::copy(&mut boot_loader_file, &mut boot_loader_writer,)?;
+		X((),)
 	}
 }
 
@@ -241,20 +222,11 @@ const fn check_volume_label(label: &str,) -> &str
 
 impl Xtask
 {
-	/// 起動用のディスクイメージをセットアップしpathを返す
+	/// 起動用のディスクイメージへのパスを返す
+	/// NOTE: 存在確認やセットアップはこの関数の責務ではない
 	pub(crate) fn build_boot_disk_img(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		let asset_dir = self.asset_dir()?;
-		// path.push(DISK_IMG_NAME,);
-		let disk_img_path = asset_dir.join(DISK_IMG_NAME,);
-
-		create_disk_img(&disk_img_path,)?;
-		fmt_as_fat(&disk_img_path,)?;
-
-		// マウント作業開始
-		let mut mount = MountGuard::new(asset_dir,)?;
-		mount.mount_disk_img(&disk_img_path,)?;
-		X(disk_img_path,)
+		X(self.asset_dir()?.join(DISK_IMG_NAME,),)
 	}
 
 	fn asset_dir(&self,) -> PoisonGirlB<PathBuf,>
@@ -263,33 +235,4 @@ impl Xtask
 		std::fs::create_dir_all(&path,)?;
 		X(path,)
 	}
-}
-
-fn create_disk_img(file_path: impl AsRef<Path,>,) -> PoisonGirlB<(),>
-{
-	// NOTE: qemu-img create
-	// でディスクイメージを生成する際、
-	// 既存のディスクイメージが既に存在する場合は上書きする為、
-	// 上書きしたくない場合は注意
-	Command::new("qemu-img",)
-		.arg("create",)
-		.args(DISK_IMG_FMT,)
-		.arg(file_path.as_ref(),)
-		.arg(DISK_IMG_SIZE,)
-		.run()
-}
-
-fn fmt_as_fat(file_path: impl AsRef<Path,>,) -> PoisonGirlB<(),>
-{
-	Command::new("mkfs.fat",)
-		.args(
-			MKFS_FAT_OPT_N
-				.into_iter()
-				.chain(MKFS_FAT_OPT_S,)
-				.chain(MKFS_FAT_OPT_F,)
-				.chain(MKFS_FAT_OPT_CAP_R,)
-				.chain(MKFS_FAT_OPT_CAP_F,),
-		)
-		.arg(file_path.as_ref(),)
-		.run()
 }
