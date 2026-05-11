@@ -6,7 +6,7 @@
 use {
 	poison_girl_dev_cargo::{Arch, Assets, Opts},
 	poison_girl_dev_orchestrate::decl_manage::crate_::PoisonGirlCrate,
-	std::path::PathBuf,
+	std::{path::PathBuf, process::Command},
 };
 
 /// orchestrate running qemu process
@@ -38,4 +38,11 @@ impl Xtask
 	{
 		&self.assets.firmware.vars
 	}
+}
+
+fn sudo() -> Command
+{
+	let mut sudo = Command::new("sudo",);
+	sudo.args(["-n", "--",],);
+	sudo
 }

@@ -39,5 +39,16 @@
 //! wfi(); // This function never returns
 //! ```
 
+use crate::bridge::{device_tree::DeviceTreeAddress, graphic::FrameBufConf};
+
 pub mod device_tree;
 pub mod graphic;
+
+/// loaderからkernelに渡される情報を一つの構造体にまとめる
+/// 必要に応じて拡張していこう!
+#[repr(C)]
+pub struct BootInfo
+{
+	frame_buf:           FrameBufConf,
+	device_tree_address: DeviceTreeAddress,
+}

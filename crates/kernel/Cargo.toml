@@ -17,7 +17,5 @@ bitmask = []
 bltonly = []
 default = ["bltonly"]
 
-[lints.clippy]
-tabs_in_doc_comments = "allow"
-assign_op_pattern = "allow"
-mut_from_ref = "allow"
+[lints]
+workspace = true

@@ -9,7 +9,9 @@ use {
 	poison_girl_this_is_b_wrapper_dev::B,
 	std::fmt::Display,
 };
-
+/// X/Y はResultの別名ではなく、分岐値 B の左右である
+/// PoisonGirlB<T> は error-specialized B である
+/// no_std/stdをまたぐ統一的な失敗伝播モデルである
 pub type PoisonGirlB<T,> = B<T, PoisonGirlError,>;
 
 #[derive(Debug,)]
@@ -141,6 +143,17 @@ impl From<PathIsNotValidUtf8,> for PoisonGirlError
 	}
 }
 
+impl From<NotObedientPath,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: NotObedientPath,) -> Self
+	{
+		Self {
+			loc: Location::caller(), src: DevError::NotObedientPath(value,),
+		}
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -155,6 +168,7 @@ enum DevError
 	HostTupleNotFound(HostTupleNotFound,),
 	InvalidManifest(InvalidManifest,),
 	PathIsNotValidUtf8(PathIsNotValidUtf8,),
+	NotObedientPath(NotObedientPath,),
 	Todo(String,),
 }
 
@@ -176,6 +190,9 @@ impl InvalidManifest
 
 #[derive(Debug,)]
 pub struct PathIsNotValidUtf8;
+
+#[derive(Debug,)]
+pub struct NotObedientPath;
 
 #[macro_export]
 macro_rules! poison_girl_err {

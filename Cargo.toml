@@ -62,10 +62,19 @@ syn = { version = "*", features = ["full", "extra-traits"] }
 tempfile = "*"
 toml = { version = "*", features = ["parse"] }
 ureq = { version = "*", features = ["cookies"] }
+hadris-fat = "*"
 
 [workspace.lints.clippy]
 tabs_in_doc_comments = "allow"
 mut_from_ref = "allow"
+# panicing APIs
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+panic_in_result_fn = "deny"
+todo = "deny"
+unimplemented = "deny"
+unreachable = "deny"
 
 # [profile.dev.package.xtask]
 # opt-level = 3
@@ -77,8 +86,12 @@ edition = "2024"
 
 [dependencies]
 colored = { workspace = true }
+hadris-fat = { workspace = true }
 poison_girl_dev_cargo = { workspace = true }
 poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
 poison_girl_dev_orchestrate = { workspace = true }
 poison_girl_dev_cli = { workspace = true }
+
+[lints]
+workspace = true

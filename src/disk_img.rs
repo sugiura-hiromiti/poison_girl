@@ -1,12 +1,12 @@
+//! TODO: CLI依存を無くす
+//!       hadris-fatクレートで置きかえる
 use {
-	crate::Xtask,
+	crate::{Xtask, sudo},
+	poison_girl_dev_cargo::Arch,
 	poison_girl_dev_cli::Run,
-	poison_girl_dev_error::{
-		PathIsNotValidUtf8, PoisonGirlB, X, poison_girl_err,
-	},
+	poison_girl_dev_error::{NotObedientPath, PoisonGirlB, X, poison_girl_err},
 	poison_girl_dev_orchestrate::decl_manage::crate_::CrateInfo,
 	std::{
-		env::set_current_dir,
 		path::{Path, PathBuf},
 		process::Command,
 	},
@@ -28,7 +28,9 @@ const DISK_IMG_NAME: &str = "disk.img";
 /// mkfs.fatの-nオプション
 /// ボリュームラベル(名前)をつける
 /// NOTE: ラベルは最大11文字
-const MKFS_FAT_OPT_N: [&str; 2] = ["-n", "'POISON GIRL'",];
+/// NOTE: `Command`はシェルを経由しないのでクオートや変数展開は機能しない
+///       ラベルをshellの時のようにシングルクオートしていないのはその為
+const MKFS_FAT_OPT_N: [&str; 2] = ["-n", "POISON GIRL",];
 /// mkfs.fatの-sオプション
 /// 1クラスタあたりのセクタ数を指定
 /// 値は2の羃である必要がある
@@ -79,9 +81,12 @@ const MKFS_FAT_OPT_CAP_R: [&str; 2] = ["-R", "32",];
 /// ESPなら数百MiB確保して32bit指定するのが無難
 const MKFS_FAT_OPT_CAP_F: [&str; 2] = ["-F", "32",];
 
+/// RAII風のマウントポイント管理の責務を持つ
+/// NOTE: Resource Acquisition Is Initialization
 struct MountGuard
 {
-	mounted: bool,
+	mounted:     bool,
+	mount_point: PathBuf,
 }
 
 impl MountGuard
@@ -91,67 +96,96 @@ impl MountGuard
 	/// mounting point path under target/
 	const MOUNT_DIR: &str = "mnt";
 
-	fn new() -> Self
+	fn new(asset_dir: impl AsRef<Path,>,) -> PoisonGirlB<Self,>
 	{
-		Self { mounted: false, }
+		let mount_point = asset_dir.as_ref().join(Self::MOUNT_DIR,);
+		std::fs::create_dir_all(&mount_point,)?;
+		X(Self { mounted: false, mount_point, },)
 	}
 
-	fn make_mount_point(&self, asset_dir: &Path,) -> PoisonGirlB<PathBuf,>
+	pub fn mount_disk_img(
+		&mut self,
+		disk_img_path: impl AsRef<Path,>,
+	) -> PoisonGirlB<(),>
 	{
-		let mut mnt_dir = asset_dir.to_path_buf();
-		mnt_dir.push(Self::MOUNT_DIR,);
-		let mnt_dir = mnt_dir;
-		Command::new("mkdir",).arg("-p",).arg(&mnt_dir,).run()?;
-		X(mnt_dir,)
+		sudo()
+		// - mountは基本的にblock deviceをマウントする
+		// - ディスクイメージはカーネルから見るとただのファイルなので
+		//   仮想的なブロックデバイスと対応付ける事でブロックデバイスとして扱う事が出来る
+	   // - その仮想的なブロックデバイスの事をloop deviceと呼ぶ
+			.args(["mount", "-o", "loop",],)
+			.arg(disk_img_path.as_ref(),)
+			.arg(&self.mount_point,)
+			.run()?;
+		self.mounted = true;
+		X((),)
+	}
+
+	/// uefiではboot_loaderへのデフォルトパスが決まっており、
+	/// boot loaderの名称はarchitecture毎に決まっている
+	/// boot loaderの名前解決は`MountGuard`の責務外なので外部から注入する
+	/// NOTE: https://uefi.org/specs/UEFI/2.10/03_Boot_Manager.html#uefi-image-types
+	pub fn copy_boot_loader(
+		&self,
+		boot_loader: impl AsRef<Path,>,
+		boot_file_name: &str,
+	) -> PoisonGirlB<(),>
+	{
+		let boot_dir = self.ensure_boot_dir()?;
+		let boot_loader = boot_loader.as_ref();
+		std::fs::copy(boot_loader, boot_dir.join(boot_file_name,),)?;
+		X((),)
+	}
+
+	fn ensure_boot_dir(&self,) -> PoisonGirlB<PathBuf,>
+	{
+		let boot_dir = self.mount_point.join(Self::BOOT_DIR,);
+		std::fs::create_dir_all(&boot_dir,)?;
+		X(boot_dir,)
 	}
 }
 
 impl Xtask
 {
 	/// 起動用のディスクイメージをセットアップしpathを返す
-	pub(crate) fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
+	pub(crate) fn build_boot_disk_img(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		let mut path = self.asset_dir()?;
-		path.push(DISK_IMG_NAME,);
-		let file_path = path;
+		let asset_dir = self.asset_dir()?;
+		// path.push(DISK_IMG_NAME,);
+		let disk_img_path = asset_dir.join(DISK_IMG_NAME,);
 
-		create_disk_img(&file_path,)?;
-		fmt_as_fat(&file_path,)?;
-		X(file_path,)
+		create_disk_img(&disk_img_path,)?;
+		fmt_as_fat(&disk_img_path,)?;
+
+		// マウント作業開始
+		let mut mount = MountGuard::new(asset_dir,)?;
+		mount.mount_disk_img(&disk_img_path,)?;
+		X(disk_img_path,)
 	}
 
 	fn asset_dir(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		let mut path = self.ws.path();
-		path.push("target",);
-		path.push(XTASK_ASSETS_DIR,);
-
-		if path.exists() {
-			X(path,)
-		} else {
-			let path_to_create =
-				path.to_str().ok_or(poison_girl_err!(PathIsNotValidUtf8),)?;
-			Command::new("mkdir",).args(["-p", path_to_create,],).run()?;
-			X(path,)
-		}
+		let path = self.ws.path().join("target",).join(XTASK_ASSETS_DIR,);
+		std::fs::create_dir_all(&path,)?;
+		X(path,)
 	}
 }
 
-fn create_disk_img(file_path: &Path,) -> PoisonGirlB<(),>
+fn create_disk_img(file_path: impl AsRef<Path,>,) -> PoisonGirlB<(),>
 {
-	let args = ["create",].into_iter().chain(DISK_IMG_FMT,).chain([
-		file_path.to_str().ok_or(poison_girl_err!(PathIsNotValidUtf8),)?,
-		DISK_IMG_SIZE,
-	],);
 	// NOTE: qemu-img create
 	// でディスクイメージを生成する際、
 	// 既存のディスクイメージが既に存在する場合は上書きする為、
 	// 上書きしたくない場合は注意
-	Command::new("qemu-img",).args(args,).run()?;
-	X((),)
+	Command::new("qemu-img",)
+		.arg("create",)
+		.args(DISK_IMG_FMT,)
+		.arg(file_path.as_ref(),)
+		.arg(DISK_IMG_SIZE,)
+		.run()
 }
 
-fn fmt_as_fat(file_path: &Path,) -> PoisonGirlB<(),>
+fn fmt_as_fat(file_path: impl AsRef<Path,>,) -> PoisonGirlB<(),>
 {
 	Command::new("mkfs.fat",)
 		.args(
@@ -162,6 +196,6 @@ fn fmt_as_fat(file_path: &Path,) -> PoisonGirlB<(),>
 				.chain(MKFS_FAT_OPT_CAP_R,)
 				.chain(MKFS_FAT_OPT_CAP_F,),
 		)
-		.arg(file_path,)
+		.arg(file_path.as_ref(),)
 		.run()
 }

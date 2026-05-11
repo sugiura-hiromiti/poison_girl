@@ -178,8 +178,6 @@
                 ]
                 ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
                   util-linux # for losetup on Linux (no-op on macOS)
-                  mount
-                  umount
                 ];
               shellHook = "";
             };

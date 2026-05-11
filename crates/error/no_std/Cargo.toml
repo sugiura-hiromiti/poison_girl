@@ -5,3 +5,6 @@ edition = "2024"
 
 [dependencies]
 poison_girl_this_is_b_wrapper_no_std = { workspace = true }
+
+[lints]
+workspace = true
