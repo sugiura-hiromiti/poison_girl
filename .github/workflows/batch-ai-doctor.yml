@@ -15,6 +15,7 @@ permissions:
 
 env:
    AI_DOCTOR_MODEL: openai/gpt-5-mini
+   AI_LIGHT_MODEL: openai/gpt-5-nano
 
 jobs:
    scan-prs:
@@ -30,8 +31,10 @@ jobs:
               # Uses tzdata to shift from Asia/Tokyo to UTC
               utc_since=$(TZ=Asia/Tokyo date -d 'yesterday 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
               utc_until=$(TZ=Asia/Tokyo date -d 'today 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
-              echo "utc_since=$utc_since" >> "$GITHUB_OUTPUT"
-              echo "utc_until=$utc_until" >> "$GITHUB_OUTPUT"
+              {
+                echo "utc_since=$utc_since"
+                echo "utc_until=$utc_until"
+              } >> "$GITHUB_OUTPUT"
 
          - name: List yesterday’s PRs (JST window, including reopened)
            id: list_prs
@@ -99,6 +102,9 @@ jobs:
          matrix:
             pr: ${{ fromJSON(needs.scan-prs.outputs.pr_list) }}
       steps:
+         - name: Checkout repository
+           uses: actions/checkout@v4
+
          - name: Get PR details
            id: details
            uses: actions/github-script@v7
@@ -160,80 +166,62 @@ jobs:
                 echo "No CI workflow run found for this PR head SHA." > ci_logs.txt
               fi
 
-         - name: Build AI prompt
+         - name: Build AI diagnosis prompt
            if: ${{ steps.status.outputs.conclusion == 'failure' }}
-           run: |
-              set -euo pipefail
-              PR_NUMBER="${{ matrix.pr }}"
-              TITLE="${{ fromJSON(steps.details.outputs.result).title }}"
-              CI_RUN_URL="${{ steps.status.outputs.html_url }}"
-              # Sanitize logs: strip non-printable/ANSI, then hard-cap size to avoid model 8k token limit
-              if [ -f ci_logs.txt ]; then
-                sed -E 's/[^[:print:]\t]//g' ci_logs.txt > ci_logs_clean.txt || cp ci_logs.txt ci_logs_clean.txt
-                # Keep only the last ~15KB to stay well under token limits
-                tail -c 15000 ci_logs_clean.txt > ci_logs_cropped.txt || cp ci_logs_clean.txt ci_logs_cropped.txt
-              else
-                echo "ci_logs.txt not found." > ci_logs_cropped.txt
-              fi
+           uses: actions/github-script@v7
+           env:
+              CI_RUN_URL: ${{ steps.status.outputs.html_url }}
+           with:
+              script: |
+                 const doctor = require('./.github/scripts/ai-doctor');
+                 const pr = ${{ steps.details.outputs.result }};
+                 await doctor.buildFailurePrompt({
+                   github,
+                   context,
+                   pr,
+                   ciRunUrl: process.env.CI_RUN_URL,
+                   logPath: 'ci_logs.txt',
+                   outPath: 'ai_prompt.txt'
+                 });
 
-              {
-                echo "PR Number: ${PR_NUMBER}"
-                echo "PR Title: ${TITLE}"
-                echo "CI Run: ${CI_RUN_URL}"
-                echo
-                echo "Logs (cropped to last ~15KB):"
-                cat ci_logs_cropped.txt
-              } > ai_prompt.txt
-
-         - name: AI severity + summary
+         - name: AI diagnosis
            if: ${{ steps.status.outputs.conclusion == 'failure' }}
            id: ai
            uses: actions/ai-inference@v2
            continue-on-error: true
            with:
               system-prompt: >-
-                You are an expert reviewer. Classify CI failure severity (critical/moderate/minor/none)
-                and summarize issues. Return only JSON with this shape:
-                {"severity":"critical|moderate|minor|none","summary":"short actionable summary"}.
+                You are an engineering diagnostician for CI failures. Explain the failure
+                semantically: likely cause, confidence, evidence, impact, concrete next
+                actions, and small experiment ideas. Return only valid JSON matching the
+                schema in the prompt.
               prompt-file: ai_prompt.txt
               model: ${{ env.AI_DOCTOR_MODEL }}
               endpoint: https://models.github.ai/inference
-              max-completion-tokens: 300
+              max-completion-tokens: 900
               token: ${{ github.token }}
 
          - name: Parse AI result
            if: ${{ steps.status.outputs.conclusion == 'failure' }}
            id: parse
+           uses: actions/github-script@v7
            env:
               AI_RESPONSE_FILE: ${{ steps.ai.outputs.response-file }}
               CI_RUN_URL: ${{ steps.status.outputs.html_url }}
-           run: |
-              set -euo pipefail
-              if [ -n "${AI_RESPONSE_FILE:-}" ] && [ -s "$AI_RESPONSE_FILE" ]; then
-                sed -e '/^```json[[:space:]]*$/d' -e '/^```[[:space:]]*$/d' "$AI_RESPONSE_FILE" > ai_response.json
-              else
-                jq -n --arg url "$CI_RUN_URL" \
-                  '{severity: "moderate", summary: ("CI failed, but AI inference did not return a response. Check " + $url + ".")}' \
-                  > ai_response.json
-              fi
-
-              if jq -e . ai_response.json > /dev/null 2>&1; then
-                severity=$(jq -r '.severity // "moderate"' ai_response.json)
-                summary=$(jq -r '.summary // "No summary returned."' ai_response.json)
-              else
-                severity="moderate"
-                summary="CI failed, but AI inference returned invalid JSON. Check ${CI_RUN_URL}."
-              fi
-
-              case "$severity" in
-                critical|moderate|minor|none) ;;
-                *) severity="moderate" ;;
-              esac
-
-              {
-                printf 'severity=%s\n' "$severity"
-                printf 'summary<<AI_SUMMARY\n%s\nAI_SUMMARY\n' "$summary"
-              } >> "$GITHUB_OUTPUT"
+           with:
+              script: |
+                 const doctor = require('./.github/scripts/ai-doctor');
+                 const diagnosis = doctor.parseDiagnosisResponse({
+                   responseFile: process.env.AI_RESPONSE_FILE,
+                   ciRunUrl: process.env.CI_RUN_URL
+                 });
+                 doctor.writeDiagnosisArtifacts({
+                   diagnosis,
+                   ciRunUrl: process.env.CI_RUN_URL,
+                   timestamp: new Date().toISOString()
+                 });
+                 core.setOutput('severity', diagnosis.severity);
+                 core.setOutput('headline', diagnosis.headline);
 
          - name: Search existing issue
            if: ${{ steps.status.outputs.conclusion == 'success' || steps.status.outputs.conclusion == 'failure' }}
@@ -252,7 +240,7 @@ jobs:
            uses: actions/github-script@v7
            with:
               script: |
-                 const issue = JSON.parse('${{ steps.search.outputs.result }}');
+                 const issue = ${{ steps.search.outputs.result }};
                  const now = new Date().toISOString();
                  await github.rest.issues.createComment({
                    owner: context.repo.owner,
@@ -272,12 +260,13 @@ jobs:
            uses: actions/github-script@v7
            with:
               script: |
+                 const fs = require('fs');
                  const prNumber = "${{ matrix.pr }}";
-                 const issue = JSON.parse('${{ steps.search.outputs.result }}');
-                 const severity = "${{ steps.parse.outputs.severity }}";
-                 const summary = "${{ steps.parse.outputs.summary }}";
-                 const now = new Date().toISOString();
-                 const commentBody = `### [${now}] CI Failure Analysis\n**Severity:** ${severity}\n\n${summary}`;
+                 const issue = ${{ steps.search.outputs.result }};
+                 const diagnosis = JSON.parse(fs.readFileSync('ai_diagnosis.json', 'utf8'));
+                 const severity = diagnosis.severity;
+                 const commentBody = fs.readFileSync('failure_comment.md', 'utf8');
+                 const severityLabel = `severity:${severity}`;
 
                  if (issue) {
                    await github.rest.issues.createComment({
@@ -291,16 +280,29 @@ jobs:
                      owner: context.repo.owner,
                      repo: context.repo.repo,
                      issue_number: issue.number,
-                     state: "open",
-                     labels: ["ai-review", "ci-failure", `severity:${severity}`]
+                     state: "open"
+                   });
+
+                   const preservedLabels = (issue.labels || [])
+                     .map(label => label.name)
+                     .filter(label => label && !label.startsWith('severity:'));
+                   await github.rest.issues.setLabels({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     issue_number: issue.number,
+                     labels: Array.from(new Set([...preservedLabels, "ai-review", "ci-failure", severityLabel]))
                    });
                  } else {
                    const created = await github.rest.issues.create({
                      owner: context.repo.owner,
                      repo: context.repo.repo,
                      title: `AI Review: PR #${prNumber}`,
-                     body: `Tracking CI health for PR #${prNumber}. Auto-updated daily.`,
-                     labels: ["ai-review", "ci-failure", `severity:${severity}`]
+                     body: [
+                       `Tracking CI health for PR #${prNumber}. Auto-updated daily.`,
+                       "",
+                       "AI Doctor keeps semantic notes here: likely cause, evidence, next actions, and experiment ideas."
+                     ].join("\n"),
+                     labels: ["ai-review", "ci-failure", severityLabel]
                    });
 
                    await github.rest.issues.createComment({
@@ -324,63 +326,39 @@ jobs:
           run: |
              utc_since=$(TZ=Asia/Tokyo date -d 'yesterday 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
              utc_until=$(TZ=Asia/Tokyo date -d 'today 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
-             echo "utc_since=$utc_since" >> "$GITHUB_OUTPUT"
-             echo "utc_until=$utc_until" >> "$GITHUB_OUTPUT"
+             date_jst=$(TZ=Asia/Tokyo date -d 'yesterday 00:00' +%Y-%m-%d)
+             {
+               echo "utc_since=$utc_since"
+               echo "utc_until=$utc_until"
+               echo "date_jst=$date_jst"
+             } >> "$GITHUB_OUTPUT"
 
         - name: Checkout repository
           uses: actions/checkout@v4
           with:
              fetch-depth: 0
 
-        - name: Collect PR activity stats
-          id: pr_stats
+        - name: Collect digest context
+          id: digest_context
           uses: actions/github-script@v7
+          env:
+             UTC_SINCE: ${{ steps.date_digest.outputs.utc_since }}
+             UTC_UNTIL: ${{ steps.date_digest.outputs.utc_until }}
+             DATE_JST: ${{ steps.date_digest.outputs.date_jst }}
           with:
             script: |
-              const since = "${{ steps.date_digest.outputs.utc_since }}";
-              const until = "${{ steps.date_digest.outputs.utc_until }}";
-              const repo = `${context.repo.owner}/${context.repo.repo}`;
-
-              const qOpened = `repo:${repo} is:pr created:>=${since} created:<${until}`;
-              const qMerged = `repo:${repo} is:pr is:merged merged:>=${since} merged:<${until}`;
-              const qClosedNotMerged = `repo:${repo} is:pr is:closed -is:merged closed:>=${since} closed:<${until}`;
-
-              const [opened, merged, closed] = await Promise.all([
-                github.rest.search.issuesAndPullRequests({ q: qOpened }),
-                github.rest.search.issuesAndPullRequests({ q: qMerged }),
-                github.rest.search.issuesAndPullRequests({ q: qClosedNotMerged }),
-              ]);
-
-              return {
-                opened: opened.data.total_count,
-                merged: merged.data.total_count,
-                closed_not_merged: closed.data.total_count,
-              };
-
-        - name: Collect CI failure issues (window)
-          id: ci_failures
-          uses: actions/github-script@v7
-          with:
-            script: |
-              const since = "${{ steps.date_digest.outputs.utc_since }}";
-              const until = "${{ steps.date_digest.outputs.utc_until }}";
-              const repo = `${context.repo.owner}/${context.repo.repo}`;
-              const q = `repo:${repo} is:issue label:ai-review label:ci-failure updated:>=${since} updated:<${until}`;
-              const res = await github.rest.search.issuesAndPullRequests({ q });
-              const items = res.data.items.map(it => {
-                const labels = it.labels || [];
-                const severity = (labels.find(l => (l.name || '').startsWith('severity:'))?.name) || 'severity:unknown';
-                return {
-                  number: it.number,
-                  title: it.title,
-                  url: it.html_url,
-                  updatedAt: it.updated_at,
-                  severity,
-                };
+              const fs = require('fs');
+              const doctor = require('./.github/scripts/ai-doctor');
+              const digestContext = await doctor.collectDigestContext({
+                github,
+                context,
+                since: process.env.UTC_SINCE,
+                until: process.env.UTC_UNTIL,
+                dateJst: process.env.DATE_JST
               });
-              require('fs').writeFileSync('ci_failures.json', JSON.stringify(items));
-              core.setOutput('count', String(items.length));
-              return items;
+              fs.writeFileSync('digest_context.json', `${JSON.stringify(digestContext, null, 2)}\n`);
+              core.setOutput('ci_failure_count', String(digestContext.ci_failures.length));
+              return { ci_failure_count: digestContext.ci_failures.length };
 
         - name: Compute git activity (since/until)
           id: git_stats
@@ -404,67 +382,66 @@ jobs:
                awk '{d[$0]++} END {for (k in d) printf "%s\t%s\n", d[k], k}' | \
                sort -rn | head -5 > top_dirs.txt || true
 
-        - name: Build digest markdown
-          run: |
-             set -euo pipefail
-             SINCE="${{ steps.date_digest.outputs.utc_since }}"
-             DATE_JST=$(TZ=Asia/Tokyo date -d "${SINCE}" +%Y-%m-%d)
-             OPENED='${{ fromJSON(steps.pr_stats.outputs.result).opened }}'
-             MERGED='${{ fromJSON(steps.pr_stats.outputs.result).merged }}'
-             CLOSED='${{ fromJSON(steps.pr_stats.outputs.result).closed_not_merged }}'
-             COMMITS='${{ steps.git_stats.outputs.commits }}'
-             CI_FAIL_COUNT='${{ steps.ci_failures.outputs.count }}'
+        - name: Build digest prompt
+          id: digest_prompt
+          uses: actions/github-script@v7
+          env:
+             COMMITS: ${{ steps.git_stats.outputs.commits }}
+          with:
+             script: |
+                const fs = require('fs');
+                const doctor = require('./.github/scripts/ai-doctor');
+                const digestContext = JSON.parse(fs.readFileSync('digest_context.json', 'utf8'));
+                doctor.attachGitStats(digestContext, {
+                  commits: process.env.COMMITS,
+                  topAuthorsPath: 'top_authors.txt',
+                  topDirsPath: 'top_dirs.txt'
+                });
+                fs.writeFileSync('digest_context.json', `${JSON.stringify(digestContext, null, 2)}\n`);
+                fs.writeFileSync('digest_prompt.txt', `${doctor.buildDigestPrompt(digestContext)}\n`);
 
-             {
-               echo "### Daily Activity Summary (${DATE_JST} JST Window)"
-               echo
-               echo "- PRs opened: ${OPENED}"
-               echo "- PRs merged: ${MERGED}"
-               echo "- PRs closed (unmerged): ${CLOSED}"
-               echo "- Commits: ${COMMITS}"
-               echo "- CI failure issues updated: ${CI_FAIL_COUNT}"
-               echo
-               echo "### Top Authors"
-               if [ -s top_authors.txt ]; then
-                 awk -F '\t' '{printf "- %s commits: %s\n", $1, $2}' top_authors.txt
-               else
-                 echo "- None"
-               fi
-               echo
-               echo "### Hot Directories"
-               if [ -s top_dirs.txt ]; then
-                 awk -F '\t' '{printf "- %s files changed: %s\n", $1, $2}' top_dirs.txt
-               else
-                 echo "- None"
-               fi
-               echo
-               echo "### CI Failures"
-               if [ -s ci_failures.json ] && [ "$(jq length ci_failures.json)" -gt 0 ]; then
-                 jq -r '.[] | "- [" + .severity + "] " + .title + " (" + .url + ")"' ci_failures.json
-               else
-                 echo "- None"
-               fi
-               echo
-               echo "### TODOs"
-               echo "- [ ] Review CI failures above and assign owners"
-               if [ -s ci_failures.json ] && [ "$(jq length ci_failures.json)" -gt 0 ]; then
-                 jq -r '.[] | "- [ ] Investigate PR from: " + (.title | capture("PR #(?<num>\\d+)").num // "unknown") + " — " + .severity + " — " + .url' ci_failures.json || true
-               fi
-               if [ -s top_dirs.txt ]; then
-                 awk -F '\t' '{printf "- [ ] Review changes in %s (%s files)\n", $2, $1}' top_dirs.txt
-               fi
-               if [ -s top_authors.txt ]; then
-                 awk -F '\t' '{printf "- [ ] Review commits by %s (%s commits)\n", $2, $1}' top_authors.txt
-               fi
-             } > digest.md
+        - name: AI insight digest
+          id: digest_ai
+          uses: actions/ai-inference@v2
+          continue-on-error: true
+          with:
+             system-prompt: >-
+               You are AI Doctor for a Rust/Nix CI system. Turn the supplied
+               activity into a semantic daily digest that surfaces patterns,
+               hypotheses, risks, next actions, and useful experiment ideas.
+               Return only valid JSON matching the schema in the prompt.
+             prompt-file: digest_prompt.txt
+             model: ${{ env.AI_DOCTOR_MODEL }}
+             endpoint: https://models.github.ai/inference
+             max-completion-tokens: 1000
+             token: ${{ github.token }}
+
+        - name: Assemble digest markdown
+          uses: actions/github-script@v7
+          env:
+             AI_RESPONSE_FILE: ${{ steps.digest_ai.outputs.response-file }}
+             AI_DOCTOR_MODEL: ${{ env.AI_DOCTOR_MODEL }}
+          with:
+             script: |
+                const fs = require('fs');
+                const doctor = require('./.github/scripts/ai-doctor');
+                const digestContext = JSON.parse(fs.readFileSync('digest_context.json', 'utf8'));
+                const digestInsight = doctor.parseDigestResponse({
+                  responseFile: process.env.AI_RESPONSE_FILE,
+                  context: digestContext
+                });
+                fs.writeFileSync('digest.md', doctor.renderDigestBody({
+                  context: digestContext,
+                  digestInsight,
+                  model: process.env.AI_DOCTOR_MODEL
+                }));
 
         - name: Create/Update Daily Digest Issue
           uses: actions/github-script@v7
           with:
              script: |
                 const fs = require('fs');
-                const now = new Date().toISOString().slice(0,10);
-                const title = `Daily AI Digest - ${now}`;
+                const title = `Daily AI Digest - ${{ steps.date_digest.outputs.date_jst }}`;
                 const digestIssues = await github.rest.search.issuesAndPullRequests({
                   q: `repo:${context.repo.owner}/${context.repo.repo} in:title "${title}"`
                 });

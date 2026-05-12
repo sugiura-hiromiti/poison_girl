@@ -1,0 +1,162 @@
+name: Weekly AI Architecture Doctor
+
+on:
+   schedule:
+      # Monday 00:30 JST = Sunday 15:30 UTC
+      - cron: "30 15 * * 0"
+   workflow_dispatch:
+
+permissions:
+   contents: read
+   issues: write
+   pull-requests: read
+   actions: read
+   models: read
+
+env:
+   AI_WEEKLY_ARCH_MODEL: openai/gpt-5
+
+jobs:
+   weekly-architecture-review:
+      runs-on: ubuntu-latest
+      timeout-minutes: 20
+      env:
+         GH_TOKEN: ${{ github.token }}
+      steps:
+         - name: Compute weekly JST window
+           id: date
+           run: |
+              utc_since=$(TZ=Asia/Tokyo date -d '7 days ago 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
+              utc_until=$(TZ=Asia/Tokyo date -d 'today 00:00' -u +%Y-%m-%dT%H:%M:%SZ)
+              week_jst=$(TZ=Asia/Tokyo date -d 'yesterday 00:00' +%G-W%V)
+              {
+                echo "utc_since=$utc_since"
+                echo "utc_until=$utc_until"
+                echo "week_jst=$week_jst"
+              } >> "$GITHUB_OUTPUT"
+
+         - name: Checkout repository
+           uses: actions/checkout@v4
+           with:
+              fetch-depth: 0
+
+         - name: Collect weekly context
+           id: weekly_context
+           uses: actions/github-script@v7
+           env:
+              UTC_SINCE: ${{ steps.date.outputs.utc_since }}
+              UTC_UNTIL: ${{ steps.date.outputs.utc_until }}
+              WEEK_JST: ${{ steps.date.outputs.week_jst }}
+           with:
+              script: |
+                 const fs = require('fs');
+                 const doctor = require('./.github/scripts/ai-doctor');
+                 const weeklyContext = await doctor.collectWeeklyArchitectureContext({
+                   github,
+                   context,
+                   since: process.env.UTC_SINCE,
+                   until: process.env.UTC_UNTIL,
+                   weekJst: process.env.WEEK_JST
+                 });
+                 fs.writeFileSync('weekly_context.json', `${JSON.stringify(weeklyContext, null, 2)}\n`);
+
+         - name: Compute weekly git activity
+           id: git_stats
+           run: |
+              set -euo pipefail
+              SINCE="${{ steps.date.outputs.utc_since }}"
+              UNTIL="${{ steps.date.outputs.utc_until }}"
+              commits=$(git log --since="$SINCE" --until="$UNTIL" --pretty=format:'%H' | wc -l | tr -d ' ')
+              echo "commits=$commits" >> "$GITHUB_OUTPUT"
+
+              git log --since="$SINCE" --until="$UNTIL" --pretty=format:'%an' | \
+                awk '{a[$0]++} END {for (k in a) printf "%s\t%s\n", a[k], k}' | \
+                sort -rn | head -8 > top_authors.txt || true
+
+              git log --since="$SINCE" --until="$UNTIL" --name-only --pretty=format: | \
+                grep -v '^$' | awk -F/ '{print $1}' | \
+                grep -vE '^(\.|README(\..*)?|LICENSE(\..*)?)$' | \
+                awk '{d[$0]++} END {for (k in d) printf "%s\t%s\n", d[k], k}' | \
+                sort -rn | head -8 > top_dirs.txt || true
+
+         - name: Build weekly prompt
+           id: weekly_prompt
+           uses: actions/github-script@v7
+           env:
+              COMMITS: ${{ steps.git_stats.outputs.commits }}
+           with:
+              script: |
+                 const fs = require('fs');
+                 const doctor = require('./.github/scripts/ai-doctor');
+                 const weeklyContext = JSON.parse(fs.readFileSync('weekly_context.json', 'utf8'));
+                 doctor.attachGitStats(weeklyContext, {
+                   commits: process.env.COMMITS,
+                   topAuthorsPath: 'top_authors.txt',
+                   topDirsPath: 'top_dirs.txt'
+                 });
+                 fs.writeFileSync('weekly_context.json', `${JSON.stringify(weeklyContext, null, 2)}\n`);
+                 fs.writeFileSync('weekly_prompt.txt', `${doctor.buildWeeklyArchitecturePrompt(weeklyContext)}\n`);
+
+         - name: AI weekly architecture review
+           id: weekly_ai
+           uses: actions/ai-inference@v2
+           continue-on-error: true
+           with:
+              system-prompt: >-
+                 You are an architecture reviewer for a Rust/Nix UEFI
+                 bootloader/kernel repository. Identify weekly design,
+                 CI, testing, and technical-debt trends. Return only valid JSON
+                 matching the schema in the prompt.
+              prompt-file: weekly_prompt.txt
+              model: ${{ env.AI_WEEKLY_ARCH_MODEL }}
+              endpoint: https://models.github.ai/inference
+              max-completion-tokens: 1800
+              token: ${{ github.token }}
+
+         - name: Assemble weekly markdown
+           uses: actions/github-script@v7
+           env:
+              AI_RESPONSE_FILE: ${{ steps.weekly_ai.outputs.response-file }}
+              AI_WEEKLY_ARCH_MODEL: ${{ env.AI_WEEKLY_ARCH_MODEL }}
+           with:
+              script: |
+                 const fs = require('fs');
+                 const doctor = require('./.github/scripts/ai-doctor');
+                 const weeklyContext = JSON.parse(fs.readFileSync('weekly_context.json', 'utf8'));
+                 const weeklyInsight = doctor.parseWeeklyArchitectureResponse({
+                   responseFile: process.env.AI_RESPONSE_FILE,
+                   context: weeklyContext
+                 });
+                 fs.writeFileSync('weekly.md', doctor.renderWeeklyArchitectureBody({
+                   context: weeklyContext,
+                   weeklyInsight,
+                   model: process.env.AI_WEEKLY_ARCH_MODEL
+                 }));
+
+         - name: Create or update weekly issue
+           uses: actions/github-script@v7
+           with:
+              script: |
+                 const fs = require('fs');
+                 const title = `Weekly AI Architecture Review - ${{ steps.date.outputs.week_jst }}`;
+                 const weeklyIssues = await github.rest.search.issuesAndPullRequests({
+                   q: `repo:${context.repo.owner}/${context.repo.repo} is:issue in:title "${title}"`
+                 });
+                 const body = fs.readFileSync('weekly.md', 'utf8');
+                 if (weeklyIssues.data.items.length) {
+                   await github.rest.issues.update({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     issue_number: weeklyIssues.data.items[0].number,
+                     body,
+                     labels: ["ai-digest", "weekly-architecture"]
+                   });
+                 } else {
+                   await github.rest.issues.create({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     title,
+                     body,
+                     labels: ["ai-digest", "weekly-architecture"]
+                   });
+                 }
