@@ -1,5 +1,5 @@
 {
-  description = "mogok dev env";
+  description = "poison girl dev env";
   inputs = {
     nixpkgs = {
       url = "github:nixos/nixpkgs/nixpkgs-unstable";

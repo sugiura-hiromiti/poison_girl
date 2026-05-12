@@ -2,7 +2,8 @@
 
 const fs = require("fs");
 
-const COMMENT_MARKER = "<!-- ai-second-review:deepseek -->";
+const COMMENT_MARKER = "<!-- ai-second-review -->";
+const COMMENT_MARKERS = [COMMENT_MARKER, "<!-- ai-second-review:deepseek -->"];
 const MAX_FILES = 80;
 const MAX_PATCH_CHARS = 60000;
 const MAX_PATCH_CHARS_PER_FILE = 12000;
@@ -267,9 +268,9 @@ async function buildSecondReviewPrompt({ github, context, pullNumber, outPath })
   }
 
   const prompt = [
-    "# DeepSeek second review context",
+    "# AI second review context",
     "",
-    "You are a second-opinion reviewer for a Codex/OpenAI-authored pull request in a Rust/Nix UEFI bootloader/kernel project.",
+    "You are a second-opinion reviewer for an AI-assisted pull request in a Rust/Nix UEFI bootloader/kernel project.",
     "Your job is to find issues that an implementation-focused first reviewer might miss.",
     "",
     "Return strict JSON only with this shape:",
@@ -351,7 +352,7 @@ function fallbackReview(message) {
 
 function normalizeSecondReview(raw) {
   const source = raw && typeof raw === "object" ? raw : fallbackReview(
-    "DeepSeek second review did not return valid JSON.",
+    "AI second review did not return valid JSON.",
   );
   const findings = Array.isArray(source.findings)
     ? source.findings.map(normalizeFinding).filter((finding) => finding.detail).slice(0, 8)
@@ -370,13 +371,13 @@ function normalizeSecondReview(raw) {
 function parseSecondReviewResponse({ responseFile }) {
   const response = readText(responseFile, "");
   if (!response.trim()) {
-    return normalizeSecondReview(fallbackReview("DeepSeek second review did not return a response."));
+    return normalizeSecondReview(fallbackReview("AI second review did not return a response."));
   }
 
   try {
     return normalizeSecondReview(parseJsonObject(response));
   } catch (_) {
-    return normalizeSecondReview(fallbackReview("DeepSeek second review returned invalid JSON."));
+    return normalizeSecondReview(fallbackReview("AI second review returned invalid JSON."));
   }
 }
 
@@ -411,7 +412,7 @@ function renderSecondReviewComment({ reviewContext, review, model }) {
 
   return [
     COMMENT_MARKER,
-    "### DeepSeek PR Second Review",
+    "### AI PR Second Review",
     "",
     `> ${review.summary}`,
     "",
@@ -440,7 +441,7 @@ function renderSkippedComment({ reviewContext, model }) {
   const pr = reviewContext.pr;
   return [
     COMMENT_MARKER,
-    "### DeepSeek PR Second Review",
+    "### AI PR Second Review",
     "",
     `Skipped model review: ${reviewContext.review_gate.reason}.`,
     "",
@@ -467,7 +468,7 @@ async function upsertSecondReviewComment({ github, context, pullNumber, body }) 
     per_page: 100,
   });
   const existing = comments.find((comment) =>
-    comment.user?.type === "Bot" && String(comment.body || "").includes(COMMENT_MARKER),
+    comment.user?.type === "Bot" && COMMENT_MARKERS.some((marker) => String(comment.body || "").includes(marker)),
   );
 
   if (existing) {

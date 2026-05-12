@@ -13,8 +13,12 @@ permissions:
    actions: read
    models: read
 
+concurrency:
+   group: weekly-ai-doctor-${{ github.ref }}
+   cancel-in-progress: true
+
 env:
-   AI_WEEKLY_ARCH_MODEL: openai/gpt-5
+   AI_WEEKLY_ARCH_MODEL: ${{ vars.AI_WEEKLY_ARCH_MODEL || 'openai/gpt-4.1' }}
 
 jobs:
    weekly-architecture-review:
@@ -79,6 +83,29 @@ jobs:
                 awk '{d[$0]++} END {for (k in d) printf "%s\t%s\n", d[k], k}' | \
                 sort -rn | head -8 > top_dirs.txt || true
 
+              base_sha=$(git rev-list -n 1 --before="$SINCE" HEAD || true)
+              head_sha=$(git rev-list -n 1 --before="$UNTIL" HEAD || git rev-parse HEAD)
+              if [ -n "${base_sha:-}" ] && [ -n "${head_sha:-}" ]; then
+                git diff --name-only "$base_sha" "$head_sha" > changed_files.txt || true
+                git diff --name-status "$base_sha" "$head_sha" > changed_name_status.txt || true
+                git diff --numstat "$base_sha" "$head_sha" > changed_numstat.txt || true
+                git diff --shortstat "$base_sha" "$head_sha" > diff_shortstat.txt || true
+                git diff -U0 "$base_sha" "$head_sha" -- '*.rs' > rust_diff.patch || true
+              else
+                : > changed_files.txt
+                : > changed_name_status.txt
+                : > changed_numstat.txt
+                : > diff_shortstat.txt
+                : > rust_diff.patch
+              fi
+
+              if command -v cargo >/dev/null 2>&1 && [ -f Cargo.toml ]; then
+                cargo metadata --format-version 1 --no-deps > cargo_metadata.json 2>/tmp/cargo-metadata.err || \
+                  printf '{"unavailable":true,"reason":"cargo metadata failed"}\n' > cargo_metadata.json
+              else
+                printf '{"unavailable":true,"reason":"cargo command or Cargo.toml unavailable"}\n' > cargo_metadata.json
+              fi
+
          - name: Build weekly prompt
            id: weekly_prompt
            uses: actions/github-script@v7
@@ -94,19 +121,54 @@ jobs:
                    topAuthorsPath: 'top_authors.txt',
                    topDirsPath: 'top_dirs.txt'
                  });
+                 doctor.attachChangeSignals(weeklyContext);
+                 const weeklyGate = doctor.evaluateWeeklyArchitectureGate(weeklyContext);
+                 weeklyContext.ai_model_gate = weeklyGate;
                  fs.writeFileSync('weekly_context.json', `${JSON.stringify(weeklyContext, null, 2)}\n`);
                  fs.writeFileSync('weekly_prompt.txt', `${doctor.buildWeeklyArchitecturePrompt(weeklyContext)}\n`);
+                 core.setOutput('should_call_model', String(weeklyGate.should_call_model));
+                 core.setOutput('skip_reason', weeklyGate.reason);
+
+         - name: Check weekly architecture model availability
+           if: ${{ steps.weekly_prompt.outputs.should_call_model == 'true' }}
+           id: weekly_model
+           uses: actions/github-script@v7
+           env:
+              GITHUB_TOKEN: ${{ github.token }}
+              MODEL_ID: ${{ env.AI_WEEKLY_ARCH_MODEL }}
+           with:
+              script: |
+                 const fs = require('fs');
+                 const models = require('./.github/scripts/github-models');
+                 const result = await models.checkModelAvailability({
+                   token: process.env.GITHUB_TOKEN,
+                   model: process.env.MODEL_ID
+                 });
+                 if (!result.available) {
+                   const weeklyContext = JSON.parse(fs.readFileSync('weekly_context.json', 'utf8'));
+                   weeklyContext.ai_model_gate = {
+                     should_call_model: false,
+                     reason: result.reason
+                   };
+                   fs.writeFileSync('weekly_context.json', `${JSON.stringify(weeklyContext, null, 2)}\n`);
+                 }
+                 core.setOutput('available', String(result.available));
+                 core.setOutput('reason', result.reason);
+                 core.setOutput('model', result.model);
+                 return result;
 
          - name: AI weekly architecture review
+           if: ${{ steps.weekly_prompt.outputs.should_call_model == 'true' && steps.weekly_model.outputs.available == 'true' }}
            id: weekly_ai
            uses: actions/ai-inference@v2
            continue-on-error: true
            with:
               system-prompt: >-
                  You are an architecture reviewer for a Rust/Nix UEFI
-                 bootloader/kernel repository. Identify weekly design,
-                 CI, testing, and technical-debt trends. Return only valid JSON
-                 matching the schema in the prompt.
+                 bootloader/kernel repository. Synthesize daily weekday lens
+                 artifacts with deterministic weekly stats to identify design,
+                 CI, testing, low-layer safety/policy, layer-boundary, and
+                 bottleneck trends. Return only valid JSON matching the schema.
               prompt-file: weekly_prompt.txt
               model: ${{ env.AI_WEEKLY_ARCH_MODEL }}
               endpoint: https://models.github.ai/inference
@@ -117,7 +179,11 @@ jobs:
            uses: actions/github-script@v7
            env:
               AI_RESPONSE_FILE: ${{ steps.weekly_ai.outputs.response-file }}
-              AI_WEEKLY_ARCH_MODEL: ${{ env.AI_WEEKLY_ARCH_MODEL }}
+              MODEL_ID: ${{ env.AI_WEEKLY_ARCH_MODEL }}
+              MODEL_AVAILABLE: ${{ steps.weekly_model.outputs.available }}
+              MODEL_CHECK_REASON: ${{ steps.weekly_model.outputs.reason }}
+              PROMPT_SHOULD_CALL_MODEL: ${{ steps.weekly_prompt.outputs.should_call_model }}
+              PROMPT_SKIP_REASON: ${{ steps.weekly_prompt.outputs.skip_reason }}
            with:
               script: |
                  const fs = require('fs');
@@ -127,18 +193,23 @@ jobs:
                    responseFile: process.env.AI_RESPONSE_FILE,
                    context: weeklyContext
                  });
+                 const modelLabel = process.env.PROMPT_SHOULD_CALL_MODEL === 'true' && process.env.MODEL_AVAILABLE === 'true'
+                   ? process.env.MODEL_ID
+                   : `not called (${process.env.MODEL_CHECK_REASON || process.env.PROMPT_SKIP_REASON || 'model gate skipped inference'})`;
                  fs.writeFileSync('weekly.md', doctor.renderWeeklyArchitectureBody({
                    context: weeklyContext,
                    weeklyInsight,
-                   model: process.env.AI_WEEKLY_ARCH_MODEL
+                   model: modelLabel
                  }));
 
          - name: Create or update weekly issue
            uses: actions/github-script@v7
+           env:
+              WEEK_JST: ${{ steps.date.outputs.week_jst }}
            with:
               script: |
                  const fs = require('fs');
-                 const title = `Weekly AI Architecture Review - ${{ steps.date.outputs.week_jst }}`;
+                 const title = `Weekly AI Architecture Review - ${process.env.WEEK_JST}`;
                  const weeklyIssues = await github.rest.search.issuesAndPullRequests({
                    q: `repo:${context.repo.owner}/${context.repo.repo} is:issue in:title "${title}"`
                  });
