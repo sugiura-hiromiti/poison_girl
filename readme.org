@@ -6,3 +6,5 @@
 2. Load an ELF kernel from a FAT disk image
 3. Boot it under QEMU virt/aarch64
 4. Gradually replace shell-dependent tooling with Rust implementations
+
+https://deepwiki.com/sugiura-hiromiti/poison_girl/1-project-overview
