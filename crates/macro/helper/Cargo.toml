@@ -12,7 +12,7 @@ itertools = { workspace = true }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }
-anyhow = { workspace = true }
+poison_girl_dev_test = { workspace = true }
 
 [lints]
 workspace = true

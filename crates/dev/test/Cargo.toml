@@ -1,0 +1,11 @@
+[package]
+name = "poison_girl_dev_test"
+version = "0.1.0"
+edition = "2024"
+description = "this crate is intended to be used as dev-dependency. provides idiomatic test helper"
+
+[dependencies]
+this_is_b = { version = "*", features = ["std"] }
+
+[lints]
+workspace = true

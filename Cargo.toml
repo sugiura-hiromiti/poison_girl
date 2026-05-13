@@ -52,6 +52,7 @@ poison_girl_no_std_error = { path = "./crates/error/no_std/" }
 poison_girl_proc_macro_helper = { path = "./crates/macro/helper/" }
 poison_girl_this_is_b_wrapper_dev = { path = "./crates/error/this_is_b_wrapper_dev/" }
 poison_girl_this_is_b_wrapper_no_std = { path = "./crates/error/this_is_b_wrapper_no_std/" }
+poison_girl_dev_test = { path = "./crates/dev/test/" }
 proc-macro2 = "*"
 quickcheck = "*"
 quote = "*"
@@ -63,7 +64,6 @@ tempfile = "*"
 toml = { version = "*", features = ["parse"] }
 ureq = { version = "*", features = ["cookies"] }
 hadris-fat = { version = "*", features = ["sync", "write"] }
-anyhow = "*"
 
 [workspace.lints.clippy]
 tabs_in_doc_comments = "allow"
@@ -71,9 +71,9 @@ mut_from_ref = "allow"
 # panicing APIs
 unwrap_used = "forbid"
 expect_used = "forbid"
-panic = "deny"
-todo = "forbid"
-unimplemented = "deny"
+panic = "forbid"
+todo = "deny"
+unimplemented = "forbid"
 unreachable = "deny"
 
 # [profile.dev.package.xtask]

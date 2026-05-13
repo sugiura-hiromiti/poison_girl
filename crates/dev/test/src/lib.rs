@@ -1,0 +1,121 @@
+#![feature(try_trait_v2)]
+
+use std::{
+	convert::Infallible,
+	fmt::Display,
+	ops::{FromResidual, Try},
+	process::Termination,
+};
+pub use this_is_b::{B::*, *};
+
+pub struct PoisonGirlTestB(B<(), String,>,);
+
+impl PoisonGirlTestB
+{
+	pub fn x() -> Self
+	{
+		Self(X((),),)
+	}
+
+	pub fn y(m: impl Display,) -> Self
+	{
+		Self(Y(m.to_string(),),)
+	}
+}
+
+impl AsRef<B<(), String,>,> for PoisonGirlTestB
+{
+	fn as_ref(&self,) -> &B<(), String,>
+	{
+		&self.0
+	}
+}
+
+impl Termination for PoisonGirlTestB
+{
+	fn report(self,) -> std::process::ExitCode
+	{
+		match self.as_ref() {
+			X(_,) => std::process::ExitCode::SUCCESS,
+			Y(m,) => {
+				eprintln!("{m}");
+				std::process::ExitCode::FAILURE
+			},
+		}
+	}
+}
+
+impl Try for PoisonGirlTestB
+{
+	type Output = ();
+	type Residual = B<Infallible, String,>;
+
+	fn from_output(output: Self::Output,) -> Self
+	{
+		Self(X(output,),)
+	}
+
+	fn branch(self,) -> std::ops::ControlFlow<Self::Residual, Self::Output,>
+	{
+		let Self(b,) = self;
+		match b {
+			X(o,) => std::ops::ControlFlow::Continue(o,),
+			Y(m,) => std::ops::ControlFlow::Break(Y(m,),),
+		}
+	}
+}
+
+impl<M: Display,> FromResidual<B<Infallible, M,>,> for PoisonGirlTestB
+{
+	#[track_caller]
+	#[expect(clippy::unreachable, reason = "required by try trait v2 system")]
+	fn from_residual(residual: B<Infallible, M,>,) -> Self
+	{
+		match residual {
+			X(_,) => unreachable!(),
+			Y(m,) => Self(Y(m.to_string(),),),
+		}
+	}
+}
+
+// `PoisonGirlTestB`が返り値の時でも`Result`に?演算子を使えるようにする
+impl<M: Display,> FromResidual<Result<Infallible, M,>,> for PoisonGirlTestB
+{
+	#[track_caller]
+	#[expect(clippy::unreachable, reason = "required by try trait v2 system")]
+	fn from_residual(residual: Result<Infallible, M,>,) -> Self
+	{
+		match residual {
+			Ok(_,) => unreachable!(),
+			Err(m,) => PoisonGirlTestB(Y(m.to_string(),),),
+		}
+	}
+}
+
+// `PoisonGirlTestB`が返り値の時でも`Option`に?演算子を使えるようにする
+impl FromResidual<Option<Infallible,>,> for PoisonGirlTestB
+{
+	#[track_caller]
+	#[expect(clippy::unreachable, reason = "required by try trait v2 system")]
+	fn from_residual(residual: Option<Infallible,>,) -> Self
+	{
+		match residual {
+			Some(_,) => unreachable!(),
+			None => PoisonGirlTestB(Y("std::option::Option::None".into(),),),
+		}
+	}
+}
+
+#[macro_export]
+macro_rules! test_fail {
+	($msg:expr) => {
+		return $crate::PoisonGirlTestB::y($msg,)
+	};
+}
+
+#[macro_export]
+macro_rules! ok {
+	() => {{
+		return $crate::PoisonGirlTestB::x();
+	}};
+}
