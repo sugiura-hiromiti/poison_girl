@@ -119,10 +119,13 @@ pub enum NotationDiag
 #[cfg(test)]
 mod tests
 {
+
+	use poison_girl_dev_error::PoisonGirlB;
+
 	use super::*;
 
 	#[test]
-	fn test_diag_enum_variants()
+	fn test_diag_enum_variants() -> B<(), String,>
 	{
 		// Test that all Diag variants can be created
 		let err = Diag::err("Error message",);

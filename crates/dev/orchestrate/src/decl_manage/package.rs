@@ -1,6 +1,7 @@
 use {
 	crate::decl_manage::crate_::{CrateAction, CrateInfo, CrateSurvey},
-	poison_girl_dev_error::PoisonGirlB,
+	poison_girl_dev_cargo::TargetSpec
+	poison_girl_dev_error::PoisonGirlBB,
 };
 
 pub trait Package: PackageAction + PackageSurvey
@@ -24,7 +25,7 @@ pub trait PackageSurvey: PackageInfo + CrateSurvey
 	fn default_target(&self,) -> PoisonGirlB<impl Into<String,>,>;
 }
 
-pub trait PackageInfo: Sized + CrateInfo
+pub trait PackageInfo: Sized + CrateInfo + TargetSpec
 {
 }
 

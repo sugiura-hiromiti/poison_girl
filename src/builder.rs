@@ -105,7 +105,8 @@ impl Xtask
 
 	fn run(&self,) -> PoisonGirlB<(),>
 	{
-		let args = self.opts.as_cargo_opt();
+		self.build()?;
+
 		todo!()
 	}
 

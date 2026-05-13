@@ -1,5 +1,6 @@
 #![feature(exit_status_error)]
 
+#[cfg(test)] pub use poison_girl_this_is_b_wrapper_dev::B;
 pub use poison_girl_this_is_b_wrapper_dev::{
 	B::{X, Y},
 	Container, ReShape,
@@ -163,6 +164,42 @@ impl From<hadris_fat::error::FatError,> for PoisonGirlError
 	}
 }
 
+impl From<ProjectRootNotFound,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: ProjectRootNotFound,) -> Self
+	{
+		Self {
+			loc: Location::caller(),
+			src: DevError::ProjectRootNotFound(value,),
+		}
+	}
+}
+
+impl From<InvalidProjectRootFound,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: InvalidProjectRootFound,) -> Self
+	{
+		Self {
+			loc: Location::caller(),
+			src: DevError::InvalidProjectRootFound(value,),
+		}
+	}
+}
+
+impl From<InvalidCurrentCratePath,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: InvalidCurrentCratePath,) -> Self
+	{
+		Self {
+			loc: Location::caller(),
+			src: DevError::InvalidCurrentCratePath(value,),
+		}
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -180,6 +217,9 @@ enum DevError
 	NotObedientPath(NotObedientPath,),
 	FatError(hadris_fat::error::FatError,),
 	Todo(String,),
+	ProjectRootNotFound(ProjectRootNotFound,),
+	InvalidProjectRootFound(InvalidProjectRootFound,),
+	InvalidCurrentCratePath(InvalidCurrentCratePath,),
 }
 
 #[derive(Debug,)]
@@ -203,6 +243,15 @@ pub struct PathIsNotValidUtf8;
 
 #[derive(Debug,)]
 pub struct NotObedientPath;
+
+#[derive(Debug,)]
+pub struct ProjectRootNotFound;
+
+#[derive(Debug,)]
+pub struct InvalidProjectRootFound;
+
+#[derive(Debug,)]
+pub struct InvalidCurrentCratePath;
 
 #[macro_export]
 macro_rules! poison_girl_err {

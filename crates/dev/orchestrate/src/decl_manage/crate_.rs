@@ -5,7 +5,7 @@ use {
 			Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
 		},
 	},
-	poison_girl_dev_cargo::host_tuple,
+	poison_girl_dev_cargo::host_tuple_by_rustc,
 	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{Container, PoisonGirlB, X},
 	poison_girl_dev_fs::{
@@ -188,6 +188,10 @@ pub struct PoisonGirlCrate
 	i_am: PoisonGirlCrateChart,
 }
 
+// impl PoisonGirlCrateChart {
+//    const KERNEL:Self=Self::
+// }
+
 impl std::fmt::Debug for PoisonGirlCrate
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result
@@ -336,10 +340,10 @@ impl PackageSurvey for PoisonGirlCrate
 				{
 					s.clone()
 				} else {
-					host_tuple()?
+					host_tuple_by_rustc()?
 				}
 			},
-			None => host_tuple()?,
+			None => host_tuple_by_rustc()?,
 		},)
 	}
 }

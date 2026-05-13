@@ -1,5 +1,11 @@
+#![feature(iterator_try_collect)]
+
 use {
-	poison_girl_dev_error::{Container, PathNotFound, PoisonGirlB, X, Y},
+	poison_girl_dev_error::{
+		InvalidCurrentCratePath, InvalidProjectRootFound, NotObedientPath,
+		PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ProjectRootNotFound, X,
+		Y, poison_girl_err,
+	},
 	std::{
 		env::current_dir,
 		fs::DirEntry,
@@ -25,31 +31,39 @@ pub fn all_crates() -> PoisonGirlB<Vec<PathBuf,>,>
 pub fn all_crates_in(path: &Path,) -> PoisonGirlB<Vec<PathBuf,>,>
 {
 	X(path
-		.read_dir()
-		.unwrap_or_else(|_| panic!("failed to read {}", path.display()),)
-		.filter_map(|entry| {
-			if entry.as_ref().expect("failed to get entry",).path().is_file() {
-				return None;
+		.read_dir()?
+		.map(|entry| -> PoisonGirlB<_,> {
+			let entry = entry?;
+			if entry.path().is_file() {
+				return X(None,);
 			}
 
-			let path = entry.as_ref().expect("failed to get entry",).path();
-			let name = path.file_name().unwrap();
-			let name = name.to_str().unwrap();
-			match name {
-				_ if IGNORE_DIR_LIST.contains(&name,) => None,
-				_ => Some(path,),
+			let path = entry.path();
+			let name = path
+				.file_name()
+				.ok_or(poison_girl_err!(NotObedientPath),)?
+				.to_str()
+				.ok_or(poison_girl_err!(PathIsNotValidUtf8),)?;
+			if IGNORE_DIR_LIST.contains(&name,) {
+				return X(None,);
 			}
-		},)
-		.map(|p| {
-			let mut paths = if search_cargo_toml(&p,)?.is_some() {
-				vec![p.clone()]
+
+			let mut paths = if search_cargo_toml(&path,)?.is_some() {
+				vec![path.clone()]
 			} else {
 				vec![]
 			};
-			paths.append(&mut all_crates_in(&p,)?,);
-			X(paths,)
+			paths.append(&mut all_crates_in(&path,)?,);
+			X(Some(paths,),)
 		},)
-		.flat_map(|v: PoisonGirlB<Vec<PathBuf,>,>| v.unwrap(),)
+		.filter_map(|entry| match entry {
+			X(None,) => None,
+			X(Some(a,),) => Some(X(a,),),
+			Y(a,) => Some(Y(a,),),
+		},)
+		.try_collect::<Vec<_,>>()?
+		.into_iter()
+		.flatten()
 		.collect(),)
 }
 
@@ -64,15 +78,23 @@ pub fn project_root_path() -> PoisonGirlB<PathBuf,>
 		}
 	}
 
-	X(last_cargo_toml.unwrap().parent().unwrap().to_path_buf(),)
+	let Some(last_cargo_toml,) = last_cargo_toml else {
+		return Y(poison_girl_err!(ProjectRootNotFound),);
+	};
+
+	X(last_cargo_toml
+		.parent()
+		.ok_or(poison_girl_err!(InvalidProjectRootFound),)?
+		.to_path_buf(),)
 }
 
 pub fn current_crate_path() -> PoisonGirlB<PathBuf,>
 {
 	match search_upstream(CARGO_MANIFEST,) {
-		X(Some(p,),) => {
-			X(p.parent().expect("should have parent directory",).to_path_buf(),)
-		},
+		X(Some(p,),) => X(p
+			.parent()
+			.ok_or(poison_girl_err!(InvalidCurrentCratePath),)?
+			.to_path_buf(),),
 		_ => Y(PathNotFound("current crate".to_string(),).into(),),
 	}
 }
@@ -91,6 +113,7 @@ pub fn search_in(
 ) -> PoisonGirlB<Option<PathBuf,>,>
 {
 	let search_strategy = |entry: &Result<DirEntry, std::io::Error,>| {
+		let entry = entry?;
 		entry
 			.as_ref()
 			.expect("failed to get dir entry",)
@@ -103,7 +126,9 @@ pub fn search_in(
 
 pub fn search_in_with(
 	place: &impl AsRef<Path,>,
-	search_strategy: impl FnMut(&Result<DirEntry, std::io::Error,>,) -> bool,
+	search_strategy: impl FnMut(
+		&Result<DirEntry, std::io::Error,>,
+	) -> PoisonGirlB<bool,>,
 ) -> PoisonGirlB<Option<PathBuf,>,>
 {
 	let rslt = std::fs::read_dir(place,)?

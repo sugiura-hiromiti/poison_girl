@@ -1,6 +1,7 @@
-poison_girl is a Rust-based experimental UEFI bootloader/kernel project.
+* poison_girl is a Rust-based experimental UEFI bootloader/kernel project.
 
-Current goal:
+** Current goals:
+
 1. Build a UEFI loader
 2. Load an ELF kernel from a FAT disk image
 3. Boot it under QEMU virt/aarch64
