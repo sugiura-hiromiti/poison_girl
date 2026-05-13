@@ -63,16 +63,16 @@ tempfile = "*"
 toml = { version = "*", features = ["parse"] }
 ureq = { version = "*", features = ["cookies"] }
 hadris-fat = { version = "*", features = ["sync", "write"] }
+anyhow = "*"
 
 [workspace.lints.clippy]
 tabs_in_doc_comments = "allow"
 mut_from_ref = "allow"
 # panicing APIs
-unwrap_used = "deny"
-expect_used = "deny"
+unwrap_used = "forbid"
+expect_used = "forbid"
 panic = "deny"
-panic_in_result_fn = "deny"
-todo = "deny"
+todo = "forbid"
 unimplemented = "deny"
 unreachable = "deny"
 

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use {poison_girl_dev_error::PoisonGirlB, std::path::PathBuf};
 
 pub trait StrEnhanced: CaseConvert + StringKind
 {
@@ -55,7 +55,8 @@ pub trait CaseConvert
 
 pub trait StringKind
 {
-	fn dump_string(&self,) -> String;
+	type DumpReturn;
+	fn dump_string(&self,) -> Self::DumpReturn;
 	fn from(s: impl Into<String,>,) -> Self;
 	fn as_case_convert(&self,) -> Option<&impl CaseConvert,>;
 }
@@ -140,7 +141,9 @@ impl CaseConvert for String
 
 impl StringKind for String
 {
-	fn dump_string(&self,) -> String
+	type DumpReturn = Self;
+
+	fn dump_string(&self,) -> Self::DumpReturn
 	{
 		self.clone()
 	}
@@ -251,7 +254,9 @@ impl CaseConvert for PathBuf
 
 impl StringKind for PathBuf
 {
-	fn dump_string(&self,) -> String
+	type DumpReturn = PoisonGirlB<String,>;
+
+	fn dump_string(&self,) -> Self::DumpReturn
 	{
 		self.file_prefix()
 			.expect("failed to get file/dir name",)
@@ -279,6 +284,8 @@ impl StringKind for PathBuf
 #[cfg(test)]
 mod tests
 {
+	use poison_girl_dev_error::X;
+
 	use super::*;
 
 	// Test String case detection
@@ -609,17 +616,18 @@ mod tests
 	}
 
 	#[test]
-	fn test_pathbuf_dump_string()
+	fn test_pathbuf_dump_string() -> PoisonGirlB<(),>
 	{
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
 			"/path/to/test_file.txt",
 		);
-		assert_eq!(path.dump_string(), "test_file");
+		assert_eq!(path.dump_string()?, "test_file");
 
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
 			"simple_file.txt",
 		);
-		assert_eq!(path.dump_string(), "simple_file");
+		assert_eq!(path.dump_string()?, "simple_file");
+		X((),)
 	}
 
 	#[test]

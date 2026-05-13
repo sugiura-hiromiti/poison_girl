@@ -3,7 +3,7 @@ use {
 		crate_::{Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart},
 		package::PackageSurvey,
 	},
-	poison_girl_dev_cargo::{CompileOpt, Opts},
+	poison_girl_dev_cargo::{CompileOpt, Opts, TargetSpec},
 	poison_girl_dev_error::{PoisonGirlB, X, Y},
 	poison_girl_dev_fs::{
 		current_crate_path, project_root_path, search_in_with,
@@ -79,6 +79,24 @@ impl CargoCrate for PoisonGirlCargoInterface
 	fn as_opts(&self,) -> &impl CompileOpt
 	{
 		&self.opts
+	}
+}
+
+impl TargetSpec for PoisonGirlCargoInterface
+{
+	fn tuple(&self,) -> String
+	{
+		todo!()
+	}
+
+	fn arch(&self,) -> poison_girl_dev_cargo::Arch
+	{
+		todo!()
+	}
+
+	fn runtime(&self,) -> poison_girl_dev_cargo::Runtime
+	{
+		todo!()
 	}
 }
 

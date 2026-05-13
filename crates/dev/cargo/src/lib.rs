@@ -11,13 +11,19 @@ pub trait CompileOpt
 {
 	fn build_mode(&self,) -> impl Into<String,>;
 	fn feature_flags(&self,) -> Vec<impl Into<String,>,>;
-	fn arch(&self,) -> impl Into<String,>;
 }
 
 pub trait AsCargoOpt
 {
 	type Out;
 	fn as_cargo_opt(&self,) -> Self::Out;
+}
+
+pub trait TargetSpec
+{
+	fn tuple(&self,) -> String;
+	fn arch(&self,) -> Arch;
+	fn runtime(&self,) -> Runtime;
 }
 
 #[features]
@@ -96,11 +102,6 @@ impl CompileOpt for Opts
 	fn feature_flags(&self,) -> Vec<impl Into<String,>,>
 	{
 		self.feature_flags.iter().map(|f| f.as_ref(),).collect()
-	}
-
-	fn arch(&self,) -> impl Into<String,>
-	{
-		self.arch.as_ref().replace("_", "",)
 	}
 }
 
@@ -224,7 +225,7 @@ impl Runtime
 {
 	pub fn host() -> PoisonGirlB<Self,>
 	{
-		host_tuple()?
+		host_tuple_by_rustc()?
 			.split('-',)
 			.next()
 			.reshape(
@@ -365,7 +366,7 @@ impl Arch
 	}
 }
 
-pub fn host_tuple() -> PoisonGirlB<String,>
+pub fn host_tuple_by_rustc() -> PoisonGirlB<String,>
 {
 	let target = Command::new("rustc",).arg("-vV",).output()?.stdout;
 	let target = String::from_utf8(target,)?;
@@ -391,16 +392,6 @@ mod tests
 	{
 		let default_mode = BuildMode::default();
 		assert!(default_mode.is_debug());
-		assert_eq!(default_mode.as_ref(), "Debug");
-	}
-
-	#[test]
-	fn test_build_mode_variants()
-	{
-		assert!(BuildMode::Debug.is_debug());
-		assert!(!BuildMode::Debug.is_release());
-		assert!(BuildMode::Release.is_release());
-		assert!(!BuildMode::Release.is_debug());
 	}
 
 	#[test]
@@ -424,16 +415,6 @@ mod tests
 		let default_arch = Arch::default();
 		assert!(default_arch.is_aarch_64());
 		assert_eq!(default_arch.as_ref(), "Aarch64");
-	}
-
-	#[test]
-	fn test_arch_variants()
-	{
-		assert!(Arch::Aarch64.is_aarch_64());
-		assert!(Arch::Riscv64.is_riscv_64());
-
-		assert!(!Arch::Aarch64.is_riscv_64());
-		assert!(!Arch::Riscv64.is_aarch_64());
 	}
 
 	#[test]

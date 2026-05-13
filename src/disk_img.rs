@@ -222,9 +222,21 @@ const fn check_volume_label(label: &str,) -> &str
 
 impl Xtask
 {
+	pub(crate) fn build_boot_disk_img(&self,) -> PoisonGirlB<(),>
+	{
+		let disk_img = self.disk_img_path()?;
+		let boot_loader = todo!();
+		let boot_loader_file_name = todo!();
+		let disk_img_bldr = DiskImageBuilder::new(
+			disk_img,
+			boot_loader,
+			boot_loader_file_name,
+		);
+	}
+
 	/// 起動用のディスクイメージへのパスを返す
 	/// NOTE: 存在確認やセットアップはこの関数の責務ではない
-	pub(crate) fn build_boot_disk_img(&self,) -> PoisonGirlB<PathBuf,>
+	pub(crate) fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
 	{
 		X(self.asset_dir()?.join(DISK_IMG_NAME,),)
 	}
