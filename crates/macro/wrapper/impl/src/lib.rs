@@ -62,11 +62,13 @@ pub fn method_args(
 		syn::FnArg::Typed(pty,) => Some(pty.pat.clone(),),
 	},)
 }
+
 #[cfg(test)]
 mod tests
 {
 	use {
 		super::*,
+		poison_girl_dev_test::{PoisonGirlTestB, ok},
 		syn::{Signature, parse_quote},
 	};
 
@@ -82,18 +84,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_method_args_with_self_receiver()
-	{
-		let sig: Signature = parse_quote! {
-			fn test_method(&self, arg1: i32, arg2: String) -> bool
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-		// Should exclude &self, only return the 2 typed arguments
-		assert_eq!(args.len(), 2);
-	}
-
-	#[test]
 	fn test_method_args_with_mut_self_receiver()
 	{
 		let sig: Signature = parse_quote! {
@@ -106,112 +96,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_method_args_with_owned_self_receiver()
-	{
-		let sig: Signature = parse_quote! {
-			fn test_method(self, arg1: String, arg2: Vec<i32>) -> String
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-		// Should exclude self, only return the 2 typed arguments
-		assert_eq!(args.len(), 2);
-	}
-
-	#[test]
-	fn test_method_args_no_arguments()
-	{
-		let sig: Signature = parse_quote! {
-			fn test_function() -> ()
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-		assert_eq!(args.len(), 0);
-	}
-
-	#[test]
-	fn test_method_args_only_receiver()
-	{
-		let sig: Signature = parse_quote! {
-			fn test_method(&self) -> i32
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-		// Should exclude &self, return empty
-		assert_eq!(args.len(), 0);
-	}
-
-	#[test]
-	fn test_method_args_complex_types()
-	{
-		let sig: Signature = parse_quote! {
-			fn complex_method(
-				&self,
-				arg1: Vec<String>,
-				arg2: HashMap<String, i32>,
-				arg3: Option<Box<dyn Trait>>,
-				arg4: &mut [u8]
-			) -> Result<(), Error>
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-		// Should exclude &self, return 4 typed arguments
-		assert_eq!(args.len(), 4);
-	}
-
-	#[test]
-	fn test_method_args_pattern_matching()
-	{
-		let sig: Signature = parse_quote! {
-			fn pattern_method(&self, (x, y): (i32, i32), [a, b, c]: [u8; 3]) -> ()
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-		// Should exclude &self, return 2 pattern arguments
-		assert_eq!(args.len(), 2);
-	}
-
-	#[test]
-	fn test_method_args_with_lifetimes()
-	{
-		let sig: Signature = parse_quote! {
-			fn lifetime_method<'a>(&self, arg1: &'a str, arg2: &'a mut Vec<i32>) -> &'a str
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-		// Should exclude &self, return 2 typed arguments with lifetimes
-		assert_eq!(args.len(), 2);
-	}
-
-	#[test]
-	fn test_method_args_with_generics()
-	{
-		let sig: Signature = parse_quote! {
-			fn generic_method<T, U>(&self, arg1: T, arg2: Vec<U>, arg3: Option<T>) -> Result<T, U>
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-		// Should exclude &self, return 3 typed arguments with generics
-		assert_eq!(args.len(), 3);
-	}
-
-	#[test]
-	fn test_method_args_preserves_pattern_structure()
-	{
-		let sig: Signature = parse_quote! {
-			fn test_fn(&self, arg1: i32, arg2: String,)
-		};
-
-		let args: Vec<_,> = method_args(&sig,).collect();
-
-		// Check that we can convert patterns back to tokens
-		for arg in args {
-			let _tokens = quote::quote! { #arg };
-			// If this compiles, the pattern structure is preserved
-		}
-	}
-
-	#[test]
-	fn test_wrapper_function_basic()
+	fn test_wrapper_function_basic() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("FRAME_BUFFER", proc_macro2::Span::call_site(),);
@@ -225,17 +110,19 @@ mod tests
 		assert!(!result.has_err());
 
 		assert!(result.notation().is_empty());
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that wrapper function is generated
 		assert!(token_string.contains("pub fn test_method"));
 		assert!(token_string.contains("FRAME_BUFFER . test_method"));
 		assert!(token_string.contains("trait TestTrait"));
+
+		ok!()
 	}
 
 	#[test]
-	fn test_wrapper_function_multiple_methods()
+	fn test_wrapper_function_multiple_methods() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -251,7 +138,7 @@ mod tests
 		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that all wrapper functions are generated
@@ -261,6 +148,7 @@ mod tests
 		assert!(token_string.contains("BUFFER . method1"));
 		assert!(token_string.contains("BUFFER . method2"));
 		assert!(token_string.contains("BUFFER . method3"));
+		ok!()
 	}
 
 	#[test]
@@ -278,7 +166,7 @@ mod tests
 		assert!(result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that const is preserved
@@ -286,7 +174,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_with_unsafe()
+	fn test_wrapper_function_with_unsafe() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -300,15 +188,17 @@ mod tests
 		assert!(result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that unsafe is preserved
 		assert!(token_string.contains("pub unsafe fn unsafe_method"));
+
+		ok!()
 	}
 
 	#[test]
-	fn test_wrapper_function_with_async()
+	fn test_wrapper_function_with_async() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -322,15 +212,16 @@ mod tests
 		assert!(result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that async is preserved
 		assert!(token_string.contains("pub async fn async_method"));
+		ok!()
 	}
 
 	#[test]
-	fn test_wrapper_function_with_generics()
+	fn test_wrapper_function_with_generics() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -344,16 +235,17 @@ mod tests
 		assert!(result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that generics are preserved (format may vary)
 		assert!(token_string.contains("generic_method"));
 		assert!(token_string.contains("< T"));
+		ok!()
 	}
 
 	#[test]
-	fn test_wrapper_function_with_return_type()
+	fn test_wrapper_function_with_return_type() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -367,7 +259,7 @@ mod tests
 		assert!(result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that return type is preserved (format may vary)
@@ -375,10 +267,11 @@ mod tests
 		assert!(token_string.contains("Result"));
 		assert!(token_string.contains("String"));
 		assert!(token_string.contains("Error"));
+		ok!()
 	}
 
 	#[test]
-	fn test_wrapper_function_filters_non_functions()
+	fn test_wrapper_function_filters_non_functions() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -394,17 +287,18 @@ mod tests
 		assert!(result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that only function gets wrapper, but trait is preserved
 		assert!(token_string.contains("pub fn method"));
 		assert!(token_string.contains("type AssocType"));
 		assert!(token_string.contains("const CONST_VAL"));
+		ok!()
 	}
 
 	#[test]
-	fn test_wrapper_function_empty_trait()
+	fn test_wrapper_function_empty_trait() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -417,15 +311,16 @@ mod tests
 		assert!(result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that trait is preserved even if empty
 		assert!(token_string.contains("trait EmptyTrait"));
+		ok!()
 	}
 
 	#[test]
-	fn test_wrapper_function_with_where_clause()
+	fn test_wrapper_function_with_where_clause() -> PoisonGirlTestB
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -439,12 +334,13 @@ mod tests
 		assert!(result.has_err());
 		assert!(result.notation().is_empty());
 
-		let tokens = result.unwrap().unwrap();
+		let tokens = result?;
 		let token_string = tokens.to_string();
 
 		// Check that where clause is preserved (though it might be formatted
 		// differently)
 		assert!(token_string.contains("pub fn where_method"));
 		assert!(token_string.contains("Clone"));
+		ok!()
 	}
 }

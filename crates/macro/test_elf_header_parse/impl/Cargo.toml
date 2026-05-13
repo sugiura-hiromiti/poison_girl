@@ -9,5 +9,8 @@ proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }
 
+[dev-dependencies]
+poison_girl_dev_test = { workspace = true }
+
 [lints]
 workspace = true
