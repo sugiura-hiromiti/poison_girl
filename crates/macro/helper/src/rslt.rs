@@ -123,19 +123,13 @@ impl<V,> Rslt<V,>
 		self.notation
 	}
 
-	#[cold]
-	#[track_caller]
-	#[expect(
-		clippy::panic,
-		reason = "use of compile_error & panic is idiomatic in proc macro Rust"
-	)]
-	pub fn unwrap(self,) -> Option<V,>
-	{
-		match self.err {
-			Some(e,) => panic!("Error Diagnostic: {e:?}"),
-			None => self.into_value(),
-		}
-	}
+	// pub fn unwrap(self,) -> Option<V,>
+	// {
+	// 	match self.err {
+	// 		Some(e,) => panic!("Error Diagnostic: {e:?}"),
+	// 		None => self.into_value(),
+	// 	}
+	// }
 
 	pub fn replace<V2,>(self, val: V2,) -> Rslt<V2,>
 	{
@@ -263,7 +257,6 @@ impl<V,> Termination for Rslt<V,>
 #[cfg(test)]
 mod tests
 {
-	use anyhow::anyhow;
 
 	use super::*;
 

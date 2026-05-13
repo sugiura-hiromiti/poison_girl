@@ -1,6 +1,5 @@
 #![feature(exit_status_error)]
 
-#[cfg(test)] pub use poison_girl_this_is_b_wrapper_dev::B;
 pub use poison_girl_this_is_b_wrapper_dev::{
 	B::{X, Y},
 	Container, ReShape,
