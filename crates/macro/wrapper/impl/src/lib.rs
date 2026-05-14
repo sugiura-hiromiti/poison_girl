@@ -68,7 +68,7 @@ mod tests
 {
 	use {
 		super::*,
-		poison_girl_dev_test::{PoisonGirlTestB, ok},
+		poison_girl_dev_test::{PoisonGirlTestB, success},
 		syn::{Signature, parse_quote},
 	};
 
@@ -118,7 +118,7 @@ mod tests
 		assert!(token_string.contains("FRAME_BUFFER . test_method"));
 		assert!(token_string.contains("trait TestTrait"));
 
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -148,7 +148,7 @@ mod tests
 		assert!(token_string.contains("BUFFER . method1"));
 		assert!(token_string.contains("BUFFER . method2"));
 		assert!(token_string.contains("BUFFER . method3"));
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -194,7 +194,7 @@ mod tests
 		// Check that unsafe is preserved
 		assert!(token_string.contains("pub unsafe fn unsafe_method"));
 
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -217,7 +217,7 @@ mod tests
 
 		// Check that async is preserved
 		assert!(token_string.contains("pub async fn async_method"));
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -241,7 +241,7 @@ mod tests
 		// Check that generics are preserved (format may vary)
 		assert!(token_string.contains("generic_method"));
 		assert!(token_string.contains("< T"));
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -267,7 +267,7 @@ mod tests
 		assert!(token_string.contains("Result"));
 		assert!(token_string.contains("String"));
 		assert!(token_string.contains("Error"));
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -294,7 +294,7 @@ mod tests
 		assert!(token_string.contains("pub fn method"));
 		assert!(token_string.contains("type AssocType"));
 		assert!(token_string.contains("const CONST_VAL"));
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -316,7 +316,7 @@ mod tests
 
 		// Check that trait is preserved even if empty
 		assert!(token_string.contains("trait EmptyTrait"));
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -341,6 +341,6 @@ mod tests
 		// differently)
 		assert!(token_string.contains("pub fn where_method"));
 		assert!(token_string.contains("Clone"));
-		ok!()
+		success!()
 	}
 }

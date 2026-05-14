@@ -1,10 +1,4 @@
-#![feature(try_trait_v2)]
-#![feature(try_trait_v2_residual)]
-
 //! TODO: compile_errorとpanicの境界をより明確に
-
-pub mod diagnostic;
-pub mod rslt;
 
 #[macro_export]
 macro_rules! fnl {
@@ -59,6 +53,7 @@ $($(, attributes($attributes))+)?)] 		#[doc = $doc]
 	};
 }
 
+/// TODO: panic!ではなくcompile errorに寄せる
 #[macro_export]
 macro_rules! def {
 	(

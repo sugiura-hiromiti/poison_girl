@@ -1,5 +1,4 @@
 use {
-	poison_girl_proc_macro_helper::rslt::Rslt,
 	proc_macro2::TokenTree,
 	syn::{TypePath, parse::Parse, spanned::Spanned},
 };

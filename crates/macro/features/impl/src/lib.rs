@@ -2,7 +2,7 @@ use {
 	poison_girl_dev_error::ReShape,
 	poison_girl_dev_fs::{all_crates, read_toml},
 	poison_girl_dev_util::CaseConvert,
-	poison_girl_proc_macro_helper::rslt::Rslt,
+	poison_girl_macro_error::rslt::Rslt,
 	proc_macro2::TokenStream,
 	quote::{ToTokens, format_ident},
 };

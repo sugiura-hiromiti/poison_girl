@@ -1,6 +1,7 @@
 use {
 	crate::diagnostic::{Diag, ErrDiag, NotationDiag},
 	poison_girl_dev_error::PoisonGirlB,
+	proc_macro2::TokenStream,
 	std::{
 		convert::Infallible,
 		fmt::Debug,
@@ -8,6 +9,8 @@ use {
 		process::Termination,
 	},
 };
+
+pub mod test_helper;
 
 pub struct Rslt<V,>
 {
@@ -24,6 +27,30 @@ impl<V,> Default for Rslt<V,>
 			val:      Default::default(),
 			notation: Default::default(),
 			err:      Default::default(),
+		}
+	}
+}
+
+impl<V: quote::ToTokens,> quote::ToTokens for Rslt<V,>
+{
+	#[cold]
+	#[track_caller]
+	#[expect(
+		clippy::unreachable,
+		reason = "it is desirable to use unreachable! for representing inner \
+		          state error of proc macro"
+	)]
+	fn to_tokens(&self, tokens: &mut TokenStream,)
+	{
+		let Self { val, err, .. } = self;
+		match (val, err,) {
+			(_, Some(e,),) => e.to_tokens(tokens,),
+			(None, None,) => {
+				unreachable!(
+					"Invalid State: in `Rslt`, val & err member are both None"
+				)
+			},
+			(Some(v,), None,) => v.to_tokens(tokens,),
 		}
 	}
 }
@@ -122,14 +149,6 @@ impl<V,> Rslt<V,>
 	{
 		self.notation
 	}
-
-	// pub fn unwrap(self,) -> Option<V,>
-	// {
-	// 	match self.err {
-	// 		Some(e,) => panic!("Error Diagnostic: {e:?}"),
-	// 		None => self.into_value(),
-	// 	}
-	// }
 
 	pub fn replace<V2,>(self, val: V2,) -> Rslt<V2,>
 	{
@@ -258,10 +277,13 @@ impl<V,> Termination for Rslt<V,>
 mod tests
 {
 
-	use super::*;
+	use {
+		super::{test_helper::*, *},
+		crate::success,
+	};
 
 	#[test]
-	fn test_multiple_module_interaction() -> anyhow::Result<(),>
+	fn test_multiple_module_interaction() -> TestRslt
 	{
 		// Test that modules can work together without conflicts
 
@@ -277,13 +299,13 @@ mod tests
 		assert!(!result.has_err());
 		assert_eq!(result.notation().len(), 2);
 
-		let tokens = result.unwrap();
-		assert!(!tokens.ok_or(anyhow!("no token parsed"))?.is_empty());
-		Ok((),)
+		let tokens = result?;
+		assert!(!tokens.is_empty());
+		success!()
 	}
 
 	#[test]
-	fn test_rslt_p_complex_scenarios() -> anyhow::Result<(),>
+	fn test_rslt_p_complex_scenarios() -> TestRslt
 	{
 		// Test RsltP with complex token streams and multiple diagnostics
 
@@ -320,15 +342,15 @@ mod tests
 		assert!(!result.has_err());
 
 		assert_eq!(result.notation().len(), 3);
-		let tokens = result.unwrap();
-		assert!(!tokens.as_ref().ok_or(anyhow!("no token parsed"))?.is_empty());
+		let tokens = result?;
+		assert!(!tokens.is_empty());
 
 		// Verify token stream contains expected content
-		let token_str = tokens.ok_or(anyhow!("no token parsed"),)?.to_string();
+		let token_str = tokens.to_string();
 		assert!(token_str.contains("ComplexStruct"));
 		assert!(token_str.contains("Clone"));
 		assert!(token_str.contains("Send"));
 		assert!(token_str.contains("Sync"));
-		Ok((),)
+		success!()
 	}
 }

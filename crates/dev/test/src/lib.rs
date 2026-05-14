@@ -107,14 +107,14 @@ impl FromResidual<Option<Infallible,>,> for PoisonGirlTestB
 }
 
 #[macro_export]
-macro_rules! test_fail {
+macro_rules! fail {
 	($msg:expr) => {
 		return $crate::PoisonGirlTestB::y($msg,)
 	};
 }
 
 #[macro_export]
-macro_rules! ok {
+macro_rules! success {
 	() => {{
 		return $crate::PoisonGirlTestB::x();
 	}};
