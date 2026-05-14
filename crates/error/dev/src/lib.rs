@@ -9,6 +9,7 @@ use {
 	poison_girl_this_is_b_wrapper_dev::B,
 	std::fmt::Display,
 };
+
 /// X/Y はResultの別名ではなく、分岐値 B の左右である
 /// PoisonGirlB<T> は error-specialized B である
 /// no_std/stdをまたぐ統一的な失敗伝播モデルである
@@ -199,7 +200,6 @@ impl From<InvalidCurrentCratePath,> for PoisonGirlError
 	}
 }
 
-#[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
 {

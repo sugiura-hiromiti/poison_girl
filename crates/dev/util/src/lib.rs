@@ -1,4 +1,9 @@
-use {poison_girl_dev_error::PoisonGirlB, std::path::PathBuf};
+use {
+	poison_girl_dev_error::{
+		PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X, Y,
+	},
+	std::path::PathBuf,
+};
 
 pub trait StrEnhanced: CaseConvert + StringKind
 {
@@ -217,32 +222,47 @@ impl CaseConvert for PathBuf
 
 	fn is_camel(&self,) -> bool
 	{
-		self.dump_string().is_camel()
+		self.dump_string().is_x_and(|s| s.is_camel(),)
 	}
 
 	fn is_snake(&self,) -> bool
 	{
-		self.dump_string().is_snake()
+		self.dump_string().is_x_and(|s| s.is_snake(),)
 	}
 
 	fn is_screaming_snake(&self,) -> bool
 	{
-		self.dump_string().is_screaming_snake()
+		self.dump_string().is_x_and(|s| s.is_screaming_snake(),)
 	}
 
 	fn is_kebab(&self,) -> bool
 	{
-		self.dump_string().is_kebab()
+		self.dump_string().is_x_and(|s| s.is_kebab(),)
 	}
 
 	fn find_spacer<S: StringKind,>(&self,) -> Option<S,>
 	{
-		self.dump_string().find_spacer()
+		// let spacer = self.dump_string().map(|s| s.find_spacer(),)?;
+		// Some(spacer,)
+		match self.dump_string() {
+			X(s,) => s.find_spacer(),
+			Y(e,) => {
+				// to avoid panic! macro
+				eprintln!("{e}");
+				None
+			},
+		}
 	}
 
 	fn words(&self,) -> Vec<String,>
 	{
-		self.dump_string().words()
+		match self.dump_string() {
+			X(s,) => s.words(),
+			Y(e,) => {
+				eprintln!("{e}");
+				vec![]
+			},
+		}
 	}
 
 	#[allow(refining_impl_trait)]
@@ -258,16 +278,25 @@ impl StringKind for PathBuf
 
 	fn dump_string(&self,) -> Self::DumpReturn
 	{
-		self.file_prefix()
-			.expect("failed to get file/dir name",)
-			.to_str()
-			.expect("failed to &str-fy file/dir name",)
-			.to_string()
+		let reshape: PoisonGirlB<_,> = self
+			.file_prefix()
+			.reshape(PathNotFound("failed to get file/dir name".to_string(),),);
+		let reshape: PoisonGirlB<_,> =
+			reshape?.to_str().reshape(PathIsNotValidUtf8,);
+		let reshape = reshape?.to_string();
+		X(reshape,)
 	}
 
+	#[cold]
+	#[track_caller]
+	#[expect(
+		clippy::unreachable,
+		reason = "indicates method that should not use but required to \
+		          implement trait"
+	)]
 	fn from(_: impl Into<String,>,) -> Self
 	{
-		unimplemented!("you should not use `PathBuf::from`")
+		unreachable!("you should not use `PathBuf::from`")
 		// let s: String = s.into();
 		// let s = s.as_str();
 		// PathBuf::from_str(s,).expect("s contains invalid character for path
@@ -284,7 +313,10 @@ impl StringKind for PathBuf
 #[cfg(test)]
 mod tests
 {
-	use poison_girl_dev_error::X;
+	use {
+		poison_girl_dev_error::X,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+	};
 
 	use super::*;
 
@@ -798,7 +830,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_pathbuf_enhanced_integration()
+	fn test_pathbuf_enhanced_integration() -> PoisonGirlTestB
 	{
 		let snake_path =
 			<std::path::PathBuf as std::convert::From<&str,>>::from(
@@ -806,7 +838,7 @@ mod tests
 			);
 
 		assert!(snake_path.is_snake());
-		assert_eq!(snake_path.dump_string(), "hello_world_test");
+		assert_eq!(snake_path.dump_string()?, "hello_world_test");
 
 		// Test spacer detection
 		let spacer: Option<String,> = snake_path.find_spacer();
@@ -815,6 +847,7 @@ mod tests
 		// Test word extraction
 		let words = snake_path.words();
 		assert_eq!(words, vec!["hello", "world", "test"]);
+		success!()
 	}
 
 	// Error condition tests
@@ -1113,7 +1146,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_pathbuf_with_extensions()
+	fn test_pathbuf_with_extensions() -> PoisonGirlTestB
 	{
 		// Test PathBuf behavior with various file extensions
 		let extensions = vec![
@@ -1127,7 +1160,7 @@ mod tests
 				<std::path::PathBuf as std::convert::From<String,>>::from(
 					format!("/path/to/{}", filename),
 				);
-			assert_eq!(path.dump_string(), filename.split('.').next().unwrap());
+			assert_eq!(path.dump_string()?, filename.split('.').next()?);
 
 			// Test case detection with extensions
 			let snake_with_ext = format!("snake_case_file{}", ext);
@@ -1137,6 +1170,7 @@ mod tests
 				);
 			assert!(path.is_snake());
 		}
+		success!()
 	}
 
 	#[test]
@@ -1180,14 +1214,14 @@ mod tests
 	}
 
 	#[test]
-	fn test_pathbuf_string_kind_trait()
+	fn test_pathbuf_string_kind_trait() -> PoisonGirlTestB
 	{
 		// Test StringKind trait implementation for PathBuf
 		let path = <std::path::PathBuf as std::convert::From<&str,>>::from(
 			"/path/to/test.txt",
 		);
 
-		let dumped = path.dump_string();
+		let dumped = path.dump_string()?;
 		assert_eq!(dumped, "test");
 
 		let case_convert = path.as_case_convert();
@@ -1195,5 +1229,6 @@ mod tests
 
 		let string_kind = path.as_string_kind();
 		assert!(string_kind.is_some());
+		success!()
 	}
 }

@@ -3,7 +3,7 @@ use {
 	poison_girl_dev_error::{InvalidManifest, poison_girl_err},
 	poison_girl_dev_fs::{CARGO_MANIFEST, all_crates, read_toml},
 	poison_girl_dev_util::CaseConvert,
-	poison_girl_proc_macro_helper::{diagnostic::Diag, rslt::Rslt},
+	poison_girl_macro_error::{diagnostic::Diag, rslt::Rslt},
 	proc_macro2::TokenStream,
 	quote::format_ident,
 	std::path::Path,
@@ -98,9 +98,12 @@ impl EnumParts
 	}
 }
 
+// TODO: Rstl型に?する場合, diagnosticsの蓄積はどう扱えば良いかを考える
+// eg: early returnを flushとして捉え、diagnosticsをeprintln!する
+
 fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 {
-	let name = detect_chart_type(struct_def,);
+	let name = detect_chart_type(struct_def,)?;
 
 	let crate_list = all_crates()?;
 	crate_list
@@ -168,7 +171,7 @@ fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,>
 
 	// 頭の`poison_girl_`部分は長ったらしいので除く
 	let name = if package_name != "poison_girl" {
-		package_name.split("poison_girl_",).nth(1,).unwrap()
+		package_name.split("poison_girl_",).nth(1,)?
 	} else {
 		package_name
 	}
@@ -177,17 +180,20 @@ fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,>
 	Rslt::new(name,)
 }
 
-fn detect_chart_type(struct_def: &syn::DeriveInput,) -> Option<syn::Type,>
+fn detect_chart_type(
+	struct_def: &syn::DeriveInput,
+) -> Rslt<Option<syn::Type,>,>
 {
 	let syn::Data::Struct(syn::DataStruct { fields, .. },) = &struct_def.data
 	else {
-		panic!("expected struct, found {struct_def:?}")
+		return Rslt::new_err(format!("expected struct, found {struct_def:?}"),);
 	};
-	fields.iter().find(|f| {
+	let ty = fields.iter().find(|f| {
 		f.attrs.iter().any(
 			|attr| matches!(attr.meta, syn::Meta::Path(ref p) if p.get_ident() == Some(&format_ident!("chart"))),
 		)
-	},).map(|f| f.ty.clone())
+	},).map(|f| f.ty.clone());
+	Rslt::new(ty,)
 }
 
 fn struct_dump(
@@ -203,7 +209,7 @@ fn struct_dump(
 		);
 	};
 
-	let fields = fields_invest(&enum_name, fields,)??;
+	let fields = fields_invest(&enum_name, fields,)?;
 
 	let ident = &struct_def.ident;
 	let generics = &struct_def.generics;
@@ -243,7 +249,7 @@ fn fields_invest(
 				field_construct(enum_name, f.clone(),)
 			},)
 			.fold(Rslt::new(vec![],), |acc, field| acc.push_elem(field,),),
-		syn::Fields::Unit => unreachable!(),
+		syn::Fields::Unit => Rslt::new_err("Unit type field (such as `None`)",),
 	}
 }
 
@@ -309,7 +315,13 @@ fn is_attred(f: &mut syn::Field,) -> bool
 #[cfg(test)]
 mod tests
 {
-	use {super::*, itertools::Itertools, quote::quote, syn::parse_quote};
+	use {
+		super::*,
+		itertools::Itertools,
+		poison_girl_macro_error::{fail, rslt::test_helper::TestRslt, success},
+		quote::quote,
+		syn::parse_quote,
+	};
 
 	#[test]
 	fn test_from_path_buf_with_enum()
@@ -451,7 +463,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_syn_item_matching()
+	fn test_syn_item_matching() -> TestRslt
 	{
 		// Test that syn::Item matching works correctly
 		let enum_item: syn::Item = syn::parse_quote! {
@@ -479,7 +491,9 @@ mod tests
 
 		match fn_item {
 			syn::Item::Fn(_,) => (),
-			_ => panic!("Should match function"),
+			_ => fail!("Should match function"),
 		}
+
+		success!()
 	}
 }

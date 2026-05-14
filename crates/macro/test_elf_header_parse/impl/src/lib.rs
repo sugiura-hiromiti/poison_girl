@@ -609,7 +609,7 @@ pub fn readelf_h() -> Rslt<ReadElfH,>
 mod tests
 {
 
-	use poison_girl_dev_test::{PoisonGirlTestB, ok};
+	use poison_girl_dev_test::{PoisonGirlTestB, success};
 
 	use super::*;
 
@@ -785,7 +785,7 @@ mod tests
 			}
 		}
 
-		ok!()
+		success!()
 	}
 
 	#[test]

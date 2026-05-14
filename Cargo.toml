@@ -53,6 +53,7 @@ poison_girl_proc_macro_helper = { path = "./crates/macro/helper/" }
 poison_girl_this_is_b_wrapper_dev = { path = "./crates/error/this_is_b_wrapper_dev/" }
 poison_girl_this_is_b_wrapper_no_std = { path = "./crates/error/this_is_b_wrapper_no_std/" }
 poison_girl_dev_test = { path = "./crates/dev/test/" }
+poison_girl_macro_error = { path = "./crates/error/macro/" }
 proc-macro2 = "*"
 quickcheck = "*"
 quote = "*"

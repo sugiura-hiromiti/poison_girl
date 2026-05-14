@@ -10,6 +10,7 @@ toml = { workspace = true }
 
 [dev-dependencies]
 quickcheck = { workspace = true }
+poison_girl_dev_test = { workspace = true }
 
 [lints]
 workspace = true

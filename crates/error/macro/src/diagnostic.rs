@@ -1,3 +1,5 @@
+use quote::quote;
+
 #[derive(Debug, PartialEq, Eq, Clone,)]
 pub enum Diag
 {
@@ -108,6 +110,19 @@ impl ErrDiag
 	}
 }
 
+impl quote::ToTokens for ErrDiag
+{
+	#[cold]
+	#[track_caller]
+	fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream,)
+	{
+		let Self(s,) = self;
+		*tokens = quote! {
+			compile_error!(#s)
+		};
+	}
+}
+
 #[derive(Debug, PartialEq, Eq, Clone,)]
 pub enum NotationDiag
 {
@@ -121,11 +136,11 @@ mod tests
 {
 	use {
 		super::*,
-		poison_girl_dev_test::{PoisonGirlTestB, ok, test_fail},
+		crate::{fail, rslt::test_helper::*, success},
 	};
 
 	#[test]
-	fn test_diag_enum_variants() -> PoisonGirlTestB
+	fn test_diag_enum_variants() -> TestRslt
 	{
 		// Test that all Diag variants can be created
 		let err = Diag::err("Error message",);
@@ -136,31 +151,31 @@ mod tests
 		// Test pattern matching on variants
 		match err {
 			Diag::Err(ErrDiag(msg,),) => assert_eq!(msg, "Error message"),
-			_ => test_fail!("Should match Err variant"),
+			_ => fail!("Should match Err variant"),
 		}
 
 		match warn {
 			Diag::Notation(NotationDiag::Warn(msg,),) => {
 				assert_eq!(msg, "Warning message")
 			},
-			_ => test_fail!("Should match Warn variant"),
+			_ => fail!("Should match Warn variant"),
 		}
 
 		match note {
 			Diag::Notation(NotationDiag::Note(msg,),) => {
 				assert_eq!(msg, "Note message")
 			},
-			_ => test_fail!("Should match Note variant"),
+			_ => fail!("Should match Note variant"),
 		}
 
 		match help {
 			Diag::Notation(NotationDiag::Help(msg,),) => {
 				assert_eq!(msg, "Help message")
 			},
-			_ => test_fail!("Should match Help variant"),
+			_ => fail!("Should match Help variant"),
 		}
 
-		ok!()
+		success!()
 	}
 
 	#[test]
@@ -196,7 +211,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_diag_with_control_characters()
+	fn test_diag_with_control_characters() -> TestRslt
 	{
 		// Test with control characters
 		let control_chars =
@@ -208,7 +223,9 @@ mod tests
 				assert_eq!(msg.len(), control_chars.len());
 				assert_eq!(msg, control_chars);
 			},
-			_ => panic!("Should be Err variant"),
+			_ => fail!("Should be Err variant"),
 		}
+
+		success!()
 	}
 }
