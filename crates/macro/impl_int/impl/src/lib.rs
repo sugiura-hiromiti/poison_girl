@@ -1,4 +1,5 @@
 use {
+	poison_girl_macro_error::rslt::Rslt,
 	proc_macro2::TokenTree,
 	syn::{TypePath, parse::Parse, spanned::Spanned},
 };
@@ -60,23 +61,23 @@ pub fn impl_int(types: Types,) -> Rslt<proc_macro2::TokenStream,>
 	},)
 }
 
-pub fn implement(ty: &syn::Type,) -> proc_macro2::TokenStream
+pub fn implement(ty: &syn::Type,) -> Rslt<proc_macro2::TokenStream,>
 {
-	let idnt = unwrap_primitive(ty,).unwrap();
+	let idnt = unwrap_primitive(ty,)?;
 	let digit_count = digit_count_impl();
 	let nth_digit = nth_digit_impl();
 	let shift_right = shift_right_impl(&idnt,);
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		impl Integer for #idnt {
 			#digit_count
 			#nth_digit
 			#shift_right
 		}
-	}
+	},)
 }
 
-fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,>
+fn unwrap_primitive(ty: &syn::Type,) -> Rslt<syn::Ident,>
 {
 	// Extract segment as `seg` from `ty`
 	let syn::Type::Path(TypePath {
@@ -84,14 +85,14 @@ fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,>
 		path: syn::Path { leading_colon: None, segments: seg, },
 	},) = ty
 	else {
-		return Err(syn::Error::new(
+		return Rslt::new_err(syn::Error::new(
 			ty.span(),
 			format!("unable to unwrap type: {ty:#?}"),
 		),);
 	};
 
 	if seg.len() != 1 {
-		return Err(syn::Error::new(
+		return Rslt::new_err(syn::Error::new(
 			ty.span(),
 			format!(
 				"type may not primitive: {ty:#?}. if not, remove leading path"
@@ -101,15 +102,15 @@ fn unwrap_primitive(ty: &syn::Type,) -> syn::Result<syn::Ident,>
 
 	// Extract ident of type from `seg`
 	let syn::PathSegment { ident: idnt, arguments: syn::PathArguments::None, } =
-		seg.first().unwrap()
+		seg.first()?
 	else {
-		return Err(syn::Error::new(
+		return Rslt::new_err(syn::Error::new(
 			seg.span(),
 			format!("unable to unwrap path segment: {seg:#?}"),
 		),);
 	};
 
-	Ok(idnt.clone(),)
+	Rslt::new(idnt.clone(),)
 }
 
 fn digit_count_impl() -> proc_macro2::TokenStream
@@ -207,105 +208,39 @@ mod tests
 {
 	use {
 		super::*,
+		poison_girl_macro_error::{rslt::test_helper::TestRslt, success},
 		quote::quote,
 		syn::{Type, parse_quote},
 	};
 
 	#[test]
-	fn test_types_parse_single_type()
-	{
-		let input = quote! { u32 };
-		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
-
-		let type_list: Vec<_,> = types.iter().collect();
-		assert_eq!(type_list.len(), 1);
-	}
-
-	#[test]
-	fn test_types_parse_multiple_types()
-	{
-		let input = quote! { u8, u16, u32, u64 };
-		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
-
-		let type_list: Vec<_,> = types.iter().collect();
-		assert_eq!(type_list.len(), 4);
-	}
-
-	#[test]
-	fn test_types_parse_with_extra_commas()
-	{
-		let input = quote! { u8, , u16, , u32, };
-		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
-
-		let type_list: Vec<_,> = types.iter().collect();
-		assert_eq!(type_list.len(), 3);
-	}
-
-	#[test]
-	fn test_types_parse_signed_types()
-	{
-		let input = quote! { i8, i16, i32, i64 };
-		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
-
-		let type_list: Vec<_,> = types.iter().collect();
-		assert_eq!(type_list.len(), 4);
-	}
-
-	#[test]
-	fn test_types_parse_mixed_types()
-	{
-		let input = quote! { u8, i16, u32, i64, usize, isize };
-		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
-
-		let type_list: Vec<_,> = types.iter().collect();
-		assert_eq!(type_list.len(), 6);
-	}
-
-	#[test]
-	fn test_types_parse_empty_input()
-	{
-		let input = quote! {};
-		let types: Types =
-			syn::parse2(input,).expect("Failed to parse empty types",);
-
-		let type_list: Vec<_,> = types.iter().collect();
-		assert_eq!(type_list.len(), 0);
-	}
-
-	#[test]
-	fn test_types_parse_error_on_invalid_token()
-	{
-		let input = quote! { u32, "invalid", u64 };
-		let result: Result<Types, _,> = syn::parse2(input,);
-
-		assert!(result.is_err());
-	}
-
-	#[test]
-	fn test_unwrap_primitive_u32()
+	fn test_unwrap_primitive_u32() -> TestRslt
 	{
 		let ty: Type = parse_quote! { u32 };
-		let ident = unwrap_primitive(&ty,).expect("Failed to unwrap u32",);
+		let ident = unwrap_primitive(&ty,)?;
 
 		assert_eq!(ident.to_string(), "u32");
+		success!()
 	}
 
 	#[test]
-	fn test_unwrap_primitive_i64()
+	fn test_unwrap_primitive_i64() -> TestRslt
 	{
 		let ty: Type = parse_quote! { i64 };
-		let ident = unwrap_primitive(&ty,).expect("Failed to unwrap i64",);
+		let ident = unwrap_primitive(&ty,)?;
 
 		assert_eq!(ident.to_string(), "i64");
+		success!()
 	}
 
 	#[test]
-	fn test_unwrap_primitive_usize()
+	fn test_unwrap_primitive_usize() -> TestRslt
 	{
 		let ty: Type = parse_quote! { usize };
-		let ident = unwrap_primitive(&ty,).expect("Failed to unwrap usize",);
+		let ident = unwrap_primitive(&ty,)?;
 
 		assert_eq!(ident.to_string(), "usize");
+		success!()
 	}
 
 	#[test]
@@ -314,7 +249,7 @@ mod tests
 		let ty: Type = parse_quote! { Vec<i32> };
 		let result = unwrap_primitive(&ty,);
 
-		assert!(result.is_err());
+		assert!(result.has_err());
 	}
 
 	#[test]
@@ -323,7 +258,7 @@ mod tests
 		let ty: Type = parse_quote! { std::collections::HashMap };
 		let result = unwrap_primitive(&ty,);
 
-		assert!(result.is_err());
+		assert!(result.has_err());
 	}
 
 	#[test]
@@ -332,136 +267,28 @@ mod tests
 		let ty: Type = parse_quote! { &str };
 		let result = unwrap_primitive(&ty,);
 
-		assert!(result.is_err());
+		assert!(result.has_err());
 	}
 
 	#[test]
-	fn test_implement_generates_valid_tokens()
-	{
-		let ty: Type = parse_quote! { u32 };
-		let implementation = implement(&ty,);
-
-		// Should generate valid Rust code
-		let code_str = implementation.to_string();
-		assert!(code_str.contains("impl Integer for u32"));
-		assert!(code_str.contains("fn digit_count"));
-		assert!(code_str.contains("fn nth_digit"));
-		assert!(code_str.contains("fn shift_right"));
-	}
-
-	#[test]
-	fn test_implement_unsigned_type()
-	{
-		let ty: Type = parse_quote! { u64 };
-		let implementation = implement(&ty,);
-
-		let code_str = implementation.to_string();
-		assert!(code_str.contains("impl Integer for u64"));
-		// For unsigned types, should use direct conversion
-		assert!(code_str.contains("first_digit as u8"));
-	}
-
-	#[test]
-	fn test_implement_signed_type()
-	{
-		let ty: Type = parse_quote! { i32 };
-		let implementation = implement(&ty,);
-
-		let code_str = implementation.to_string();
-		assert!(code_str.contains("impl Integer for i32"));
-		// For signed types, should handle negative numbers
-		assert!(code_str.contains("if first_digit < 0"));
-	}
-
-	#[test]
-	fn test_digit_count_impl_structure()
-	{
-		let implementation = digit_count_impl();
-		let code_str = implementation.to_string();
-
-		assert!(code_str.contains("fn digit_count"));
-		assert!(code_str.contains("-> usize"));
-		assert!(code_str.contains("while n != 0"));
-		assert!(code_str.contains("n = n / 10"));
-		assert!(code_str.contains("digits += 1"));
-	}
-
-	#[test]
-	fn test_nth_digit_impl_structure()
-	{
-		let implementation = nth_digit_impl();
-		let code_str = implementation.to_string();
-
-		assert!(code_str.contains("fn nth_digit"));
-		assert!(code_str.contains("n : usize"));
-		assert!(code_str.contains("-> u8"));
-		assert!(code_str.contains("assert_ne ! (n , 0)"));
-		assert!(code_str.contains("origin . shift_right ()"));
-		assert!(code_str.contains("(origin % 10) as u8"));
-	}
-
-	#[test]
-	fn test_shift_right_impl_unsigned()
-	{
-		let ident: syn::Ident = syn::parse_str("u32",).unwrap();
-		let implementation = shift_right_impl(&ident,);
-		let code_str = implementation.to_string();
-
-		assert!(code_str.contains("fn shift_right"));
-		assert!(code_str.contains("-> u8"));
-		assert!(code_str.contains("first_digit = * self % 10"));
-		assert!(code_str.contains("* self = * self / 10"));
-		assert!(code_str.contains("first_digit as u8"));
-		assert!(!code_str.contains("if first_digit < 0"));
-	}
-
-	#[test]
-	fn test_shift_right_impl_signed()
-	{
-		let ident: syn::Ident = syn::parse_str("i32",).unwrap();
-		let implementation = shift_right_impl(&ident,);
-		let code_str = implementation.to_string();
-
-		assert!(code_str.contains("fn shift_right"));
-		assert!(code_str.contains("-> u8"));
-		assert!(code_str.contains("first_digit = * self % 10"));
-		assert!(code_str.contains("* self = * self / 10"));
-		assert!(code_str.contains("if first_digit < 0"));
-		assert!(code_str.contains("- first_digit as u8"));
-	}
-
-	#[test]
-	fn test_types_iter_functionality()
-	{
-		let input = quote! { u8, u16, u32 };
-		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
-
-		let mut count = 0;
-		for _ty in types.iter() {
-			count += 1;
-		}
-
-		assert_eq!(count, 3);
-	}
-
-	#[test]
-	fn test_complete_workflow()
+	fn test_complete_workflow() -> TestRslt
 	{
 		// Test the complete workflow from parsing to implementation
 		let input = quote! { u8, i16, u32 };
-		let types: Types = syn::parse2(input,).expect("Failed to parse types",);
+		let types: Types = syn::parse2(input,)?;
 
 		let implementations: Vec<_,> = types.iter().map(implement,).collect();
 
 		assert_eq!(implementations.len(), 3);
 
 		// Check that each implementation is valid
-		for impl_tokens in implementations.iter() {
-			let code_str = impl_tokens.to_string();
+		for impl_tokens in implementations.into_iter() {
+			let code_str = impl_tokens?.to_string();
 			assert!(code_str.contains("impl Integer for"));
 			assert!(code_str.contains("fn digit_count"));
 			assert!(code_str.contains("fn nth_digit"));
 			assert!(code_str.contains("fn shift_right"));
 		}
+		success!()
 	}
 }

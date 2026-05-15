@@ -54,14 +54,14 @@ pub trait WalkTried
 	/// # Returns
 	///
 	/// Optional reference to the tree walker (None if operation failed)
-	fn current_tree(&self,) -> &Option<Self::T,>;
+	fn current_tree(&self,) -> &Self::T;
 
 	/// Get a mutable reference to the current tree walker.
 	///
 	/// # Returns
 	///
 	/// Optional mutable reference to the tree walker (None if operation failed)
-	fn current_tree_mut(&mut self,) -> &mut Option<Self::T,>;
+	fn current_tree_mut(&mut self,) -> &mut Self::T;
 
 	/// Create a new walk result from a tree walker and coordinate.
 	///
@@ -121,12 +121,12 @@ impl<N: NodeValue, T: TreeWalker<N,>, C: Coordinate,> WalkTried
 		&self.coord
 	}
 
-	fn current_tree(&self,) -> &Option<T,>
+	fn current_tree(&self,) -> &T
 	{
 		&self.tree
 	}
 
-	fn current_tree_mut(&mut self,) -> &mut Option<T,>
+	fn current_tree_mut(&mut self,) -> &mut T
 	{
 		&mut self.tree
 	}

@@ -211,8 +211,23 @@ impl<V,> Try for Rslt<V,>
 
 	fn branch(self,) -> std::ops::ControlFlow<Self::Residual, Self::Output,>
 	{
-		let Self { notation, err, .. } = self;
-		std::ops::ControlFlow::Break(Rslt { val: None, notation, err, },)
+		let Self { val, notation, err, .. } = self;
+		match (val, err,) {
+			(_, Some(e,),) => std::ops::ControlFlow::Break(Rslt {
+				val: None,
+				notation,
+				err: Some(e,),
+			},),
+			(None, None,) => std::ops::ControlFlow::Break(Rslt {
+				val: None,
+				notation,
+				err: Some(ErrDiag::new(
+					"invalid internal state: Rslt has None value while err is \
+					 also None",
+				),),
+			},),
+			(Some(v,), _,) => std::ops::ControlFlow::Continue(v,),
+		}
 	}
 }
 

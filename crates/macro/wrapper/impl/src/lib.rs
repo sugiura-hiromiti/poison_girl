@@ -1,5 +1,5 @@
 use {
-	poison_girl_proc_macro_helper::rslt::Rslt, proc_macro2::TokenStream,
+	poison_girl_macro_error::rslt::Rslt, proc_macro2::TokenStream,
 	syn::Signature,
 };
 
@@ -68,7 +68,7 @@ mod tests
 {
 	use {
 		super::*,
-		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_macro_error::{rslt::test_helper::TestRslt, success},
 		syn::{Signature, parse_quote},
 	};
 
@@ -96,7 +96,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_basic() -> PoisonGirlTestB
+	fn test_wrapper_function_basic() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("FRAME_BUFFER", proc_macro2::Span::call_site(),);
@@ -122,7 +122,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_multiple_methods() -> PoisonGirlTestB
+	fn test_wrapper_function_multiple_methods() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -152,7 +152,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_with_const()
+	fn test_wrapper_function_with_const() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -171,10 +171,11 @@ mod tests
 
 		// Check that const is preserved
 		assert!(token_string.contains("pub const fn const_method"));
+		success!()
 	}
 
 	#[test]
-	fn test_wrapper_function_with_unsafe() -> PoisonGirlTestB
+	fn test_wrapper_function_with_unsafe() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -198,7 +199,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_with_async() -> PoisonGirlTestB
+	fn test_wrapper_function_with_async() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -221,7 +222,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_with_generics() -> PoisonGirlTestB
+	fn test_wrapper_function_with_generics() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -245,7 +246,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_with_return_type() -> PoisonGirlTestB
+	fn test_wrapper_function_with_return_type() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -271,7 +272,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_filters_non_functions() -> PoisonGirlTestB
+	fn test_wrapper_function_filters_non_functions() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -298,7 +299,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_empty_trait() -> PoisonGirlTestB
+	fn test_wrapper_function_empty_trait() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);
@@ -320,7 +321,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_wrapper_function_with_where_clause() -> PoisonGirlTestB
+	fn test_wrapper_function_with_where_clause() -> TestRslt
 	{
 		let static_frame_buffer =
 			syn::Ident::new("BUFFER", proc_macro2::Span::call_site(),);

@@ -11,6 +11,7 @@ poison_girl_macro_impl_features = { workspace = true }
 poison_girl_proc_macro_helper = { workspace = true }
 proc-macro2 = { workspace = true }
 syn = { workspace = true }
+poison_girl_macro_error = { workspace = true }
 
 [lints]
 workspace = true
