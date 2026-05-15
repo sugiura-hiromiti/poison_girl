@@ -136,7 +136,7 @@ pub trait TreeWalker<N: NodeValue,>: Sized + Iterator
 			if parent.has_success() {
 				// Successfully found parent, continue recursion
 				TreeWalker::nth_ancestor::<WT,>(
-					parent.current_tree_mut().as_mut().unwrap(),
+					parent.current_tree_mut(),
 					n - 1,
 				)
 			} else {

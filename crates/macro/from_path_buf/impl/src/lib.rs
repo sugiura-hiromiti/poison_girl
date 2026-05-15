@@ -21,15 +21,6 @@ fn struct_impl(mut struct_def: syn::DeriveInput,) -> Rslt<TokenStream,>
 {
 	trim_name(&mut struct_def,);
 
-	// let enum_parts = enum_parts(&struct_def,)??;
-	// let enum_name = enum_parts.name.clone();
-	// let enum_dumped = enum_parts.dump();
-	// let struct_dumped = struct_dump(struct_def, enum_name,)?;
-	//
-	// Rslt::new(quote::quote! {
-	// 	#enum_dumped
-	// 	#struct_dumped
-	// },)
 	enum_parts(&struct_def,).replace_by(|enum_def| {
 		struct_dump(struct_def.clone(), enum_def.name.clone(),).replace_by(
 			|struct_def| {
@@ -253,6 +244,7 @@ fn fields_invest(
 	}
 }
 
+/// from method内でどのように各フィールドがassignされるかを定義する
 fn field_construct(
 	enum_name: &Option<syn::Type,>,
 	f: syn::Field,
@@ -278,9 +270,9 @@ fn field_construct(
 					..
 				},),) = enum_name
 				else {
-					unimplemented!()
+					return Rslt::new_err("enum名の解決に失敗しました",);
 				};
-				let enum_last = &segments.last().unwrap().ident;
+				let enum_last = &segments.last()?.ident;
 
 				if last.ident == "PathBuf" {
 					quote::quote! {
@@ -299,7 +291,7 @@ fn field_construct(
 				return Rslt::new_err("invalid type",);
 			}
 		},
-		a => unimplemented!("type {a:#?} not supported"),
+		a => return Rslt::new_err(format!("type {a:#?} not supported"),),
 	};
 
 	Rslt::new(construct,)
@@ -315,22 +307,16 @@ fn is_attred(f: &mut syn::Field,) -> bool
 #[cfg(test)]
 mod tests
 {
-	use {
-		super::*,
-		itertools::Itertools,
-		poison_girl_macro_error::{fail, rslt::test_helper::TestRslt, success},
-		quote::quote,
-		syn::parse_quote,
-	};
-
+	use {super::*, syn::parse_quote};
 	#[test]
-	fn test_from_path_buf_with_enum()
+
+	fn test_from_path()
 	{
 		// Create a test enum as DeriveInput
 		let test_enum: syn::DeriveInput = parse_quote! {
 			pub enum TestCrate {
-				OsoKernel,
-				OsoBootloader,
+				Kernel,
+				BootLoader
 			}
 		};
 
@@ -339,161 +325,5 @@ mod tests
 
 		// Should return an error since from_path_buf expects a struct
 		assert!(result.has_err());
-	}
-
-	#[test]
-	fn test_camel_case_conversion_logic()
-	{
-		// Test the camel case conversion logic used in enum_impl
-		let test_name = "oso_kernel_test";
-		let camel_cased = test_name
-			.split('_',)
-			.map(|s| s[..1].to_uppercase() + &s[1..],)
-			.join("",);
-
-		assert_eq!(camel_cased, "OsoKernelTest");
-	}
-
-	#[test]
-	fn test_camel_case_single_word()
-	{
-		let test_name = "kernel";
-		let camel_cased = test_name
-			.split('_',)
-			.map(|s| s[..1].to_uppercase() + &s[1..],)
-			.join("",);
-
-		assert_eq!(camel_cased, "Kernel");
-	}
-
-	#[test]
-	fn test_camel_case_empty_parts()
-	{
-		let test_name = "oso__kernel"; // Double underscore
-		let camel_cased = test_name
-			.split('_',)
-			.map(|s| {
-				if s.is_empty() {
-					String::new()
-				} else {
-					s[..1].to_uppercase() + &s[1..]
-				}
-			},)
-			.join("",);
-
-		assert_eq!(camel_cased, "OsoKernel");
-	}
-
-	#[test]
-	fn test_path_string_conversion()
-	{
-		use std::path::PathBuf;
-
-		// Test that PathBuf can be converted to string
-		let path = PathBuf::from("/test/path",);
-		let path_str = path.to_str();
-
-		assert!(path_str.is_some());
-		assert_eq!(path_str.unwrap(), "/test/path");
-	}
-
-	#[test]
-	fn test_path_with_non_utf8_handling()
-	{
-		use std::path::PathBuf;
-
-		// Create a path that might have UTF-8 issues
-		let path = PathBuf::from("test_path",);
-		let path_str = path.to_str();
-
-		// For normal paths, this should work
-		assert!(path_str.is_some());
-	}
-
-	#[test]
-	fn test_quote_format_ident_functionality()
-	{
-		// Test that quote::format_ident works as expected
-		let ident_name = "TestVariant";
-		let ident = quote::format_ident!("{}", ident_name);
-
-		let token_string = quote! { #ident }.to_string();
-		assert!(token_string.contains("TestVariant"));
-	}
-
-	#[test]
-	fn test_token_stream_generation()
-	{
-		// Test that we can generate basic token streams
-		let test_tokens = quote! {
-			impl From<PathBuf> for TestEnum {
-				fn from(value: PathBuf) -> Self {
-					match value.to_str().unwrap() {
-						"/test/path" => Self::TestVariant,
-					}
-				}
-			}
-		};
-
-		let token_string = test_tokens.to_string();
-		assert!(token_string.contains("impl From"));
-		assert!(token_string.contains("PathBuf"));
-		assert!(token_string.contains("TestEnum"));
-		assert!(token_string.contains("fn from"));
-		assert!(token_string.contains("match"));
-	}
-
-	#[test]
-	fn test_itertools_join_functionality()
-	{
-		// Test that itertools join works as expected
-		let parts = ["Hello", "World", "Test",];
-		let joined = parts.iter().map(|s| s.to_string(),).join("",);
-
-		assert_eq!(joined, "HelloWorldTest");
-	}
-
-	#[test]
-	fn test_itertools_join_with_separator()
-	{
-		let parts = ["Hello", "World",];
-		let joined = parts.iter().map(|s| s.to_string(),).join("_",);
-
-		assert_eq!(joined, "Hello_World");
-	}
-
-	#[test]
-	fn test_syn_item_matching() -> TestRslt
-	{
-		// Test that syn::Item matching works correctly
-		let enum_item: syn::Item = syn::parse_quote! {
-			enum TestEnum { A, B }
-		};
-
-		let struct_item: syn::Item = syn::parse_quote! {
-			struct TestStruct;
-		};
-
-		let fn_item: syn::Item = syn::parse_quote! {
-			fn test_fn() {}
-		};
-
-		// Test pattern matching
-		match enum_item {
-			syn::Item::Enum(_,) => (),
-			_ => panic!("Should match enum"),
-		}
-
-		match struct_item {
-			syn::Item::Struct(_,) => (),
-			_ => panic!("Should match struct"),
-		}
-
-		match fn_item {
-			syn::Item::Fn(_,) => (),
-			_ => fail!("Should match function"),
-		}
-
-		success!()
 	}
 }

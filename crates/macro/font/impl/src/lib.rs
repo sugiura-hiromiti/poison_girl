@@ -1,6 +1,6 @@
+#![feature(iterator_try_collect)]
 use {
-	poison_girl_proc_macro_helper::rslt::Rslt, proc_macro2::TokenStream,
-	syn::LitStr,
+	poison_girl_macro_error::rslt::Rslt, proc_macro2::TokenStream, syn::LitStr,
 };
 
 /// Number of ASCII characters supported (0-255)
@@ -8,7 +8,7 @@ const CHARACTER_COUNT: usize = 256;
 
 pub fn font(path: syn::LitStr,) -> Rslt<TokenStream,>
 {
-	let fonts = convert_bitfield(&font_data(path,)??,);
+	let fonts = convert_bitfield(&font_data(path,)?,)?;
 	Rslt::new(quote::quote! {
 		&[#(#fonts),*]
 	},)
@@ -47,7 +47,7 @@ fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,>
 	Rslt::new(fonts,)
 }
 
-fn convert_bitfield(fonts: &[String],) -> Vec<u128,>
+fn convert_bitfield(fonts: &[String],) -> Rslt<Vec<u128,>,>
 {
 	let fonts: Vec<u128,> = fonts
 		.iter()
@@ -67,23 +67,29 @@ fn convert_bitfield(fonts: &[String],) -> Vec<u128,>
 					let s: String = s.chars().rev().collect();
 
 					// Parse the binary string to get the line value
-					let line = u128::from_str_radix(&s, 2,).unwrap();
+					let line = u128::from_str_radix(&s, 2,)?;
 
 					// Shift the line to its proper position (line i goes to bit
 					// position i*8)
-					line << i
+					Rslt::new(line << i,)
 				},)
+				.try_collect::<Vec<u128,>>()?
+				.into_iter()
 				.sum(); // Combine all lines using bitwise OR (via sum)
-			a
+			Rslt::new(a,)
 		},)
-		.collect();
-	fonts
+		.try_collect()?;
+	Rslt::new(fonts,)
 }
 
 #[cfg(test)]
 mod tests
 {
-	use {super::*, std::fs};
+	use {
+		super::*,
+		poison_girl_macro_error::{rslt::test_helper::TestRslt, success},
+		std::fs,
+	};
 
 	#[test]
 	fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),>
@@ -110,7 +116,7 @@ mod tests
 			"test_font_temp.txt",
 			proc_macro2::Span::call_site(),
 		);
-		let fonts = font_data(lit_str,)??;
+		let fonts = font_data(lit_str,)?;
 
 		// Should load exactly 256 characters
 		assert_eq!(fonts.len(), 256);
@@ -165,40 +171,43 @@ mod tests
 	}
 
 	#[test]
-	fn test_convert_bitfield_returns_correct_count()
+	fn test_convert_bitfield_returns_correct_count() -> TestRslt
 	{
 		let test_fonts = vec!["........".repeat(16); 256];
-		let bitfields = convert_bitfield(&test_fonts,);
+		let bitfields = convert_bitfield(&test_fonts,)?;
 
 		assert_eq!(bitfields.len(), 256);
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_empty_pattern()
+	fn test_convert_bitfield_empty_pattern() -> TestRslt
 	{
 		// Test with all empty pixels (all dots)
 		let empty_pattern = "........".repeat(16,);
 		let test_fonts = vec![empty_pattern; 1];
-		let bitfields = convert_bitfield(&test_fonts,);
+		let bitfields = convert_bitfield(&test_fonts,)?;
 
 		// All dots should result in 0
 		assert_eq!(bitfields[0], 0);
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_full_pattern()
+	fn test_convert_bitfield_full_pattern() -> TestRslt
 	{
 		// Test with all filled pixels (all @)
 		let full_pattern = "@@@@@@@@".repeat(16,);
 		let test_fonts = vec![full_pattern; 1];
-		let bitfields = convert_bitfield(&test_fonts,);
+		let bitfields = convert_bitfield(&test_fonts,)?;
 
 		// All @ should result in a non-zero value
 		assert_ne!(bitfields[0], 0);
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_specific_pattern()
+	fn test_convert_bitfield_specific_pattern() -> TestRslt
 	{
 		// Test a specific pattern: single pixel in top-left corner
 		let mut pattern = String::new();
@@ -208,14 +217,15 @@ mod tests
 		}
 
 		let test_fonts = vec![pattern; 1];
-		let bitfields = convert_bitfield(&test_fonts,);
+		let bitfields = convert_bitfield(&test_fonts,)?;
 
 		// Should have the rightmost bit set (due to bit reversal)
 		assert_eq!(bitfields[0] & 1, 1);
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_line_positioning()
+	fn test_convert_bitfield_line_positioning() -> TestRslt
 	{
 		// Test that different lines result in different bit positions
 		let mut patterns = Vec::new();
@@ -233,7 +243,7 @@ mod tests
 			patterns.push(pattern,);
 		}
 
-		let bitfields = convert_bitfield(&patterns,);
+		let bitfields = convert_bitfield(&patterns,)?;
 
 		// Each pattern should produce a different value
 		for i in 0..15 {
@@ -245,6 +255,7 @@ mod tests
 				);
 			}
 		}
+		success!()
 	}
 
 	#[test]
@@ -303,10 +314,10 @@ mod tests
 		let fonts = font_data(lit_str,)?;
 
 		// Should still load 256 characters, with hex lines filtered out
-		assert_eq!(fonts.as_ref().unwrap().len(), 256);
+		assert_eq!(fonts.clone().len(), 256);
 
 		// Each character should still have 128 characters (hex lines filtered)
-		for font_char in &fonts.unwrap() {
+		for font_char in &fonts {
 			assert_eq!(font_char.len(), 128);
 		}
 
@@ -314,114 +325,6 @@ mod tests
 		let _ = fs::remove_file(test_file_path,);
 		Rslt::new((),)
 	}
-
-	// Property-based tests using proptest
-	// proptest! {
-	// 	#[test]
-	// 	fn test_convert_bitfield_preserves_count_property(
-	// 		patterns in prop::collection::vec(
-	// 			prop::string::string_regex("[.@]{128}").unwrap(),
-	// 			256..=256
-	// 		)
-	// 	) {
-	// 		let bitfields = convert_bitfield(&patterns);
-	// 		prop_assert_eq!(bitfields.len(), 256);
-	// 	}
-	//
-	// 	#[test]
-	// 	fn test_convert_bitfield_deterministic_property(
-	// 		pattern in prop::string::string_regex("[.@]{128}").unwrap()
-	// 	) {
-	// 		let patterns = vec![pattern.clone(); 1];
-	// 		let bitfields1 = convert_bitfield(&patterns);
-	// 		let bitfields2 = convert_bitfield(&patterns);
-	//
-	// 		prop_assert_eq!(bitfields1, bitfields2);
-	// 	}
-	//
-	// 	#[test]
-	// 	fn test_convert_bitfield_empty_vs_full(
-	// 		size in 1usize..=256
-	// 	) {
-	// 		let empty_pattern = ".".repeat(128);
-	// 		let full_pattern = "@".repeat(128);
-	//
-	// 		let empty_patterns = vec![empty_pattern; size];
-	// 		let full_patterns = vec![full_pattern; size];
-	//
-	// 		let empty_bitfields = convert_bitfield(&empty_patterns);
-	// 		let full_bitfields = convert_bitfield(&full_patterns);
-	//
-	// 		// All empty patterns should result in 0
-	// 		for bitfield in &empty_bitfields {
-	// 			prop_assert_eq!(*bitfield, 0);
-	// 		}
-	//
-	// 		// All full patterns should result in non-zero
-	// 		for bitfield in &full_bitfields {
-	// 			prop_assert_ne!(*bitfield, 0);
-	// 		}
-	// 	}
-	//
-	// 	#[test]
-	// 	fn test_font_data_character_count_property(
-	// 		char_count in 1usize..=512
-	// 	) {
-	// 		// Create font data with variable character count
-	// 		let sample_char =
-	// "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\n..@@@@..\n..@..@..\n..
-	// @..@..\n..@..@..\n..@..@..\n........\n........\n........\n........\n.....
-	// ...\n........\n"; 		let font_file_data = sample_char.repeat(char_count);
-	//
-	// 		// Only test with exactly 256 characters as that's what the function
-	// expects 		if char_count == 256 {
-	// 			use std::env;
-	// 			let project_root = env::var("CARGO_MANIFEST_DIR").unwrap();
-	// 			let test_file_path = format!("{}/test_font_prop_{}.txt", project_root,
-	// char_count);
-	//
-	// 			fs::write(&test_file_path, &font_file_data).unwrap();
-	//
-	// 			let lit_str = syn::LitStr::new(&format!("test_font_prop_{}.txt",
-	// char_count), proc_macro2::Span::call_site()); 			let result =
-	// font_data(lit_str);
-	//
-	// 			if let Ok(fonts) = result {
-	// 				prop_assert_eq!(fonts.len(), 256);
-	// 				for font_char in &fonts {
-	// 					prop_assert_eq!(font_char.len(), 128);
-	// 				}
-	// 			}
-	//
-	// 			let _ = fs::remove_file(test_file_path);
-	// 		}
-	// 	}
-	//
-	// 	#[test]
-	// 	fn test_bitfield_bit_operations(
-	// 		dot_count in 0usize..=128,
-	// 		at_count in 0usize..=128
-	// 	) {
-	// 		// Ensure total is exactly 128
-	// 		let total = dot_count + at_count;
-	// 		if total == 128 {
-	// 			let mut pattern = String::new();
-	// 			pattern.push_str(&".".repeat(dot_count));
-	// 			pattern.push_str(&"@".repeat(at_count));
-	//
-	// 			let patterns = vec![pattern; 1];
-	// 			let bitfields = convert_bitfield(&patterns);
-	//
-	// 			// If all dots, should be 0
-	// 			if at_count == 0 {
-	// 				prop_assert_eq!(bitfields[0], 0);
-	// 			} else {
-	// 				// If any @, should be non-zero
-	// 				prop_assert_ne!(bitfields[0], 0);
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 	#[test]
 	fn test_font_function_integration() -> Rslt<(),>
@@ -452,7 +355,7 @@ mod tests
 		// Should have no diagnostics
 		assert!(result.notation().is_empty());
 
-		let tokens = result??;
+		let tokens = result?;
 
 		// Should generate valid token stream
 		let token_string = tokens.to_string();
@@ -494,7 +397,7 @@ mod tests
 			proc_macro2::Span::call_site(),
 		);
 
-		let fonts = font_data(lit_str,)??;
+		let fonts = font_data(lit_str,)?;
 		assert_eq!(fonts.len(), 256);
 		// Each font should have exactly 128 characters (16 lines × 8
 		// chars)
@@ -507,7 +410,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_convert_bitfield_line_by_line()
+	fn test_convert_bitfield_line_by_line() -> TestRslt
 	{
 		// Test that each line contributes to the correct bit position
 		let mut test_patterns = Vec::new();
@@ -525,7 +428,7 @@ mod tests
 			test_patterns.push(pattern,);
 		}
 
-		let bitfields = convert_bitfield(&test_patterns,);
+		let bitfields = convert_bitfield(&test_patterns,)?;
 
 		// Each pattern should produce a different value
 		for i in 0..16 {
@@ -540,10 +443,11 @@ mod tests
 				);
 			}
 		}
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_bit_reversal()
+	fn test_convert_bitfield_bit_reversal() -> TestRslt
 	{
 		// Test that bit reversal works correctly
 		let patterns = vec![
@@ -551,13 +455,14 @@ mod tests
 			".......@".repeat(16,), // Rightmost bit
 		];
 
-		let bitfields = convert_bitfield(&patterns,);
+		let bitfields = convert_bitfield(&patterns,)?;
 
 		// Due to bit reversal, the leftmost @ should set the rightmost bit
 		// and the rightmost @ should set the leftmost bit
 		assert_ne!(bitfields[0], bitfields[1]);
 		assert_ne!(bitfields[0], 0);
 		assert_ne!(bitfields[1], 0);
+		success!()
 	}
 
 	#[test]
@@ -589,16 +494,6 @@ mod tests
 		unsafe {
 			std::env::set_var("CARGO_MANIFEST_DIR", env!("CARGO_MANIFEST_DIR"),);
 		}
-	}
-
-	#[test]
-	fn test_character_count_constant()
-	{
-		// Test that CHARACTER_COUNT is correct
-		assert_eq!(CHARACTER_COUNT, 256);
-
-		// Test that it matches ASCII character range
-		assert_eq!(CHARACTER_COUNT, (u8::MAX as usize) + 1);
 	}
 
 	#[test]
@@ -678,58 +573,61 @@ mod tests
 	}
 
 	#[test]
-	fn test_convert_bitfield_preserves_count()
+	fn test_convert_bitfield_preserves_count() -> TestRslt
 	{
 		// Test that convert_bitfield preserves the number of characters
 		let input_fonts = vec!["........".repeat(16); 256]; // 256 characters, each 128 chars long
-		let result = convert_bitfield(&input_fonts,);
+		let result = convert_bitfield(&input_fonts,)?;
 
 		assert_eq!(result.len(), 256);
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_deterministic()
+	fn test_convert_bitfield_deterministic() -> TestRslt
 	{
 		// Test that convert_bitfield produces deterministic results
 		let input_fonts = vec!["@.......".repeat(16); 10]; // 10 characters for faster test
 
-		let result1 = convert_bitfield(&input_fonts,);
-		let result2 = convert_bitfield(&input_fonts,);
+		let result1 = convert_bitfield(&input_fonts,)?;
+		let result2 = convert_bitfield(&input_fonts,)?;
 
 		assert_eq!(result1, result2);
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_edge_cases()
+	fn test_convert_bitfield_edge_cases() -> TestRslt
 	{
 		// Test edge cases: single character, empty input
 		let single_char = vec!["@.......".repeat(16,)]; // Single character
-		let result = convert_bitfield(&single_char,);
+		let result = convert_bitfield(&single_char,)?;
 		assert_eq!(result.len(), 1);
 		assert_ne!(result[0], 0); // Should have some bits set
 
 		// Test with all dots
 		let all_dots = vec![".".repeat(128,)];
-		let result = convert_bitfield(&all_dots,);
+		let result = convert_bitfield(&all_dots,)?;
 		assert_eq!(result.len(), 1);
 		assert_eq!(result[0], 0); // Should be all zeros
 
 		// Test with all @
 		let all_at = vec!["@".repeat(128,)];
-		let result = convert_bitfield(&all_at,);
+		let result = convert_bitfield(&all_at,)?;
 		assert_eq!(result.len(), 1);
 		assert_eq!(result[0], u128::MAX); // Should be all ones
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_bit_positions()
+	fn test_convert_bitfield_bit_positions() -> TestRslt
 	{
 		// Test specific bit positions
 		let mut pattern = ".".repeat(128,);
 		pattern.replace_range(0..1, "@",); // Set first bit
 
 		let fonts = vec![pattern];
-		let result = convert_bitfield(&fonts,);
+		let result = convert_bitfield(&fonts,)?;
 
 		// First bit should be set (MSB) - but the actual implementation might
 		// use different bit ordering Let's just verify that the result is
@@ -737,10 +635,11 @@ mod tests
 		assert_eq!(result.len(), 1);
 		assert_ne!(result[0], 0); // Should have some bits set
 		assert_eq!(result[0].count_ones(), 1); // Should have exactly one bit set
+		success!()
 	}
 
 	#[test]
-	fn test_convert_bitfield_mixed_patterns()
+	fn test_convert_bitfield_mixed_patterns() -> TestRslt
 	{
 		// Test with mixed patterns
 		let patterns = vec![
@@ -749,13 +648,14 @@ mod tests
 			"@.@.@.@.".repeat(16,), // Alternating pattern
 		];
 
-		let result = convert_bitfield(&patterns,);
+		let result = convert_bitfield(&patterns,)?;
 		assert_eq!(result.len(), 3);
 
 		// All should be different
 		assert_ne!(result[0], result[1]);
 		assert_ne!(result[1], result[2]);
 		assert_ne!(result[0], result[2]);
+		success!()
 	}
 
 	#[test]

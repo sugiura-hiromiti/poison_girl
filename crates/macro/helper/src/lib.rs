@@ -71,13 +71,13 @@ macro_rules! def {
 		}
 
 		rslt.notation().iter().for_each(|d| match d {
-			poison_girl_proc_macro_helper::diagnostic::NotationDiag::Warn(msg,) => {
+			poison_girl_macro_error::diagnostic::NotationDiag::Warn(msg,) => {
 				proc_macro::Diagnostic::new(proc_macro::Level::Warning, msg,).emit();
 			},
-			poison_girl_proc_macro_helper::diagnostic::NotationDiag::Note(msg,) => {
+			poison_girl_macro_error::diagnostic::NotationDiag::Note(msg,) => {
 				proc_macro::Diagnostic::new(proc_macro::Level::Note, msg,).emit();
 			},
-			poison_girl_proc_macro_helper::diagnostic::NotationDiag::Help(msg,) => {
+			poison_girl_macro_error::diagnostic::NotationDiag::Help(msg,) => {
 				proc_macro::Diagnostic::new(proc_macro::Level::Help, msg,).emit();
 			},
 		});

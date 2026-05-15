@@ -200,6 +200,7 @@ impl From<InvalidCurrentCratePath,> for PoisonGirlError
 	}
 }
 
+#[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
 {

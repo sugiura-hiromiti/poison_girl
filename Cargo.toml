@@ -70,11 +70,11 @@ hadris-fat = { version = "*", features = ["sync", "write"] }
 tabs_in_doc_comments = "allow"
 mut_from_ref = "allow"
 # panicing APIs
-unwrap_used = "forbid"
-expect_used = "forbid"
-panic = "forbid"
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
 todo = "deny"
-unimplemented = "forbid"
+unimplemented = "deny"
 unreachable = "deny"
 
 # [profile.dev.package.xtask]

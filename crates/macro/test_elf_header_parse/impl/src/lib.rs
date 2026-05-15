@@ -1,5 +1,5 @@
 use {
-	poison_girl_proc_macro_helper::{diagnostic::Diag, rslt::Rslt},
+	poison_girl_macro_error::{diagnostic::Diag, rslt::Rslt},
 	proc_macro2::{Span, TokenStream},
 	std::process::Command,
 };
@@ -356,163 +356,123 @@ fn parse_version(header: &ReadElfH,) -> Rslt<proc_macro2::TokenStream,>
 	},)
 }
 
-fn parse_entry(header: &ReadElfH,) -> proc_macro2::TokenStream
+fn parse_entry(header: &ReadElfH,) -> Rslt<proc_macro2::TokenStream,>
 {
 	let entry = header.entry.as_str();
 	let entry = &entry[2..]; // Remove "0x" prefix
-	let entry = u64::from_str_radix(entry, 16,).unwrap_or_else(|_| {
-		panic!("entry point address must be valid hex number: {entry}")
-	},);
+	let entry = u64::from_str_radix(entry, 16,)?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#entry
-	}
+	},)
 }
 
-fn parse_program_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream
+fn parse_program_header_offset(
+	header: &ReadElfH,
+) -> Rslt<proc_macro2::TokenStream,>
 {
 	let program_header_offset = header.program_header_offset.as_str();
-	let program_header_offset =
-		program_header_offset.parse::<u64>().unwrap_or_else(|_| {
-			panic!(
-				"program_header_offset address must be valid hex number: \
-				 {program_header_offset}"
-			)
-		},);
+	let program_header_offset = program_header_offset.parse::<u64>()?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#program_header_offset
-	}
+	},)
 }
 
-fn parse_section_header_offset(header: &ReadElfH,) -> proc_macro2::TokenStream
+fn parse_section_header_offset(
+	header: &ReadElfH,
+) -> Rslt<proc_macro2::TokenStream,>
 {
 	let section_header_offset = header.section_header_offset.as_str();
-	let section_header_offset =
-		section_header_offset.parse::<u64>().unwrap_or_else(|_| {
-			panic!(
-				"section_header_offset address must be valid hex number: \
-				 {section_header_offset}"
-			)
-		},);
+	let section_header_offset = section_header_offset.parse::<u64>()?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#section_header_offset
-	}
+	},)
 }
 
-fn parse_flags(header: &ReadElfH,) -> proc_macro2::TokenStream
+fn parse_flags(header: &ReadElfH,) -> Rslt<proc_macro2::TokenStream,>
 {
 	let flags = header.flags.as_str();
 	let flags = &flags[2..]; // Remove "0x" prefix
-	let flags = u32::from_str_radix(flags, 16,)
-		.unwrap_or_else(|_| panic!("flags must be valid hex number: {flags}"),);
+	let flags = u32::from_str_radix(flags, 16,)?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#flags
-	}
+	},)
 }
 
-fn parse_elf_header_size(header: &ReadElfH,) -> proc_macro2::TokenStream
+fn parse_elf_header_size(header: &ReadElfH,)
+-> Rslt<proc_macro2::TokenStream,>
 {
 	let elf_header_size = header.elf_header_size.as_str();
-	let elf_header_size = elf_header_size.parse::<u16>().unwrap_or_else(|_| {
-		panic!("elf_header_size must be valid hex number: {elf_header_size}")
-	},);
+	let elf_header_size = elf_header_size.parse::<u16>()?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#elf_header_size
-	}
+	},)
 }
 
 fn parse_program_header_entry_size(
 	header: &ReadElfH,
-) -> proc_macro2::TokenStream
+) -> Rslt<proc_macro2::TokenStream,>
 {
 	let program_header_entry_size = header.program_header_entry_size.as_str();
-	let program_header_entry_size =
-		program_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
-			panic!(
-				"program_header_entry_size must be valid hex number: \
-				 {program_header_entry_size}"
-			)
-		},);
+	let program_header_entry_size = program_header_entry_size.parse::<u16>()?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#program_header_entry_size
-	}
+	},)
 }
 
-fn parse_program_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream
+fn parse_program_header_count(
+	header: &ReadElfH,
+) -> Rslt<proc_macro2::TokenStream,>
 {
 	let program_header_count = header.program_header_count.as_str();
-	let program_header_count =
-		program_header_count.parse::<u16>().unwrap_or_else(|_| {
-			panic!(
-				"program_header_count must be valid hex number: \
-				 {program_header_count}"
-			)
-		},);
+	let program_header_count = program_header_count.parse::<u16>()?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#program_header_count
-	}
+	},)
 }
 
 fn parse_section_header_entry_size(
 	header: &ReadElfH,
-) -> proc_macro2::TokenStream
+) -> Rslt<proc_macro2::TokenStream,>
 {
 	let section_header_entry_size = header.section_header_entry_size.as_str();
-	let section_header_entry_size =
-		section_header_entry_size.parse::<u16>().unwrap_or_else(|_| {
-			panic!(
-				"section_header_entry_size must be valid hex number: \
-				 {section_header_entry_size}"
-			)
-		},);
+	let section_header_entry_size = section_header_entry_size.parse::<u16>()?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#section_header_entry_size
-	}
+	},)
 }
 
-fn parse_section_header_count(header: &ReadElfH,) -> proc_macro2::TokenStream
+fn parse_section_header_count(
+	header: &ReadElfH,
+) -> Rslt<proc_macro2::TokenStream,>
 {
 	let section_header_count = header.section_header_count.as_str();
-	let section_header_count =
-		section_header_count.parse::<u16>().unwrap_or_else(|_| {
-			panic!(
-				"section_header_count must be valid hex number: \
-				 {section_header_count}"
-			)
-		},);
+	let section_header_count = section_header_count.parse::<u16>()?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#section_header_count
-	}
+	},)
 }
 
 fn parse_section_header_index_of_section_name_string_table(
 	header: &ReadElfH,
-) -> proc_macro2::TokenStream
+) -> Rslt<proc_macro2::TokenStream,>
 {
 	let section_header_index_of_section_name_string_table =
 		header.section_header_index_of_section_name_string_table.as_str();
 	let section_header_index_of_section_name_string_table =
-		section_header_index_of_section_name_string_table
-			.parse::<u16>()
-			.unwrap_or_else(|_| {
-				panic!(
-					"section_header_index_of_section_name_string_table must \
-					 be valid hex number: \
-					 {section_header_index_of_section_name_string_table}"
-				)
-			},);
+		section_header_index_of_section_name_string_table.parse::<u16>()?;
 
-	quote::quote! {
+	Rslt::new(quote::quote! {
 		#section_header_index_of_section_name_string_table
-	}
+	},)
 }
 
 pub fn readelf_h() -> Rslt<ReadElfH,>
