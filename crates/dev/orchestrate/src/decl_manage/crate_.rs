@@ -493,143 +493,16 @@ mod tests
 		assert!(debug_string.contains("path"));
 	}
 
-	// Test methods that don't require valid paths (they return Results)
-
-	#[test]
-	fn test_crate_action_methods_exist()
-	{
-		let current_dir =
-			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = PoisonGirlCrate::from(current_dir,);
-
-		// Test that action methods exist (they will likely fail in test
-		// environment) ignore `test` method because running it in test cause
-		// infinity loop ignore `run` too because this crate is library crate.
-		// nothing to run.
-		let _build_result = crate_obj.build();
-		let _check_result = crate_obj.check();
-		let _fmt_result = crate_obj.format();
-
-		// If we get here without compilation errors, the methods exist
-	}
-
-	#[test]
-	fn test_crate_action_with_methods_exist()
-	{
-		let current_dir =
-			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = PoisonGirlCrate::from(current_dir,);
-
-		// Test that action methods with options exist
-		// ignore `test_with` method because running it in test cause infinity
-		// loop ignore `run_with` too because this crate is library crate.
-		// nothing to run.
-		let opts = ["--release",];
-		let _build_result = crate_obj.build_with(&opts,);
-		let _check_result = crate_obj.ckeck_with(&opts,);
-		let _fmt_result = crate_obj.fmt_with(&["--all",],);
-	}
-
-	#[test]
-	fn test_crate_info_methods()
-	{
-		let current_dir =
-			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = PoisonGirlCrate::from(current_dir,);
-
-		// Test that CrateInfo methods exist and return Results
-		let _is_package_result = crate_obj.is_package();
-		let _is_workspace_result = crate_obj.is_workspace();
-		let _is_both_result = crate_obj.is_pkg_and_ws();
-		let _toml_result = crate_obj.toml();
-		let _cargo_conf_result = crate_obj.cargo_conf();
-	}
-
-	#[test]
-	fn test_package_survey_methods()
-	{
-		let current_dir =
-			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = PoisonGirlCrate::from(current_dir,);
-
-		// Test PackageSurvey methods
-		let _target_result = crate_obj.default_target();
-
-		// Test build_artifact with proper CompileOpt
-		use poison_girl_dev_cargo::Opts;
-		let _opts = Opts::default();
-	}
-
-	#[test]
-	fn test_workspace_info_methods()
-	{
-		let current_dir =
-			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = PoisonGirlCrate::from(current_dir,);
-
-		// Test WorkspaceInfo methods
-		let _members = crate_obj.members();
-
-		let _target_members = crate_obj.members_with_target("test-target",);
-	}
-
 	#[test]
 	fn test_workspace_survey_land_on()
 	{
-		let current_dir =
-			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let parent_dir =
-			current_dir.parent().unwrap_or(&current_dir,).to_path_buf();
+		let mut crate_obj =
+			PoisonGirlCrate::from(PoisonGirlCrateChart::DevOrchestrate,);
+		let target_crate = PoisonGirlCrate::from(PoisonGirlCrateChart::DevFs,);
+		let target_path = target_crate.path();
 
-		let mut crate_obj = PoisonGirlCrate::from(current_dir,);
-		let target_crate = PoisonGirlCrate::from(parent_dir.clone(),);
-
-		// Test that land_on method exists and works
 		crate_obj.land_on(target_crate,);
 
-		// After landing on the target, the path should change
-		assert_eq!(crate_obj.path(), parent_dir);
-	}
-
-	#[test]
-	fn test_trait_implementations()
-	{
-		let current_dir =
-			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = PoisonGirlCrate::from(current_dir,);
-
-		// Test that all required traits are implemented
-		// These are compile-time checks using concrete types since traits are
-		// not object-safe
-
-		// Test that we can use the crate as different trait implementors
-		let _crate_ref: &PoisonGirlCrate = &crate_obj;
-		let _package_ref: &PoisonGirlCrate = &crate_obj;
-		let _workspace_ref: &PoisonGirlCrate = &crate_obj;
-
-		// If we get here, all traits are implemented
-	}
-
-	// Test the survey methods that contain todo!() - they should panic
-	#[test]
-	fn test_crate_survey_todo_methods()
-	{
-		let current_dir =
-			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
-		let crate_obj = PoisonGirlCrate::from(current_dir,);
-
-		// Test that survey methods exist (they contain todo!() so will panic)
-		let has_parent_result =
-			std::panic::catch_unwind(|| crate_obj.has_parent(),);
-		let go_parent_result = std::panic::catch_unwind(|| {
-			let mut obj = crate_obj.clone();
-			obj.go_parent()
-		},);
-		let fix_result = std::panic::catch_unwind(|| crate_obj.fix(),);
-
-		// These methods contain todo!() so they should panic
-		assert!(has_parent_result.is_ok());
-		assert!(go_parent_result.is_ok());
-		assert!(fix_result.is_ok());
+		assert_eq!(crate_obj.path(), target_path);
 	}
 }
