@@ -519,15 +519,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_readelf_l_out_simulation()
-	{
-		// We can't easily test the actual readelf command without the binary,
-		// but we can test that the function signature is correct and it returns
-		// a Result This test would need to be ignored in CI/CD environments
-		// without the binary
-	}
-
-	#[test]
 	fn test_hex_string_edge_cases() -> Rslt<(),>
 	{
 		// Test various hex string formats

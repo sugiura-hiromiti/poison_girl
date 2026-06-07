@@ -221,6 +221,20 @@ mod tests
 		poison_girl_dev_test::{PoisonGirlTestB, success},
 	};
 
+	fn test_dir(name: &str,) -> PoisonGirlB<PathBuf,>
+	{
+		let nanos = std::time::SystemTime::now()
+			.duration_since(std::time::UNIX_EPOCH,)
+			.map_or(0, |duration| duration.as_nanos(),);
+		let path = std::env::temp_dir().join(format!(
+			"poison_girl_dev_fs_{name}_{}_{}",
+			std::process::id(),
+			nanos
+		),);
+		std::fs::create_dir_all(&path,)?;
+		X(path,)
+	}
+
 	#[test]
 	fn test_search_cargo_toml() -> PoisonGirlTestB
 	{
@@ -415,22 +429,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_search_in_with_dot_files() -> PoisonGirlTestB
-	{
-		// Test searching for hidden files (dot files)
-		let current_dir = std::path::PathBuf::from(CWD,);
-
-		let dot_files = vec![".gitignore", ".cargo", ".hidden", "..parent"];
-
-		for dot_file in dot_files {
-			let result = search_in(&current_dir, dot_file,)?;
-			// These may or may not exist, just verify no panic
-			assert!(result.is_none() || result.is_some());
-		}
-		success!()
-	}
-
-	#[test]
 	fn test_search_upstream_from_root() -> PoisonGirlTestB
 	{
 		// Test search_upstream when starting from root directory
@@ -448,43 +446,50 @@ mod tests
 		success!()
 	}
 
-	// TODO: テストケース死んでる
+	#[cfg(unix)]
 	#[test]
 	fn test_search_upstream_with_symlinks() -> PoisonGirlTestB
 	{
-		// Test behavior with symbolic links (if any exist)
-		// This is system-dependent, so we'll just test that it doesn't panic
-		let result = search_upstream("Cargo.toml",)?;
-		if let Some(path,) = result {
-			// Verify the found path exists and is readable
-			assert!(path.exists());
-			assert!(path.is_file());
-		}
+		let root = test_dir("symlink",)?;
+		let manifest = root.join("Cargo.toml",);
+		let real_nested = root.join("real",).join("nested",);
+		let linked_nested = root.join("linked_nested",);
+		let start = linked_nested.join("child",);
+
+		std::fs::write(&manifest, "[package]\nname = \"fixture\"\n",)?;
+		std::fs::create_dir_all(&real_nested,)?;
+		std::os::unix::fs::symlink(&real_nested, &linked_nested,)?;
+		std::fs::create_dir_all(&start,)?;
+
+		let result = search_upstream_at(&start, "Cargo.toml",)?;
+		let _ = std::fs::remove_dir_all(&root,);
+
+		assert_eq!(result, Some(manifest,));
 		success!()
 	}
 
+	#[cfg(unix)]
 	#[test]
 	fn test_search_in_with_permission_denied() -> PoisonGirlTestB
 	{
-		// Test behavior when encountering permission denied errors
-		// This is system-dependent and might not trigger on all systems
-		let restricted_paths = vec![
-			"/root",
-			"/private/var/root",
-			"/System/Library/PrivateFrameworks",
-		];
+		use std::os::unix::fs::PermissionsExt;
 
-		for path in restricted_paths {
-			let path_buf = std::path::PathBuf::from(path,);
-			if path_buf.exists() {
-				let result = search_in(&path_buf, "any_file.txt",);
-				// Should either succeed or fail gracefully
-				match result {
-					X(_,) => {}, // Success
-					Y(_,) => {}, // Expected failure due to permissions
-				}
-			}
-		}
+		let root = test_dir("permission_denied",)?;
+		let restricted = root.join("restricted",);
+		std::fs::create_dir(&restricted,)?;
+
+		let original_permissions =
+			std::fs::metadata(&restricted,)?.permissions();
+		let mut denied_permissions = original_permissions.clone();
+		denied_permissions.set_mode(0o000,);
+		std::fs::set_permissions(&restricted, denied_permissions,)?;
+
+		let result = search_in(&restricted, "any_file.txt",);
+
+		std::fs::set_permissions(&restricted, original_permissions,)?;
+		let _ = std::fs::remove_dir_all(&root,);
+
+		assert!(result.is_y());
 		success!()
 	}
 }

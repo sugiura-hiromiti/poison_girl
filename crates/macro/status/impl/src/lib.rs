@@ -489,13 +489,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_parse_text()
-	{
-		let node = parse_text(BASIC_HTML,);
-		eprintln!("{node:#?}")
-	}
-
-	#[test]
 	fn test_get_elements_by_attribute()
 	{
 		let node = parse_text(BASIC_HTML,);

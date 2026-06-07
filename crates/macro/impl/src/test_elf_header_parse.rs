@@ -1032,26 +1032,85 @@ mod tests
 	}
 
 	#[test]
-	fn test_readelf_h_string_operations()
+	fn test_readelf_h_string_operations() -> Rslt<(),>
 	{
-		// Test various string operations that might be used with ReadElfH
 		let header = ReadElfH {
 			file_class: "ELF64".to_string(),
+			endianness: "little".to_string(),
+			elf_version: "1".to_string(),
+			target_os_abi: "UNIX - System V".to_string(),
+			abi_version: "0".to_string(),
+			ty: "EXEC".to_string(),
+			machine: "Advanced".to_string(),
+			version: "0x1".to_string(),
 			entry: "0x401000".to_string(),
+			program_header_offset: "64".to_string(),
+			section_header_offset: "4096".to_string(),
+			flags: "0x0".to_string(),
+			elf_header_size: "64".to_string(),
+			program_header_entry_size: "56".to_string(),
+			program_header_count: "4".to_string(),
+			section_header_entry_size: "64".to_string(),
+			section_header_count: "10".to_string(),
+			section_header_index_of_section_name_string_table: "9".to_string(),
 			..Default::default()
 		};
 
-		// Test string comparisons
-		assert_eq!(header.file_class, "ELF64");
-		assert_ne!(header.file_class, "ELF32");
-
-		// Test string contains
-		assert!(header.entry.contains("0x"));
-		assert!(header.entry.contains("401000"));
-
-		// Test string length
-		assert_eq!(header.file_class.len(), 5);
-		assert_eq!(header.entry.len(), 8);
+		assert_eq!(
+			parse_file_class(&header,)?.to_string(),
+			quote::quote! { FileClass::Bit64 }.to_string()
+		);
+		assert_eq!(
+			parse_endianness(&header,)?.to_string(),
+			quote::quote! { Endian::Little }.to_string()
+		);
+		assert_eq!(
+			parse_elf_version(&header,)?.to_string(),
+			quote::quote! { ElfVersion::ONE }.to_string()
+		);
+		assert_eq!(
+			parse_target_os_abi(&header,)?.to_string(),
+			quote::quote! { TargetOsAbi::SysV }.to_string()
+		);
+		let abi_version = 0u8;
+		assert_eq!(
+			parse_abi_version(&header,)?.to_string(),
+			quote::quote! { AbiVersion(#abi_version) }.to_string()
+		);
+		assert_eq!(
+			parse_ty(&header,)?.to_string(),
+			quote::quote! { ElfType::Executable }.to_string()
+		);
+		assert_eq!(
+			parse_machine(&header,).to_string(),
+			quote::quote! { ElfHeader::EM_ADVANCED }.to_string()
+		);
+		let version = 1u32;
+		assert_eq!(
+			parse_version(&header,).to_string(),
+			quote::quote! { #version }.to_string()
+		);
+		let entry = 0x401000u64;
+		assert_eq!(
+			parse_entry(&header,).to_string(),
+			quote::quote! { #entry }.to_string()
+		);
+		let program_header_offset = 64u64;
+		assert_eq!(
+			parse_program_header_offset(&header,).to_string(),
+			quote::quote! { #program_header_offset }.to_string()
+		);
+		let section_header_offset = 4096u64;
+		assert_eq!(
+			parse_section_header_offset(&header,).to_string(),
+			quote::quote! { #section_header_offset }.to_string()
+		);
+		let flags = 0u32;
+		assert_eq!(
+			parse_flags(&header,).to_string(),
+			quote::quote! { #flags }.to_string()
+		);
+		Rslt::new((),)
 	}
 
 	#[test]
@@ -1208,28 +1267,49 @@ mod tests
 
 		header.fix();
 
-		// Verify all fields are properly cleaned
-		assert!(!header.file_class.is_empty());
-		assert!(!header.endianness.is_empty());
-		assert!(!header.elf_version.is_empty());
-		assert!(!header.target_os_abi.is_empty());
-		assert!(!header.abi_version.is_empty());
-		assert!(!header.ty.is_empty());
-		assert!(!header.machine.is_empty());
-		assert!(!header.version.is_empty());
-		assert!(!header.entry.is_empty());
-		assert!(!header.program_header_offset.is_empty());
-		assert!(!header.section_header_offset.is_empty());
-		assert!(!header.flags.is_empty());
-		assert!(!header.elf_header_size.is_empty());
-		assert!(!header.program_header_entry_size.is_empty());
-		assert!(!header.program_header_count.is_empty());
-		assert!(!header.section_header_entry_size.is_empty());
-		assert!(!header.section_header_count.is_empty());
-		assert!(
-			!header
-				.section_header_index_of_section_name_string_table
-				.is_empty()
+		assert_eq!(
+			[
+				header.file_class.as_str(),
+				header.endianness.as_str(),
+				header.elf_version.as_str(),
+				header.target_os_abi.as_str(),
+				header.abi_version.as_str(),
+				header.ty.as_str(),
+				header.machine.as_str(),
+				header.version.as_str(),
+				header.entry.as_str(),
+				header.program_header_offset.as_str(),
+				header.section_header_offset.as_str(),
+				header.flags.as_str(),
+				header.elf_header_size.as_str(),
+				header.program_header_entry_size.as_str(),
+				header.program_header_count.as_str(),
+				header.section_header_entry_size.as_str(),
+				header.section_header_count.as_str(),
+				header
+					.section_header_index_of_section_name_string_table
+					.as_str(),
+			],
+			[
+				"ELF64",
+				"little",
+				"1",
+				"UNIX - System V",
+				"0",
+				"EXEC",
+				"Advanced",
+				"0x1",
+				"0x401000",
+				"64",
+				"4096",
+				"0x0",
+				"64",
+				"56",
+				"4",
+				"64",
+				"10",
+				"9",
+			]
 		);
 	}
 }

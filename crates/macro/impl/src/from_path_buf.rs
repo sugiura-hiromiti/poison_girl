@@ -384,17 +384,16 @@ mod tests
 		assert_eq!(path_str.unwrap(), "/test/path");
 	}
 
+	#[cfg(unix)]
 	#[test]
 	fn test_path_with_non_utf8_handling()
 	{
-		use std::path::PathBuf;
+		use std::{ffi::OsString, os::unix::ffi::OsStringExt, path::PathBuf};
 
-		// Create a path that might have UTF-8 issues
-		let path = PathBuf::from("test_path",);
+		let path = PathBuf::from(OsString::from_vec(vec![b't', b'e', 0x80],),);
 		let path_str = path.to_str();
 
-		// For normal paths, this should work
-		assert!(path_str.is_some());
+		assert!(path_str.is_none());
 	}
 
 	#[test]

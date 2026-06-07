@@ -154,14 +154,3 @@ pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,)
 	// If we reach here, kernel execution failed
 	wfi();
 }
-
-#[cfg(test)]
-mod tests
-{
-	use super::*;
-
-	#[test]
-	fn test_name()
-	{
-	}
-}

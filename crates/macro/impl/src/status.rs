@@ -506,13 +506,6 @@ mod tests
 	}
 
 	#[test]
-	fn test_parse_text()
-	{
-		let node = parse_text(BASIC_HTML,);
-		eprintln!("{node:#?}")
-	}
-
-	#[test]
 	fn test_get_element_by_id() -> Rslt<(),>
 	{
 		let node = parse_text(BASIC_HTML,);

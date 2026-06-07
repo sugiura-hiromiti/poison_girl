@@ -198,16 +198,47 @@ mod tests
 	fn test_method_args_preserves_pattern_structure()
 	{
 		let sig: Signature = parse_quote! {
-			fn test_fn(&self, arg1: i32, arg2: String,)
+			fn test_fn(
+				&self,
+				(x, y): (i32, i32),
+				[a, b]: [u8; 2],
+				mut name: String,
+			)
 		};
 
 		let args: Vec<_,> = method_args(&sig,).collect();
-
-		// Check that we can convert patterns back to tokens
-		for arg in args {
-			let _tokens = quote::quote! { #arg };
-			// If this compiles, the pattern structure is preserved
-		}
+		assert_eq!(args.len(), 3);
+		assert!(matches!(
+			&*args[0],
+			syn::Pat::Tuple(tuple)
+				if tuple.elems.len() == 2
+					&& matches!(
+						&tuple.elems[0],
+						syn::Pat::Ident(pat) if pat.ident == "x"
+					)
+					&& matches!(
+						&tuple.elems[1],
+						syn::Pat::Ident(pat) if pat.ident == "y"
+					)
+		));
+		assert!(matches!(
+			&*args[1],
+			syn::Pat::Slice(slice)
+				if slice.elems.len() == 2
+					&& matches!(
+						&slice.elems[0],
+						syn::Pat::Ident(pat) if pat.ident == "a"
+					)
+					&& matches!(
+						&slice.elems[1],
+						syn::Pat::Ident(pat) if pat.ident == "b"
+					)
+		));
+		assert!(matches!(
+			&*args[2],
+			syn::Pat::Ident(ident)
+				if ident.ident == "name" && ident.mutability.is_some()
+		));
 	}
 
 	#[test]

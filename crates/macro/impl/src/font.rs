@@ -33,6 +33,14 @@ fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,>
 		.into_iter()
 		.filter(|s| !(s.is_empty() || s.contains("0x",)),) // Remove empty lines and hex values
 		.collect();
+	let expected_line_count = CHARACTER_COUNT * 16;
+	if fonts_data_lines.len() != expected_line_count {
+		return Rslt::new_err(format!(
+			"font file must contain {expected_line_count} bitmap rows, found \
+			 {}",
+			fonts_data_lines.len()
+		),);
+	}
 
 	// Process each character (16 lines per character)
 	let mut fonts = vec!["".to_string(); CHARACTER_COUNT];
@@ -43,7 +51,14 @@ fn font_data(specified_path: LitStr,) -> Rslt<Vec<String,>,>
 
 	// Verify that each character has exactly 128 characters (16 lines × 8
 	// chars)
-	fonts.iter().for_each(|s| assert_eq!(s.len(), 128),);
+	for (idx, font,) in fonts.iter().enumerate() {
+		if font.len() != 128 {
+			return Rslt::new_err(format!(
+				"font character {idx} must contain 128 pixels, found {}",
+				font.len()
+			),);
+		}
+	}
 	Rslt::new(fonts,)
 }
 
@@ -628,18 +643,12 @@ mod tests
 			proc_macro2::Span::call_site(),
 		);
 
-		// Use panic catching since the function might panic on insufficient
-		// data
-		let result = std::panic::catch_unwind(|| font_data(lit_str,),);
+		let result = font_data(lit_str,);
 
 		// Cleanup
 		let _ = fs::remove_file(test_file_path,);
 
-		// Should either return an error or panic due to insufficient characters
-		if let Ok(inner_result,) = result {
-			// If it doesn't panic, it should return an error
-			assert!(inner_result.has_err());
-		}
+		assert!(result.has_err());
 
 		Rslt::new((),)
 	}
@@ -668,12 +677,11 @@ mod tests
 			proc_macro2::Span::call_site(),
 		);
 
-		// This should panic due to the assertion in font_data
-		let result = std::panic::catch_unwind(|| font_data(lit_str,),);
-		assert!(result.is_err());
+		let result = font_data(lit_str,);
 
 		// Cleanup
 		let _ = fs::remove_file(test_file_path,);
+		assert!(result.has_err());
 		Rslt::new((),)
 	}
 
@@ -724,19 +732,24 @@ mod tests
 	#[test]
 	fn test_convert_bitfield_bit_positions()
 	{
-		// Test specific bit positions
 		let mut pattern = ".".repeat(128,);
-		pattern.replace_range(0..1, "@",); // Set first bit
+		pattern.replace_range(0..1, "@",);
 
 		let fonts = vec![pattern];
 		let result = convert_bitfield(&fonts,);
 
-		// First bit should be set (MSB) - but the actual implementation might
-		// use different bit ordering Let's just verify that the result is
-		// non-zero and has exactly one bit set
 		assert_eq!(result.len(), 1);
-		assert_ne!(result[0], 0); // Should have some bits set
-		assert_eq!(result[0].count_ones(), 1); // Should have exactly one bit set
+		assert_eq!(result[0], 1);
+
+		let mut pattern = ".".repeat(128,);
+		pattern.replace_range(7..8, "@",);
+		let result = convert_bitfield(&[pattern,],);
+		assert_eq!(result[0], 1u128 << 7);
+
+		let mut pattern = ".".repeat(128,);
+		pattern.replace_range(127..128, "@",);
+		let result = convert_bitfield(&[pattern,],);
+		assert_eq!(result[0], 1u128 << 127);
 	}
 
 	#[test]

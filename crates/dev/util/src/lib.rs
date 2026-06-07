@@ -900,13 +900,24 @@ mod tests
 	#[test]
 	fn test_unicode_handling()
 	{
-		// Test that the functions handle basic ASCII properly
-		// (Unicode support might be limited in the current implementation)
-		let ascii_snake = "hello_world".to_string();
-		assert!(ascii_snake.is_snake()); // hello_world is valid snake case
+		let unicode_snake = "hello_世界".to_string();
+		assert!(!unicode_snake.is_snake());
+		assert!(!unicode_snake.is_screaming_snake());
+		assert_eq!(
+			unicode_snake.find_spacer::<String>(),
+			Some("_".to_string())
+		);
+		assert_eq!(unicode_snake.words(), vec!["hello", "世界"]);
 
-		let ascii_camel = "HelloWorld".to_string();
-		assert!(ascii_camel.is_camel());
+		let converted: String = unicode_snake.to_snake();
+		assert_eq!(converted, "hello_世界");
+
+		let unicode_word = "Καλημέρα".to_string();
+		assert!(!unicode_word.is_camel());
+		assert!(!unicode_word.is_snake());
+		assert!(!unicode_word.is_screaming_snake());
+		assert!(!unicode_word.is_kebab());
+		assert_eq!(unicode_word.words(), vec!["Καλημέρα"]);
 	}
 
 	#[test]

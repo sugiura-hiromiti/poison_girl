@@ -400,14 +400,4 @@ mod tests
 		assert!(opts.command.is_run());
 		assert!(!opts.lock_deps);
 	}
-
-	#[test]
-	fn test_cli_parser_integration()
-	{
-		// Test that CLI parsing works with clap
-		use clap::CommandFactory;
-
-		// Test that we can create a parser
-		let _parser = Cli::command();
-	}
 }
