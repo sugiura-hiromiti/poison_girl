@@ -1,10 +1,10 @@
 //! # Builder Module
 //!
-//! Core functionality for building the OSO loader and kernel, creating disk
-//! images, and running QEMU.
+//! Core functionality for building the poison_girl loader and kernel, creating
+//! disk images, and running QEMU.
 //!
 //! This module handles:
-//! - Building the OSO loader and kernel for the target architecture
+//! - Building the poison_girl loader and kernel for the target architecture
 //! - Creating and formatting a disk image
 //! - Mounting the disk image and copying the built artifacts
 //! - Configuring and running QEMU with the appropriate firmware and disk image
@@ -21,12 +21,12 @@ use {
 
 impl Xtask
 {
-	/// Creates a new Builder instance with the specified options
+	/// Creates a new Xtask instance with the specified options
 	///
 	/// This constructor initializes all the necessary components for the build
 	/// process:
 	/// - Parses command-line options and build configuration
-	/// - Sets up the OSO workspace with project paths
+	/// - Sets up the poison_girl workspace with project paths
 	/// - Downloads and configures OVMF firmware for the target architecture
 	/// - Detects the host operating system for platform-specific operations
 	///
@@ -43,7 +43,7 @@ impl Xtask
 	///
 	/// # Returns
 	///
-	/// * `Ok(Builder)` - A fully initialized Builder instance ready for use
+	/// * `Ok(Xtask)` - A fully initialized Xtask instance ready for use
 	/// * `Err(anyhow::Error)` - If initialization fails due to:
 	///   - Invalid workspace structure
 	///   - Firmware download failure
@@ -53,18 +53,17 @@ impl Xtask
 	/// # Examples
 	///
 	/// ```rust,ignore
-	/// use xtask::builder::Builder;
+	/// use poison_girl::Xtask;
 	///
-	/// // Create a builder with default configuration
-	/// let builder = Builder::new()?;
-	/// println!("Building for architecture: {:?}", builder.arch());
+	/// // Create an xtask runner with default configuration.
+	/// let xtask = Xtask::new()?;
 	/// ```
 	///
 	/// # Errors
 	///
 	/// This method can fail in several scenarios:
-	/// - **Workspace Error**: If the OSO project structure is invalid or
-	///   incomplete
+	/// - **Workspace Error**: If the poison_girl project structure is invalid
+	///   or incomplete
 	/// - **Firmware Error**: If OVMF firmware files cannot be downloaded or
 	///   accessed
 	/// - **Host OS Error**: If the host operating system is not supported

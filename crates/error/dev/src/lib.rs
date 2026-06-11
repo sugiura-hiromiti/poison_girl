@@ -43,6 +43,15 @@ impl From<std::io::Error,> for PoisonGirlError
 	}
 }
 
+impl From<&std::io::Error,> for PoisonGirlError
+{
+	fn from(value: &std::io::Error,) -> Self
+	{
+		let value = std::io::Error::new(value.kind(), value.to_string(),);
+		Self::from(value,)
+	}
+}
+
 impl From<std::process::ExitStatusError,> for PoisonGirlError
 {
 	#[track_caller]
@@ -200,6 +209,29 @@ impl From<InvalidCurrentCratePath,> for PoisonGirlError
 	}
 }
 
+impl From<InvalidHostName,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: InvalidHostName,) -> Self
+	{
+		Self {
+			loc: Location::caller(), src: DevError::InvalidHostName(value,),
+		}
+	}
+}
+
+impl From<YourHostPlatformIsOutOfSupport,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: YourHostPlatformIsOutOfSupport,) -> Self
+	{
+		Self {
+			loc: Location::caller(),
+			src: DevError::YourHostPlatformIsOutOfSupport(value,),
+		}
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -220,10 +252,20 @@ enum DevError
 	ProjectRootNotFound(ProjectRootNotFound,),
 	InvalidProjectRootFound(InvalidProjectRootFound,),
 	InvalidCurrentCratePath(InvalidCurrentCratePath,),
+	InvalidHostName(InvalidHostName,),
+	YourHostPlatformIsOutOfSupport(YourHostPlatformIsOutOfSupport,),
 }
 
 #[derive(Debug,)]
 pub struct PathNotFound(pub String,);
+
+impl PathNotFound
+{
+	pub fn new(s: impl Into<String,>,) -> Self
+	{
+		Self(s.into(),)
+	}
+}
 
 #[derive(Debug,)]
 pub struct HostTupleNotFound;
@@ -252,6 +294,20 @@ pub struct InvalidProjectRootFound;
 
 #[derive(Debug,)]
 pub struct InvalidCurrentCratePath;
+
+#[derive(Debug,)]
+pub struct InvalidHostName(pub String,);
+
+impl InvalidHostName
+{
+	pub fn new(s: impl Into<String,>,) -> Self
+	{
+		Self(s.into(),)
+	}
+}
+
+#[derive(Debug,)]
+pub struct YourHostPlatformIsOutOfSupport;
 
 #[macro_export]
 macro_rules! poison_girl_err {

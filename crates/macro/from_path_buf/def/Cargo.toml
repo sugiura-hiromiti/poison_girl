@@ -3,6 +3,9 @@ name = "poison_girl_macro_def_from_path_buf"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+debug-diagnostics = ["poison_girl_macro_impl_from_path_buf/debug-diagnostics"]
+
 [lib]
 proc-macro = true
 

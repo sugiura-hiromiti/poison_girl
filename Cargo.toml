@@ -6,6 +6,7 @@ members = [
   "crates/no_std",
   "crates/error/*",
   "crates/dev/*",
+  "crates/macro/impl",
   "crates/macro/helper",
   "crates/macro/macro",
   "crates/macro/*/def",
@@ -77,7 +78,7 @@ todo = "deny"
 unimplemented = "deny"
 unreachable = "deny"
 
-# [profile.dev.package.xtask]
+# [profile.dev.package.poison_girl]
 # opt-level = 3
 
 [package]

@@ -11,7 +11,7 @@ fnl! {
 	r#"Generates implementations for integer types.
 
 This procedural macro takes a list of types and generates implementations
-for them using the logic defined in the `oso_proc_macro_logic::impl_init` module.
+for them using the logic defined in the `poison_girl_proc_macro_logic::impl_init` module.
 It's typically used to reduce boilerplate when implementing common traits
 or methods for multiple integer types.
 

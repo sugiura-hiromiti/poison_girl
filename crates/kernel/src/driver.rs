@@ -1,9 +1,9 @@
 //! # Hardware Device Drivers and Low-Level Hardware Abstraction
 //!
 //! This module contains device drivers for various hardware components and
-//! provides low-level hardware abstraction layers for the OSO kernel. It
-//! enables the kernel to interact with different types of hardware devices in a
-//! consistent manner.
+//! provides low-level hardware abstraction layers for the poison_girl kernel.
+//! It enables the kernel to interact with different types of hardware devices
+//! in a consistent manner.
 //!
 //! ## Overview
 //!
@@ -42,8 +42,8 @@
 //! standardized interfaces for hardware interaction.
 //!
 //! ```rust,ignore
-//! use oso_kernel::driver::pci;
-//! use oso_kernel::driver::usb;
+//! use poison_girl_kernel::driver::pci;
+//! use poison_girl_kernel::driver::usb;
 //!
 //! // Initialize PCI subsystem
 //! // pci::init();

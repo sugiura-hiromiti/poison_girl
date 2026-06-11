@@ -1,6 +1,7 @@
 use {
 	poison_girl_dev_error::{
 		PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X, Y,
+		poison_girl_err,
 	},
 	std::path::PathBuf,
 };
@@ -278,13 +279,13 @@ impl StringKind for PathBuf
 
 	fn dump_string(&self,) -> Self::DumpReturn
 	{
-		let reshape: PoisonGirlB<_,> = self
-			.file_prefix()
-			.reshape(PathNotFound("failed to get file/dir name".to_string(),),);
-		let reshape: PoisonGirlB<_,> =
-			reshape?.to_str().reshape(PathIsNotValidUtf8,);
-		let reshape = reshape?.to_string();
-		X(reshape,)
+		self.file_prefix()
+			.reshape(poison_girl_err!(PathNotFound(
+				"failed to get file/dir name".to_string()
+			)),)?
+			.to_str()
+			.reshape(poison_girl_err!(PathIsNotValidUtf8),)
+			.map(|s| s.to_string(),)
 	}
 
 	#[cold]

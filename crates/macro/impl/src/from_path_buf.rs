@@ -316,8 +316,8 @@ mod tests
 		// Create a test enum as DeriveInput
 		let test_enum: syn::DeriveInput = parse_quote! {
 			pub enum TestCrate {
-				OsoKernel,
-				OsoBootloader,
+				PoisonGirlKernel,
+				PoisonGirlBootloader,
 			}
 		};
 
@@ -332,13 +332,13 @@ mod tests
 	fn test_camel_case_conversion_logic()
 	{
 		// Test the camel case conversion logic used in enum_impl
-		let test_name = "oso_kernel_test";
+		let test_name = "poison_girl_kernel_test";
 		let camel_cased = test_name
 			.split('_',)
 			.map(|s| s[..1].to_uppercase() + &s[1..],)
 			.join("",);
 
-		assert_eq!(camel_cased, "OsoKernelTest");
+		assert_eq!(camel_cased, "PoisonGirlKernelTest");
 	}
 
 	#[test]
@@ -356,7 +356,7 @@ mod tests
 	#[test]
 	fn test_camel_case_empty_parts()
 	{
-		let test_name = "oso__kernel"; // Double underscore
+		let test_name = "poison_girl__kernel"; // Double underscore
 		let camel_cased = test_name
 			.split('_',)
 			.map(|s| {
@@ -368,7 +368,7 @@ mod tests
 			},)
 			.join("",);
 
-		assert_eq!(camel_cased, "OsoKernel");
+		assert_eq!(camel_cased, "PoisonGirlKernel");
 	}
 
 	#[test]

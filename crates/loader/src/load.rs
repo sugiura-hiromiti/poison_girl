@@ -93,7 +93,7 @@ pub fn kernel() -> PoisonGirlB<PhysicalAddress,>
 /// Opens the kernel ELF file from the filesystem
 ///
 /// This function locates the simple file system protocol and opens the
-/// kernel file named "oso_kernel.elf" from the root directory.
+/// kernel file named "poison_girl_kernel.elf" from the root directory.
 ///
 /// # Returns
 ///
@@ -126,7 +126,8 @@ fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,>
 	.open_volume()?;
 
 	// Open the kernel file
-	let kernel_file = volume.open("oso_kernel.elf", open_mode, attrs,)?;
+	let kernel_file =
+		volume.open("poison_girl_kernel.elf", open_mode, attrs,)?;
 	let non_null_kernel_file =
 		NonNull::new(kernel_file,).expect("reference can't be null",);
 	X(non_null_kernel_file,)

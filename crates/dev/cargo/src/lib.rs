@@ -1,7 +1,10 @@
 use {
 	clap::{Parser, Subcommand},
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
-	poison_girl_dev_error::{HostTupleNotFound, PoisonGirlB, ReShape, X},
+	poison_girl_dev_error::{
+		HostTupleNotFound, InvalidHostName, PoisonGirlB, ReShape, X, Y,
+		poison_girl_err,
+	},
 	poison_girl_macro_def_features::features,
 	std::{path::PathBuf, process::Command, str::FromStr},
 	strum_macros::Display,
@@ -42,6 +45,10 @@ impl AsCargoOpt for Vec<Feature,>
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
+		if self.is_empty() {
+			return vec![];
+		}
+
 		vec![
 			"-F".to_string(),
 			self.iter().map(|f| f.as_ref(),).collect::<Vec<_,>>().join(",",),
@@ -74,7 +81,7 @@ impl AsCargoOpt for Opts
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
 		let Self { command, build_mode, feature_flags, lock_deps, .. } = self;
-		let command = command.as_cargo_opt();
+		let Some(command,) = command.as_cargo_opt() else { return vec![] };
 		let build_mode = build_mode.as_cargo_opt();
 		let feature_flags = feature_flags.as_cargo_opt();
 		// single architecture info itself is useless
@@ -83,8 +90,7 @@ impl AsCargoOpt for Opts
 		let lock_deps =
 			if *lock_deps { Some("--locked".to_string(),) } else { None };
 
-		[command,]
-			.into_iter()
+		std::iter::once(command,)
 			.chain(build_mode,)
 			.chain(feature_flags,)
 			.chain(lock_deps,)
@@ -190,17 +196,14 @@ pub enum CliCommand
 
 impl AsCargoOpt for CliCommand
 {
-	type Out = String;
+	type Out = Option<String,>;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
 		match self {
-			Self::Check { .. } => unreachable!(
-				"check command in xtask do not connected usual cargo check \
-				 command"
-			),
-			Self::Fixture => unreachable!("fixture command is xtask only"),
-			_ => self.as_ref().to_string(),
+			Self::Check { .. } => None,
+			Self::Fixture => None,
+			_ => Some(self.as_ref().to_string(),),
 		}
 	}
 }
@@ -225,27 +228,35 @@ impl Runtime
 {
 	pub fn host() -> PoisonGirlB<Self,>
 	{
-		host_tuple_by_rustc()?
-			.split('-',)
-			.next()
-			.reshape(
-				"target tuple for host does not include `-`. that is not \
-				 usual.",
-			)
-			.map(Runtime::from_str,)
+		let host_name = host_tuple_by_rustc()?;
+		let host_name = host_name.split('-',).next().reshape(
+			poison_girl_err!(InvalidHostName::new(
+				"host's target tuple of rustc is weird. they do not contain \
+				 `-`."
+			)),
+		)?;
+		Runtime::from_str(host_name,)
 	}
-}
 
-impl Runtime
-{
-	fn from_str(value: &str,) -> Self
+	fn from_str(value: &str,) -> PoisonGirlB<Self,>
 	{
-		match value {
+		let runtime = match value {
 			"mac" | "darwin" => Self::Mac,
 			"linux" => Self::Linux,
-			"oso" => Self::PoisonGirl,
+			"poison_girl" | "pg" => Self::PoisonGirl,
 			"efi" => Self::Efi,
-			a => unimplemented!("{a} is not supported runtime"),
+			a => return Y(poison_girl_err!(InvalidHostName::new(a)),),
+		};
+		X(runtime,)
+	}
+
+	fn as_target_tuple_runtime(&self,) -> &str
+	{
+		match self {
+			Self::Mac => "apple-darwin",
+			Self::Linux => "unknown-linux",
+			Self::Efi => "unknown-uefi",
+			Self::PoisonGirl => todo!("generate custom target json from xtask"),
 		}
 	}
 }
@@ -379,7 +390,7 @@ pub fn host_tuple_by_rustc() -> PoisonGirlB<String,>
 				None
 			}
 		},)
-		.reshape(HostTupleNotFound,)
+		.reshape(poison_girl_err!(HostTupleNotFound),)
 }
 
 #[cfg(test)]

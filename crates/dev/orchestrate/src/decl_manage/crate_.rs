@@ -7,7 +7,10 @@ use {
 	},
 	poison_girl_dev_cargo::host_tuple_by_rustc,
 	poison_girl_dev_cli::Run,
-	poison_girl_dev_error::{Container, PoisonGirlB, X},
+	poison_girl_dev_error::{
+		Container, PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X,
+		poison_girl_err,
+	},
 	poison_girl_dev_fs::{
 		CARGO_CONFIG, CARGO_MANIFEST, all_crates_in, read_toml,
 		search_upstream_at,
@@ -42,7 +45,7 @@ pub trait CrateSurvey: CrateInfo
 		let mut manifest = self.toml()?;
 		if let Some(pkg,) = manifest.get_mut("package",)
 			&& let Some(toml::Value::String(name,),) = pkg.get_mut("name",)
-			&& let true_name = self.name()
+			&& let true_name = self.name()?
 			&& *name != true_name
 		{
 			*name = true_name;
@@ -166,17 +169,22 @@ pub trait CrateInfo: CrateCalled
 	fn cargo_conf(&self,) -> Option<PoisonGirlB<toml::Table,>,>
 	{
 		let config_toml = self.path().join(CARGO_CONFIG,);
+		if !config_toml.exists() {
+			return None;
+		}
 		Some(read_toml(config_toml,),)
 	}
 
-	fn name(&self,) -> String
+	fn name(&self,) -> PoisonGirlB<String,>
 	{
 		self.path()
 			.file_name()
-			.expect("error on obtaining crate name",)
+			.reshape(poison_girl_err!(PathNotFound::new(
+				"path of the crate is terminated with .. or root",
+			)),)?
 			.to_str()
-			.expect("error on converting path component to str",)
-			.to_string()
+			.reshape(poison_girl_err!(PathIsNotValidUtf8),)
+			.map(|s| s.to_string(),)
 	}
 }
 
@@ -188,17 +196,27 @@ pub struct PoisonGirlCrate
 	i_am: PoisonGirlCrateChart,
 }
 
-// impl PoisonGirlCrateChart {
-//    const KERNEL:Self=Self::
-// }
+impl PoisonGirlCrateChart
+{
+	pub const KERNEL: Self = Self::Kernel;
+	pub const LOADER: Self = Self::Loader;
+}
+
+impl PoisonGirlCrate
+{
+	pub fn as_chart(&self,) -> &PoisonGirlCrateChart
+	{
+		&self.i_am
+	}
+}
 
 impl std::fmt::Debug for PoisonGirlCrate
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_,>,) -> std::fmt::Result
 	{
-		f.debug_struct("OsoCrate",)
+		f.debug_struct("PoisonGirlCrate",)
 			.field("path", &self.path,)
-			.field("i_am", &"<OsoCrateChart>",)
+			.field("i_am", &"<PoisonGirlCrateChart>",)
 			.finish()
 	}
 }
@@ -229,7 +247,9 @@ impl CrateSurvey for PoisonGirlCrate
 	{
 		if self.has_parent()? {
 			let parent = self.path();
-			let parent = parent.parent().unwrap();
+			let parent = parent.parent().reshape(poison_girl_err!(
+				PathNotFound::new("parent directory do not exist")
+			),)?;
 			let parent = PoisonGirlCrateChart::from(parent.to_path_buf(),);
 			self.land_on(parent,);
 			X((),)
@@ -370,7 +390,7 @@ mod tests
 	// exist
 
 	#[test]
-	fn test_oso_crate_default()
+	fn test_poison_girl_crate_default()
 	{
 		let default_crate = PoisonGirlCrate::default();
 		let default_path = default_crate.path();
@@ -379,7 +399,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_oso_crate_creation_with_current_dir()
+	fn test_poison_girl_crate_creation_with_current_dir()
 	{
 		// Use current directory which should exist
 		let current_dir =
@@ -389,7 +409,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_oso_crate_clone_with_current_dir()
+	fn test_poison_girl_crate_clone_with_current_dir()
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -401,7 +421,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_oso_crate_equality_with_current_dir()
+	fn test_poison_girl_crate_equality_with_current_dir()
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -464,7 +484,7 @@ mod tests
 	}
 
 	#[test]
-	fn test_oso_crate_chart_conversion_with_current_dir()
+	fn test_poison_girl_crate_chart_conversion_with_current_dir()
 	{
 		let current_dir =
 			std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".",),);
@@ -489,7 +509,7 @@ mod tests
 
 		// Test that Debug is implemented
 		let debug_string = format!("{:?}", crate_obj);
-		assert!(debug_string.contains("OsoCrate"));
+		assert!(debug_string.contains("PoisonGirlCrate"));
 		assert!(debug_string.contains("path"));
 	}
 

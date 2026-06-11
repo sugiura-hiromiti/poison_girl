@@ -310,7 +310,7 @@ fn parse_ty(header: &ReadElfH,) -> Rslt<TokenStream,>
 
 	if ty != "EXEC" {
 		return Rslt::new_err(format!(
-			"oso_kernel.elf type must be executable: {ty}"
+			"poison_girl_kernel.elf type must be executable: {ty}"
 		),);
 	}
 
@@ -479,7 +479,7 @@ pub fn readelf_h() -> Rslt<ReadElfH,>
 {
 	// Execute readelf command to get header information
 	let header_info = Command::new("readelf",)
-		.args(["-h", "target/oso_kernel.elf",],)
+		.args(["-h", "target/poison_girl_kernel.elf",],)
 		.output()?
 		.stdout;
 

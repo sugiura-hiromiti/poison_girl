@@ -50,7 +50,7 @@ pub trait TreePart
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_no_std_shared::data::tree::{Tree, Node};
+/// use poison_girl_no_std_shared::data::tree::{Tree, Node};
 ///
 /// let root_node = Node("root".to_string());
 /// let children = [];

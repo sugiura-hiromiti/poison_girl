@@ -1,8 +1,8 @@
 //! # Core Kernel Functionality and Basic Data Structures
 //!
 //! This module provides the fundamental building blocks and core functionality
-//! for the OSO kernel. It includes hardware abstraction layers, basic data
-//! structures, and essential system utilities.
+//! for the poison_girl kernel. It includes hardware abstraction layers, basic
+//! data structures, and essential system utilities.
 //!
 //! ## Overview
 //!
@@ -30,9 +30,9 @@
 //! to hardware and system resources.
 //!
 //! ```rust,ignore
-//! use oso_kernel::base::graphic::FrameBuffer;
-//! use oso_kernel::base::io;
-//! use oso_kernel::base::util;
+//! use poison_girl_kernel::base::graphic::FrameBuffer;
+//! use poison_girl_kernel::base::io;
+//! use poison_girl_kernel::base::util;
 //!
 //! // Graphics operations
 //! // let framebuffer = FrameBuffer::new(...);

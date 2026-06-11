@@ -159,7 +159,7 @@ pub fn readelf_l() -> Rslt<Vec<ReadElfL,>,>
 fn readelf_l_out() -> Rslt<Vec<String,>,>
 {
 	let program_headers_info = Command::new("readelf",)
-		.args(["-l", "target/oso_kernel.elf",],)
+		.args(["-l", "target/poison_girl_kernel.elf",],)
 		.output()?
 		.stdout;
 	let program_headers_info = String::from_utf8(program_headers_info,)?;
@@ -261,13 +261,13 @@ mod tests
 	{
 		let mut cwd = current_dir()?;
 		while let Some(parent_path,) = cwd.parent()
-			&& parent_path.file_name().unwrap() != "oso"
+			&& parent_path.file_name().unwrap() != "poison_girl"
 			&& parent_path
 				.file_name()
 				.unwrap()
 				.to_str()
 				.unwrap()
-				.contains("oso",)
+				.contains("poison_girl",)
 		{
 			cwd = parent_path.to_owned();
 		}
@@ -279,7 +279,7 @@ mod tests
 	{
 		let cwd = go_crate_root()?;
 		if let Some(crate_name,) = cwd.file_name()
-			&& crate_name == "oso"
+			&& crate_name == "poison_girl"
 		{
 			X(cwd,)
 		} else {
@@ -302,7 +302,7 @@ mod tests
 		go_workspace_root()?;
 
 		// Check if the kernel file exists before running the test
-		if !std::path::Path::new("target/oso_kernel.elf",).exists() {
+		if !std::path::Path::new("target/poison_girl_kernel.elf",).exists() {
 			set_current_dir(cwd,)?;
 			// Skip test if kernel file doesn't exist
 			return Rslt::new((),);
@@ -321,7 +321,7 @@ mod tests
 		go_workspace_root()?;
 
 		// Check if the kernel file exists before running the test
-		if !std::path::Path::new("target/oso_kernel.elf",).exists() {
+		if !std::path::Path::new("target/poison_girl_kernel.elf",).exists() {
 			set_current_dir(cwd,)?;
 			// Skip test if kernel file doesn't exist
 			return Rslt::new((),);
@@ -341,7 +341,7 @@ mod tests
 		go_workspace_root()?;
 
 		// Check if the kernel file exists before running the test
-		if !std::path::Path::new("target/oso_kernel.elf",).exists() {
+		if !std::path::Path::new("target/poison_girl_kernel.elf",).exists() {
 			set_current_dir(cwd,)?;
 			// Skip test if kernel file doesn't exist
 			return Rslt::new((),);
@@ -363,7 +363,7 @@ mod tests
 		go_workspace_root()?;
 
 		// Check if the kernel file exists before running the test
-		if !std::path::Path::new("target/oso_kernel.elf",).exists() {
+		if !std::path::Path::new("target/poison_girl_kernel.elf",).exists() {
 			set_current_dir(cwd,)?;
 			// Skip test if kernel file doesn't exist
 			return Rslt::new((),);

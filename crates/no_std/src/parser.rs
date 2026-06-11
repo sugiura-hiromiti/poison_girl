@@ -1,8 +1,8 @@
 //! # Parser Module
 //!
 //! This module provides parsing utilities and code generation capabilities for
-//! the OSO operating system. It includes parsers for different data formats and
-//! a framework for building custom parsers.
+//! the poison_girl operating system. It includes parsers for different data
+//! formats and a framework for building custom parsers.
 //!
 //! ## Submodules
 //!

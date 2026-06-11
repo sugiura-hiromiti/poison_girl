@@ -52,8 +52,8 @@ use core::marker::PhantomData;
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_no_std_shared::parser::binary::BinaryParser;
-/// use oso_no_std_shared::parser::generator::{Parser, Context};
+/// use poison_girl_no_std_shared::parser::binary::BinaryParser;
+/// use poison_girl_no_std_shared::parser::generator::{Parser, Context};
 ///
 /// struct ElfParser;
 ///
@@ -90,7 +90,7 @@ pub trait BinaryParser<C: Context,>: Parser<C,>
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_no_std_shared::parser::binary::BinaryParserBuilder;
+/// use poison_girl_no_std_shared::parser::binary::BinaryParserBuilder;
 ///
 /// // Create a builder for parsing u32 values
 /// let builder = BinaryParserBuilder::<u32>::new();
@@ -132,7 +132,7 @@ impl<T,> BinaryParserBuilder<T,>
 	/// # Examples
 	///
 	/// ```rust,ignore
-	/// use oso_no_std_shared::parser::binary::BinaryParserBuilder;
+	/// use poison_girl_no_std_shared::parser::binary::BinaryParserBuilder;
 	///
 	/// let builder = BinaryParserBuilder::<u64>::new();
 	/// ```

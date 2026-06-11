@@ -1,8 +1,8 @@
-//! # OSO Loader Main Entry Point
+//! # poison_girl Loader Main Entry Point
 //!
-//! This module contains the main UEFI application entry point for the OSO
-//! bootloader. It orchestrates the boot process from UEFI initialization
-//! through kernel handoff.
+//! This module contains the main UEFI application entry point for the
+//! poison_girl bootloader. It orchestrates the boot process from UEFI
+//! initialization through kernel handoff.
 
 #![no_std]
 #![no_main]

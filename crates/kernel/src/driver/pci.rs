@@ -48,7 +48,7 @@
 //! ## Usage
 //!
 //! ```rust,ignore
-//! use oso_kernel::driver::pci::{DeviceTree, DeviceTreeData};
+//! use poison_girl_kernel::driver::pci::{DeviceTree, DeviceTreeData};
 //!
 //! // Parse device tree from firmware-provided pointer
 //! let device_tree = DeviceTreeData::new(device_tree_ptr);
@@ -70,7 +70,8 @@
 //!
 //! - Implement derive macros for automatic parser generation from type
 //!   definitions
-//! - Provide foundation for macro-generated parsers in `oso_binary_parser`
+//! - Provide foundation for macro-generated parsers in
+//!   `poison_girl_binary_parser`
 //! - Complete implementation of all parser methods
 //! - Add PCI-specific device tree node parsing
 //! - Implement PCI device enumeration and initialization
@@ -107,7 +108,7 @@ use poison_girl_no_std_error::PoisonGirlB;
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_kernel::driver::pci::{DeviceTree, DeviceTreeData};
+/// use poison_girl_kernel::driver::pci::{DeviceTree, DeviceTreeData};
 ///
 /// let dt = DeviceTreeData::new(device_tree_ptr);
 ///
@@ -697,7 +698,7 @@ impl BinaryParserTarget for usize
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_kernel::driver::pci::DeviceTreeData;
+/// use poison_girl_kernel::driver::pci::DeviceTreeData;
 ///
 /// // Create from firmware-provided pointer
 /// let device_tree = DeviceTreeData::new(device_tree_ptr);

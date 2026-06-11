@@ -1,8 +1,9 @@
 //! # Parser Generation Framework
 //!
 //! This module provides the core traits and types for building composable
-//! parsers in the OSO operating system. The framework is designed around traits
-//! that allow for flexible parser construction and zero-cost abstractions.
+//! parsers in the poison_girl operating system. The framework is designed
+//! around traits that allow for flexible parser construction and zero-cost
+//! abstractions.
 //!
 //! ## Core Concepts
 //!
@@ -34,7 +35,7 @@ use poison_girl_no_std_error::PoisonGirlB;
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_no_std_shared::parser::generator::{ParserGenerator, Context};
+/// use poison_girl_no_std_shared::parser::generator::{ParserGenerator, Context};
 ///
 /// struct MyParserGen;
 ///
@@ -152,8 +153,8 @@ pub trait ParserComponents<C: Context,>
 	/// # Examples
 	///
 	/// ```rust,ignore
-	/// use oso_no_std_shared::parser::generator::{ParserComponents, Context};
-	/// use oso_error::Rslt;
+	/// use poison_girl_no_std_shared::parser::generator::{ParserComponents, Context};
+	/// use poison_girl_error::Rslt;
 	///
 	/// struct IntegerParser;
 	///
@@ -199,9 +200,9 @@ pub trait Parser<C: Context,>
 	/// # Examples
 	///
 	/// ```rust,ignore
-	/// use oso_no_std_shared::parser::generator::{Parser, Context};
-	/// use oso_error::Rslt;
-	/// use oso_error::parser::ParserError;
+	/// use poison_girl_no_std_shared::parser::generator::{Parser, Context};
+	/// use poison_girl_error::Rslt;
+	/// use poison_girl_error::parser::ParserError;
 	///
 	/// struct JsonParser;
 	///

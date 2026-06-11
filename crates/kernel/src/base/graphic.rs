@@ -210,8 +210,8 @@ pub trait DisplayDraw
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_kernel::base::graphic::{FrameBuffer, DisplayDraw};
-/// use oso_kernel::base::graphic::color::Rgb;
+/// use poison_girl_kernel::base::graphic::{FrameBuffer, DisplayDraw};
+/// use poison_girl_kernel::base::graphic::color::Rgb;
 ///
 /// // Create a new framebuffer with RGB pixel format
 /// let framebuffer = FrameBuffer::new(Rgb);
@@ -263,8 +263,8 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 	/// # Examples
 	///
 	/// ```rust,ignore
-	/// use oso_kernel::base::graphic::FrameBuffer;
-	/// use oso_kernel::base::graphic::color::Rgb;
+	/// use poison_girl_kernel::base::graphic::FrameBuffer;
+	/// use poison_girl_kernel::base::graphic::color::Rgb;
 	///
 	/// let framebuffer = FrameBuffer::new(Rgb);
 	/// // framebuffer now needs to be initialized with init() before use
@@ -324,7 +324,7 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 	/// # Examples
 	///
 	/// ```rust,ignore
-	/// use oso_kernel::base::graphic::{FrameBuffer, FRAME_BUFFER};
+	/// use poison_girl_kernel::base::graphic::{FrameBuffer, FRAME_BUFFER};
 	///
 	/// // Initialize the global framebuffer during kernel boot
 	/// unsafe {
@@ -509,8 +509,8 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 	/// # Examples
 	///
 	/// ```rust,ignore
-	/// use oso_kernel::base::graphic::position::Coord;
-	/// use oso_kernel::base::graphic::color::Rgb;
+	/// use poison_girl_kernel::base::graphic::position::Coord;
+	/// use poison_girl_kernel::base::graphic::color::Rgb;
 	///
 	/// let coord = Coord::new(100, 50);
 	/// let red_color = Rgb::new(255, 0, 0);

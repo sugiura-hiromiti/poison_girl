@@ -3,7 +3,7 @@ use {
 	poison_girl_dev_error::{InvalidManifest, poison_girl_err},
 	poison_girl_dev_fs::{CARGO_MANIFEST, all_crates, read_toml},
 	poison_girl_dev_util::CaseConvert,
-	poison_girl_macro_error::{diagnostic::Diag, rslt::Rslt},
+	poison_girl_macro_error::rslt::Rslt,
 	proc_macro2::TokenStream,
 	quote::format_ident,
 	std::path::Path,
@@ -130,18 +130,31 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 				variants_attr.push(a,);
 				paths.push(p,);
 			},);
-			Rslt::new(EnumParts {
+			let rslt = Rslt::new(EnumParts {
 				name,
 				variants: variants.clone(),
 				variants_attr,
 				paths,
-			},)
-			.with_diags(
-				variants
-					.iter()
-					.map(|v| Diag::help(format!("{v:?}"),),)
-					.collect(),
-			)
+			},);
+
+			#[cfg(feature = "debug-diagnostics")]
+			{
+				rslt.with_diags(
+					variants
+						.iter()
+						.map(|v| {
+							poison_girl_macro_error::diagnostic::Diag::help(
+								format!("{v:?}"),
+							)
+						},)
+						.collect(),
+				)
+			}
+
+			#[cfg(not(feature = "debug-diagnostics"))]
+			{
+				rslt
+			}
 		},)
 }
 

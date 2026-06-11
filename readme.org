@@ -9,4 +9,10 @@ OS development is a journey, and it must be joyful.
 3. Boot it under QEMU virt/aarch64
 4. Gradually replace shell-dependent tooling with Rust implementations
 
+** Common commands:
+
+- =cargo xt --help= shows the xtask CLI.
+- =cargo xt check= runs the default check command.
+- =cargo xt build= builds through the xtask wrapper.
+
 https://deepwiki.com/sugiura-hiromiti/poison_girl/1-project-overview

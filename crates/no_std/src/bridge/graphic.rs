@@ -7,9 +7,9 @@
 //! ## Overview
 //!
 //! The graphics bridge module is designed to facilitate communication between
-//! different components of the OSO system regarding graphics configuration.
-//! It provides standardized data structures that can be safely passed between
-//! the bootloader and kernel to configure display hardware.
+//! different components of the poison_girl system regarding graphics
+//! configuration. It provides standardized data structures that can be safely
+//! passed between the bootloader and kernel to configure display hardware.
 //!
 //! ## Key Components
 //!
@@ -32,7 +32,9 @@
 //! The bootloader discovers display hardware and creates a `FrameBufConf`:
 //!
 //! ```rust,no_run
-//! use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+//! use poison_girl_no_std_shared::bridge::graphic::{
+//! 	FrameBufConf, PixelFormatConf,
+//! };
 //!
 //! // Bootloader code
 //! let framebuf_config = FrameBufConf::new(
@@ -120,7 +122,7 @@
 /// # Examples
 ///
 /// ```rust
-/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+/// use poison_girl_no_std_shared::bridge::graphic::PixelFormatConf;
 ///
 /// // Configure different pixel formats
 /// let rgb_format = PixelFormatConf::Rgb;
@@ -190,7 +192,7 @@ impl PixelFormatConf
 	/// # Examples
 	///
 	/// ```rust
-	/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+	/// use poison_girl_no_std_shared::bridge::graphic::PixelFormatConf;
 	///
 	/// assert_eq!(PixelFormatConf::Rgb.bytes_per_pixel(), Some(4));
 	/// assert_eq!(PixelFormatConf::Bgr.bytes_per_pixel(), Some(4));
@@ -218,7 +220,7 @@ impl PixelFormatConf
 	/// # Examples
 	///
 	/// ```rust
-	/// use oso_no_std_shared::bridge::graphic::PixelFormatConf;
+	/// use poison_girl_no_std_shared::bridge::graphic::PixelFormatConf;
 	///
 	/// assert!(PixelFormatConf::Rgb.supports_pixel_access());
 	/// assert!(PixelFormatConf::Bgr.supports_pixel_access());
@@ -292,7 +294,9 @@ impl PixelFormatConf
 /// ### Basic Configuration
 ///
 /// ```rust,no_run
-/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+/// use poison_girl_no_std_shared::bridge::graphic::{
+/// 	FrameBufConf, PixelFormatConf,
+/// };
 ///
 /// // Create a framebuffer configuration for a 1024x768 display
 /// let framebuf = FrameBufConf::new(
@@ -308,7 +312,9 @@ impl PixelFormatConf
 /// ### With Row Padding
 ///
 /// ```rust,no_run
-/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+/// use poison_girl_no_std_shared::bridge::graphic::{
+/// 	FrameBufConf, PixelFormatConf,
+/// };
 ///
 /// // Framebuffer with row padding for alignment
 /// let framebuf = FrameBufConf::new(
@@ -372,7 +378,9 @@ impl FrameBufConf
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+	/// use poison_girl_no_std_shared::bridge::graphic::{
+	/// 	FrameBufConf, PixelFormatConf,
+	/// };
 	///
 	/// // Create a configuration for a Full HD display
 	/// let framebuf = FrameBufConf::new(
@@ -435,7 +443,9 @@ impl FrameBufConf
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+	/// use poison_girl_no_std_shared::bridge::graphic::{
+	/// 	FrameBufConf, PixelFormatConf,
+	/// };
 	///
 	/// let framebuf = FrameBufConf::new(
 	/// 	PixelFormatConf::Rgb,
@@ -477,7 +487,9 @@ impl FrameBufConf
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+	/// use poison_girl_no_std_shared::bridge::graphic::{
+	/// 	FrameBufConf, PixelFormatConf,
+	/// };
 	///
 	/// let framebuf = FrameBufConf::new(
 	/// 	PixelFormatConf::Rgb,
@@ -507,7 +519,9 @@ impl FrameBufConf
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use oso_no_std_shared::bridge::graphic::{FrameBufConf, PixelFormatConf};
+	/// use poison_girl_no_std_shared::bridge::graphic::{
+	/// 	FrameBufConf, PixelFormatConf,
+	/// };
 	///
 	/// let framebuf = FrameBufConf::new(
 	/// 	PixelFormatConf::Rgb,

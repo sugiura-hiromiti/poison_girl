@@ -1,8 +1,8 @@
 //! # Application Execution and Management
 //!
-//! This module provides the application execution framework for the OSO kernel.
-//! It handles user application lifecycle management, process creation, and
-//! application-specific utilities.
+//! This module provides the application execution framework for the poison_girl
+//! kernel. It handles user application lifecycle management, process creation,
+//! and application-specific utilities.
 //!
 //! ## Features
 //!
@@ -23,7 +23,7 @@
 //! and provide application-level services.
 //!
 //! ```rust,ignore
-//! use oso_kernel::app::cursor;
+//! use poison_girl_kernel::app::cursor;
 //!
 //! // Application cursor management
 //! // cursor::set_position(x, y);

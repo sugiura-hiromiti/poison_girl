@@ -52,7 +52,7 @@ pub mod driver;
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_kernel::init;
+/// use poison_girl_kernel::init;
 ///
 /// // Called by the bootloader after kernel loading
 /// #[no_mangle]

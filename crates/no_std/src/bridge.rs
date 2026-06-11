@@ -1,7 +1,7 @@
-//! # OSO Bridge
+//! # poison_girl Bridge
 //!
-//! `oso_bridge` is a no_std crate that provides low-level interfaces and
-//! utilities for operating system development, particularly focused on
+//! `poison_girl_bridge` is a no_std crate that provides low-level interfaces
+//! and utilities for operating system development, particularly focused on
 //! bare-metal environments.
 //!
 //! This crate serves as a bridge between hardware and the operating system
@@ -20,7 +20,7 @@
 //! kernel or bootloader code:
 //!
 //! ```rust,no_run
-//! use oso_no_std_shared::{
+//! use poison_girl_no_std_shared::{
 //! 	bridge::graphic::{FrameBufConf, PixelFormatConf},
 //! 	wfi,
 //! };

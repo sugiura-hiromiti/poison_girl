@@ -135,7 +135,7 @@ pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey
 {
 }
 
-/// Trait for managing OSO workspace operations
+/// Trait for managing poison_girl workspace operations
 ///
 /// This trait provides an interface for workspace management operations
 /// including root directory access and crate enumeration. It's designed to work
@@ -149,9 +149,9 @@ pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey
 /// # Examples
 ///
 /// ```rust,ignore
-/// use oso_dev_util::OsoWorkspace;
+/// use poison_girl_dev_util::PoisonGirlWorkspace;
 ///
-/// fn process_workspace<W: OsoWorkspace>(workspace: &W) {
+/// fn process_workspace<W: PoisonGirlWorkspace>(workspace: &W) {
 ///     let root = workspace.root();
 ///     println!("Processing workspace at: {}", root.display());
 ///

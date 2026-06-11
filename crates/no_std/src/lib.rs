@@ -1,12 +1,12 @@
 // #![feature(min_specialization)]
 // #![feature(specialization)]
 
-//! # OSO No-Std Shared Library
+//! # poison_girl No-Std Shared Library
 //!
-//! This crate provides shared utilities and data structures for the OSO
+//! This crate provides shared utilities and data structures for the poison_girl
 //! operating system that work in `no_std` environments. It serves as a
 //! foundational library containing common functionality used across different
-//! components of the OSO ecosystem.
+//! components of the poison_girl ecosystem.
 //!
 //! ## Features
 //!
@@ -26,7 +26,7 @@
 //! ## Usage
 //!
 //! ```rust,no_run
-//! use oso_no_std_shared::{
+//! use poison_girl_no_std_shared::{
 //! 	bridge::graphic::{FrameBufConf, PixelFormatConf},
 //! 	wfi,
 //! };
@@ -72,7 +72,7 @@ use core::arch::asm;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use oso_no_std_shared::wfi;
+/// use poison_girl_no_std_shared::wfi;
 ///
 /// // After completing all necessary work:
 /// wfi(); // CPU will enter low-power state until an interrupt occurs
@@ -114,7 +114,7 @@ pub fn wfi() -> !
 /// # Examples
 ///
 /// ```rust,no_run
-/// use oso_no_std_shared::wfe;
+/// use poison_girl_no_std_shared::wfe;
 ///
 /// // After setting up event monitoring:
 /// wfe(); // CPU will enter low-power state until an event occurs
@@ -155,7 +155,7 @@ pub fn wfe() -> !
 /// # Examples
 ///
 /// ```rust,no_run
-/// use oso_no_std_shared::nop;
+/// use poison_girl_no_std_shared::nop;
 ///
 /// // When you want to keep the CPU busy without doing work:
 /// nop(); // CPU will continuously execute no-operation instructions
