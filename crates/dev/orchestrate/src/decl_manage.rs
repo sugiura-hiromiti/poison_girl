@@ -1,30 +1,60 @@
 use {
-	crate::decl_manage::{
-		crate_::{Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart},
-		package::PackageSurvey,
+	crate::decl_manage::crate_::{
+		Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
 	},
 	poison_girl_dev_cargo::{CompileOpt, Opts, TargetSpec},
-	poison_girl_dev_error::{PoisonGirlB, X, Y},
-	poison_girl_dev_fs::{
-		current_crate_path, project_root_path, search_in_with,
+	poison_girl_dev_error::{
+		PoisonGirlB, X, Y, YourHostPlatformIsOutOfSupport, poison_girl_err,
 	},
-	std::{path::PathBuf, str::FromStr},
+	poison_girl_dev_fs::{current_crate_path, project_root_path},
+	std::path::PathBuf,
 };
 
 pub mod crate_;
 pub mod package;
 pub mod workspace;
 
-/// orchestration fuctionality which is finally resolved.
+pub struct BuildArtifact
+{
+	target_dir:                  PathBuf,
+	/// maybe should be Option
+	target_tuple_representation: PathBuf,
+	profile:                     PathBuf,
+	artifact_name:               PathBuf,
+}
+
+impl BuildArtifact
+{
+	pub fn path(&self,) -> PathBuf
+	{
+		let Self {
+			target_dir,
+			target_tuple_representation,
+			profile,
+			artifact_name,
+		} = self;
+
+		let workspace_root = PoisonGirlCrateChart::XTASK.to_path_buf();
+
+		// TODO: support `target_dir` format as relative path and absolute path.
+		workspace_root
+			.join(target_dir,)
+			.join(target_tuple_representation,)
+			.join(profile,)
+			.join(artifact_name,)
+	}
+}
+
+/// orchestration functionality which is finally resolved.
 /// this is required over any traits in this crate because finally resolved
 /// orchestration graph is not statically determined e.g. by env var, and this
 /// trait also connect to existing cargo orchestration as needed
-pub trait WorkspaceOrchestrate
+pub trait OrchestrationResolver
 {
-	fn build_artifact(&self,) -> PoisonGirlB<PathBuf,>;
+	fn build_artifact(&self,) -> PoisonGirlB<BuildArtifact,>;
 	fn resolve_target_dir(&self,) -> PoisonGirlB<PathBuf,>;
 	fn resolve_target_triple_representation(&self,) -> PoisonGirlB<PathBuf,>;
-	fn resolve_profile(&self,) -> PoisonGirlB<PathBuf,>;
+	fn resolve_profile(&self,) -> PathBuf;
 	fn resolve_artifact_name(&self,) -> PoisonGirlB<PathBuf,>;
 
 	fn as_crate(&self,) -> &impl Crate;
@@ -43,40 +73,38 @@ impl PoisonGirlCargoInterface
 	{
 		Self { ws: PoisonGirlCrate::from(chart,), opts, }
 	}
+
+	pub fn opts(&self,) -> Opts
+	{
+		self.opts.clone()
+	}
+
+	pub fn ws(&self,) -> PoisonGirlCrate
+	{
+		self.ws.clone()
+	}
 }
 
-impl WorkspaceOrchestrate for PoisonGirlCargoInterface
+impl OrchestrationResolver for PoisonGirlCargoInterface
 {
-	fn build_artifact(&self,) -> PoisonGirlB<PathBuf,>
+	/// TODO: I want to refactor centerizing orchestration info to upper level
+	/// xtask struct. to do that, this function should return the list of
+	/// information which is used on building build artifact path instead of one
+	/// PathBuf
+	fn build_artifact(&self,) -> PoisonGirlB<BuildArtifact,>
 	{
-		todo!(
-			"1. --target-dir <path>
-2. CARGO_TARGET_DIR=<path>
-3. .cargo/config.toml: [build] target-dir = ..
-4 default <workspace-root>/target
-
-then target resolving
--> no --target leads target/debug|release
--> explicit leads target/<target tuple>/debug|release
-
-even if user specifies host target, these use different directories
-
-then resolve profile. dev|test is debug/, release|bench is release/, custom \
-			 profile foo is foo/
-
-artifact file name is crate name or [[bin.name]] in Cargo.toml"
-		);
 		let target_dir = self.resolve_target_dir()?;
 		let target_tuple_representation =
 			self.resolve_target_triple_representation()?;
-		let profile = self.resolve_profile()?;
+		let profile = self.resolve_profile();
 		let artifact_name = self.resolve_artifact_name()?;
-		X(PathBuf::from_iter([
+
+		X(BuildArtifact {
 			target_dir,
 			target_tuple_representation,
 			profile,
 			artifact_name,
-		],),)
+		},)
 	}
 
 	/// current(20260609) cargo's target directory determination follows these
@@ -84,7 +112,7 @@ artifact file name is crate name or [[bin.name]] in Cargo.toml"
 	/// 1. --target-dir <path>
 	/// 2. CARGO_TARGET_DIR=<path>
 	/// 3. .cargo/config.toml: [build] target-dir = ..
-	/// 4 default <workspace-root>/target
+	/// 4. default <workspace-root>/target
 	///
 	/// for rule 1, we ignore by filtering in xtask. this keeps things easy
 	fn resolve_target_dir(&self,) -> PoisonGirlB<PathBuf,>
@@ -132,18 +160,36 @@ artifact file name is crate name or [[bin.name]] in Cargo.toml"
 
 		// TODO: extract kernel's vendor-os resolver logic. they should no be
 		// tied to here
-		match chart {
-			PoisonGirlCrateChart::Kernel => "sugiura_hiromiti-poison_girl.json",
+		let vendor_runtime = match chart {
+			PoisonGirlCrateChart::Kernel => {
+				"sugiura_hiromiti-poison_girl-elf.json"
+			},
 			PoisonGirlCrateChart::Loader => "unknown-uefi",
 			_ => match std::env::consts::OS {
 				"linux" => "unknown-linux",
 				"macos" => "apple-darwin",
-				other => {
+				_ => {
 					return Y(poison_girl_err!(YourHostPlatformIsOutOfSupport),);
 				},
 			},
-		}
-		[arch.to_string(),]
+		};
+		X(PathBuf::from([arch.as_ref(), vendor_runtime,].join("-",),),)
+	}
+
+	///then resolve profile. dev|test is debug/, release|bench is release/,
+	/// custom profile foo is foo/
+	///
+	/// now, we only support debug/ and release/
+	fn resolve_profile(&self,) -> PathBuf
+	{
+		PathBuf::from(self.opts.build_mode.as_ref(),)
+	}
+
+	/// artifact file name is crate name or [[bin.name]] in Cargo.toml"
+	fn resolve_artifact_name(&self,) -> PoisonGirlB<PathBuf,>
+	{
+		let bin_name = self.ws.as_chart().bin_name();
+		X(PathBuf::from(bin_name,),)
 	}
 
 	fn as_crate(&self,) -> &impl Crate
@@ -161,17 +207,34 @@ impl TargetSpec for PoisonGirlCargoInterface
 {
 	fn tuple(&self,) -> String
 	{
-		todo!()
+		let arch = self.arch();
+		let arch = arch.as_ref();
+
+		use poison_girl_dev_cargo::Runtime::*;
+		match self.runtime() {
+			Host => "host-tuple".to_string(),
+			Efi => [arch, "unknown-uefi",].join("-",),
+			PoisonGirl => {
+				[arch, "sugiura_hiromiti-poison_girl.json",].join("-",)
+			},
+		}
 	}
 
 	fn arch(&self,) -> poison_girl_dev_cargo::Arch
 	{
-		todo!()
+		self.opts.arch
 	}
 
 	fn runtime(&self,) -> poison_girl_dev_cargo::Runtime
 	{
-		todo!()
+		let chart = self.ws.as_chart();
+		if chart == &PoisonGirlCrateChart::KERNEL {
+			poison_girl_dev_cargo::Runtime::PoisonGirl
+		} else if chart == &PoisonGirlCrateChart::LOADER {
+			poison_girl_dev_cargo::Runtime::Efi
+		} else {
+			poison_girl_dev_cargo::Runtime::Host
+		}
 	}
 }
 

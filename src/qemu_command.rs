@@ -29,7 +29,7 @@ impl Xtask
 	/// The name of the QEMU executable (e.g., "qemu-system-aarch64")
 	fn qemu(&self,) -> String
 	{
-		format!("qemu-system-{}", self.arch())
+		format!("qemu-system-{}", self.opts().arch)
 	}
 
 	/// Generates QEMU command-line arguments based on the target architecture
@@ -40,7 +40,7 @@ impl Xtask
 	/// A vector of command-line arguments for QEMU or an error if it fails
 	fn qemu_args(&self,) -> PoisonGirlB<Vec<String,>,>
 	{
-		let mut args = basic_args(self.arch(),);
+		let mut args = basic_args(self.opts().arch,);
 
 		// configure persistent flash memory
 		let pflash_code = persistent_flash_memory_args(
@@ -147,7 +147,7 @@ fn persistent_flash_memory_args(
 	},);
 
 	arg.push_str(",file=",);
-	arg.push_str(pflash_file.to_str().unwrap(),);
+	arg.push_str(&pflash_file.display().to_string(),);
 	args.push(arg,);
 
 	args

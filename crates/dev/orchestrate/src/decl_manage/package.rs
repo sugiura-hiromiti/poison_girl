@@ -1,7 +1,6 @@
 use {
 	crate::decl_manage::crate_::{CrateAction, CrateInfo, CrateSurvey},
 	poison_girl_dev_error::PoisonGirlB,
-	std::path::PathBuf,
 };
 
 pub trait Package: PackageAction + PackageSurvey

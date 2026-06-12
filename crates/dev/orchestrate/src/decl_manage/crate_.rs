@@ -196,10 +196,12 @@ pub struct PoisonGirlCrate
 	i_am: PoisonGirlCrateChart,
 }
 
+/// this block is subject and responsible for crate name change
 impl PoisonGirlCrateChart
 {
 	pub const KERNEL: Self = Self::Kernel;
 	pub const LOADER: Self = Self::Loader;
+	pub const XTASK: Self = Self::PoisonGirl;
 }
 
 impl PoisonGirlCrate
@@ -273,7 +275,7 @@ impl CrateCalled for PoisonGirlCrate
 
 	fn whoami(&self,) -> Self::F
 	{
-		self.i_am.clone()
+		self.i_am
 	}
 
 	fn path_buf(&self,) -> PathBuf
@@ -288,7 +290,7 @@ impl CrateCalled for PoisonGirlCrateChart
 
 	fn whoami(&self,) -> Self::F
 	{
-		self.clone()
+		*self
 	}
 
 	fn path_buf(&self,) -> PathBuf

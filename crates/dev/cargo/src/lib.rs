@@ -2,8 +2,7 @@ use {
 	clap::{Parser, Subcommand},
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{
-		HostTupleNotFound, InvalidHostName, PoisonGirlB, ReShape, X, Y,
-		poison_girl_err,
+		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
 	poison_girl_macro_def_features::features,
 	std::{path::PathBuf, process::Command, str::FromStr},
@@ -56,7 +55,7 @@ impl AsCargoOpt for Vec<Feature,>
 	}
 }
 
-#[derive(Default,)]
+#[derive(Default, Clone,)]
 pub struct Opts
 {
 	pub command:       CliCommand,
@@ -175,7 +174,9 @@ impl AsCargoOpt for BuildMode
 	}
 }
 
-#[derive(Subcommand, Default, strum_macros::EnumIs, strum_macros::AsRefStr,)]
+#[derive(
+	Subcommand, Default, strum_macros::EnumIs, strum_macros::AsRefStr, Clone,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum CliCommand
 {
@@ -208,7 +209,7 @@ impl AsCargoOpt for CliCommand
 	}
 }
 
-#[derive(Subcommand, strum_macros::EnumIter,)]
+#[derive(Subcommand, strum_macros::EnumIter, Clone,)]
 pub enum CheckKind
 {
 	KernelAarch64,
@@ -218,47 +219,24 @@ pub enum CheckKind
 
 pub enum Runtime
 {
-	Mac,
-	Linux,
+	Host,
 	Efi,
 	PoisonGirl,
 }
 
 impl Runtime
 {
-	pub fn host() -> PoisonGirlB<Self,>
-	{
-		let host_name = host_tuple_by_rustc()?;
-		let host_name = host_name.split('-',).next().reshape(
-			poison_girl_err!(InvalidHostName::new(
-				"host's target tuple of rustc is weird. they do not contain \
-				 `-`."
-			)),
-		)?;
-		Runtime::from_str(host_name,)
-	}
-
-	fn from_str(value: &str,) -> PoisonGirlB<Self,>
-	{
-		let runtime = match value {
-			"mac" | "darwin" => Self::Mac,
-			"linux" => Self::Linux,
-			"poison_girl" | "pg" => Self::PoisonGirl,
-			"efi" => Self::Efi,
-			a => return Y(poison_girl_err!(InvalidHostName::new(a)),),
-		};
-		X(runtime,)
-	}
-
-	fn as_target_tuple_runtime(&self,) -> &str
-	{
-		match self {
-			Self::Mac => "apple-darwin",
-			Self::Linux => "unknown-linux",
-			Self::Efi => "unknown-uefi",
-			Self::PoisonGirl => todo!("generate custom target json from xtask"),
-		}
-	}
+	// pub fn host() -> PoisonGirlB<Self,>
+	// {
+	// 	let host_name = host_tuple_by_rustc()?;
+	// 	let host_name = host_name.split('-',).next().reshape(
+	// 		poison_girl_err!(InvalidHostName::new(
+	// 			"host's target tuple of rustc is weird. they do not contain \
+	// 			 `-`."
+	// 		)),
+	// 	)?;
+	// 	Runtime::from_str(host_name,)
+	// }
 }
 
 pub struct Assets
@@ -272,7 +250,7 @@ impl Assets
 	pub fn new(arch: Arch,) -> PoisonGirlB<Self,>
 	{
 		let firmware = Firmware::new(arch,)?;
-		X(Self { firmware, host: Runtime::host()?, },)
+		X(Self { firmware, host: Runtime::Host, },)
 	}
 }
 

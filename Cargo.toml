@@ -6,7 +6,6 @@ members = [
   "crates/no_std",
   "crates/error/*",
   "crates/dev/*",
-  "crates/macro/impl",
   "crates/macro/helper",
   "crates/macro/macro",
   "crates/macro/*/def",

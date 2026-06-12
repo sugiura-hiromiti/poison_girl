@@ -7,7 +7,9 @@ use {
 	core::arch::asm,
 	poison_girl_kernel::{init, println},
 	poison_girl_macro::cfg_if,
-	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe, wfi},
+	poison_girl_no_std::{
+		bridge::device_tree::DeviceTreeAddress, idle_cpu_forever, wfe,
+	},
 	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
@@ -34,7 +36,7 @@ cfg_if! {
 			// Enter wait-for-interrupt state for power efficiency
 			// This stops the CPU until an interrupt occurs, conserving power
 			// while keeping the system responsive to hardware events
-			wfi();
+			idle_cpu_forever();
 		}
 	} else if #[cfg(target_arch = "x86_64")] {
 		#[unsafe(no_mangle)]

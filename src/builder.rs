@@ -15,7 +15,8 @@ use {
 	poison_girl_dev_cargo::{AsCargoOpt, Assets, CheckKind, CliCommand, Opts},
 	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::decl_manage::{
-		crate_::CrateAction, project_root,
+		PoisonGirlCargoInterface,
+		crate_::{CrateAction, PoisonGirlCrateChart},
 	},
 };
 
@@ -73,14 +74,17 @@ impl Xtask
 	pub fn new() -> PoisonGirlB<Self,>
 	{
 		let opts = Opts::new();
-		let ws = project_root()?;
+		let chart = PoisonGirlCrateChart::XTASK;
 		let assets = Assets::new(opts.arch,)?;
-		X(Self { opts, ws, assets, },)
+		X(Self {
+			interface: PoisonGirlCargoInterface::new(chart, opts,),
+			assets,
+		},)
 	}
 
 	pub fn runner(&self,) -> PoisonGirlB<(),>
 	{
-		match &self.opts.command {
+		match &self.opts().command {
 			CliCommand::Build => self.build(),
 			CliCommand::Test => self.test(),
 			CliCommand::Run => self.run(),
@@ -98,8 +102,8 @@ impl Xtask
 
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
-		let args = self.opts.as_cargo_opt();
-		self.ws.build_with(&args,)
+		let args = self.opts().as_cargo_opt();
+		self.ws().build_with(&args,)
 	}
 
 	fn run(&self,) -> PoisonGirlB<(),>
@@ -111,7 +115,6 @@ impl Xtask
 
 	fn check(&self,) -> PoisonGirlB<(),>
 	{
-		let args = self.opts.as_cargo_opt();
 		self.kernel_check()?;
 		self.loader_check()?;
 		self.clippy()

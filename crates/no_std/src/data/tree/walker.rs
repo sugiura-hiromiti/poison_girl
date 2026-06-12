@@ -133,16 +133,22 @@ pub trait TreeWalker<N: NodeValue,>: Sized + Iterator
 		} else {
 			// Recursive case: go to parent and continue
 			let mut parent = self.parent::<WT>();
-			if parent.has_success() {
-				// Successfully found parent, continue recursion
-				TreeWalker::nth_ancestor::<WT,>(
-					parent.current_tree_mut(),
-					n - 1,
-				)
-			} else {
-				// Failed to find parent, return the failure
-				parent
-			}
+
+			let nth_ancestor =
+				parent.current_tree_mut().map(|tw| tw.nth_ancestor(n - 1,),);
+
+			nth_ancestor.unwrap_or(parent,)
+
+			// if parent.has_success() {
+			// 	// Successfully found parent, continue recursion
+			// 	TreeWalker::nth_ancestor::<WT,>(
+			// 		parent.current_tree_mut(),
+			// 		n - 1,
+			// 	)
+			// } else {
+			// 	// Failed to find parent, return the failure
+			// 	parent
+			// }
 		}
 	}
 

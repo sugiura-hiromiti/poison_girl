@@ -1,9 +1,8 @@
-#![feature(exit_status_error)]
 #![feature(proc_macro_hygiene)]
 
 use {
 	crate::decl_manage::{
-		PoisonGirlCargoInterface, WorkspaceOrchestrate,
+		OrchestrationResolver, PoisonGirlCargoInterface,
 		crate_::PoisonGirlCrateChart,
 	},
 	poison_girl_dev_cargo::{Arch, BuildMode, Opts},
@@ -30,13 +29,13 @@ pub fn check_poison_girl_kernel(
 		Opts { arch, build_mode, ..Default::default() },
 	);
 	// Construct the expected path to the kernel ELF file
-	let target_path = kernel_crate.build_artifact()?;
+	let target_path = kernel_crate.build_artifact()?.path();
 
 	// Check if the file exists and return appropriate result
 	if target_path.exists() {
 		X((),)
 	} else {
-		Y(PathNotFound(target_path.to_str().unwrap().to_string(),),)
+		Y(PathNotFound(target_path.display().to_string(),),)
 	}?;
 	X((),)
 }
