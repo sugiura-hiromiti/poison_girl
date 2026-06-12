@@ -4,22 +4,9 @@ use {
 	poison_girl_dev_error::{
 		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
-	poison_girl_macro_def_features::features,
 	std::{path::PathBuf, process::Command, str::FromStr},
 	strum_macros::Display,
 };
-
-pub trait CompileOpt
-{
-	fn build_mode(&self,) -> impl Into<String,>;
-	fn feature_flags(&self,) -> Vec<impl Into<String,>,>;
-}
-
-pub trait AsCargoOpt
-{
-	type Out;
-	fn as_cargo_opt(&self,) -> Self::Out;
-}
 
 pub trait TargetSpec
 {
@@ -28,39 +15,12 @@ pub trait TargetSpec
 	fn runtime(&self,) -> Runtime;
 }
 
-#[features]
-#[derive(
-	strum_macros::AsRefStr,
-	strum_macros::EnumIs,
-	strum_macros::EnumString,
-	Clone,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum Feature {}
-
-impl AsCargoOpt for Vec<Feature,>
-{
-	type Out = Vec<String,>;
-
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		if self.is_empty() {
-			return vec![];
-		}
-
-		vec![
-			"-F".to_string(),
-			self.iter().map(|f| f.as_ref(),).collect::<Vec<_,>>().join(",",),
-		]
-	}
-}
-
 #[derive(Default, Clone,)]
 pub struct Opts
 {
 	pub command:       CliCommand,
 	pub build_mode:    BuildMode,
-	pub feature_flags: Vec<Feature,>,
+	pub feature_flags: Vec<String,>,
 	pub arch:          Arch,
 	pub lock_deps:     bool,
 }
@@ -73,43 +33,6 @@ impl Opts
 	}
 }
 
-impl AsCargoOpt for Opts
-{
-	type Out = Vec<String,>;
-
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		let Self { command, build_mode, feature_flags, lock_deps, .. } = self;
-		let Some(command,) = command.as_cargo_opt() else { return vec![] };
-		let build_mode = build_mode.as_cargo_opt();
-		let feature_flags = feature_flags.as_cargo_opt();
-		// single architecture info itself is useless
-		// target tuple is truth
-		// let arch = arch.as_cargo_opt();
-		let lock_deps =
-			if *lock_deps { Some("--locked".to_string(),) } else { None };
-
-		std::iter::once(command,)
-			.chain(build_mode,)
-			.chain(feature_flags,)
-			.chain(lock_deps,)
-			.collect()
-	}
-}
-
-impl CompileOpt for Opts
-{
-	fn build_mode(&self,) -> impl Into<String,>
-	{
-		self.build_mode.as_ref()
-	}
-
-	fn feature_flags(&self,) -> Vec<impl Into<String,>,>
-	{
-		self.feature_flags.iter().map(|f| f.as_ref(),).collect()
-	}
-}
-
 #[derive(clap::Parser, Default,)]
 #[command(version, about)]
 pub struct Cli
@@ -117,7 +40,9 @@ pub struct Cli
 	#[arg(value_enum, short)]
 	pub build_mode:    Option<BuildMode,>,
 	#[arg(short)]
-	pub feature_flags: Option<Vec<Feature,>,>,
+	/// this is not Option<Vec<Feature,>,> in order to prevent cyclic
+	/// referencing
+	pub feature_flags: Option<Vec<String,>,>,
 	#[arg(short)]
 	pub arch:          Option<Arch,>,
 	#[command(subcommand)]
@@ -161,19 +86,6 @@ pub enum BuildMode
 	Debug,
 }
 
-impl AsCargoOpt for BuildMode
-{
-	type Out = Option<String,>;
-
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		match self {
-			Self::Release => Some("-r".to_string(),),
-			Self::Debug => None,
-		}
-	}
-}
-
 #[derive(
 	Subcommand, Default, strum_macros::EnumIs, strum_macros::AsRefStr, Clone,
 )]
@@ -193,20 +105,6 @@ pub enum CliCommand
 	Fmt,
 	Fixture,
 	Fix,
-}
-
-impl AsCargoOpt for CliCommand
-{
-	type Out = Option<String,>;
-
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		match self {
-			Self::Check { .. } => None,
-			Self::Fixture => None,
-			_ => Some(self.as_ref().to_string(),),
-		}
-	}
 }
 
 #[derive(Subcommand, strum_macros::EnumIter, Clone,)]

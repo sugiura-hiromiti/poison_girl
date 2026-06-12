@@ -244,6 +244,15 @@ impl From<PointerOperationFailed,> for PoisonGirlError
 	}
 }
 
+impl From<strum::ParseError,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: strum::ParseError,) -> Self
+	{
+		Self { loc: Location::caller(), src: DevError::StrumError(value,), }
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -267,6 +276,7 @@ enum DevError
 	InvalidHostName(InvalidHostName,),
 	YourHostPlatformIsOutOfSupport(YourHostPlatformIsOutOfSupport,),
 	PointerOperationFailed(PointerOperationFailed,),
+	StrumError(strum::ParseError,),
 }
 
 #[derive(Debug,)]

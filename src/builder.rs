@@ -12,11 +12,14 @@
 
 use {
 	crate::Xtask,
-	poison_girl_dev_cargo::{AsCargoOpt, Assets, CheckKind, CliCommand, Opts},
+	poison_girl_dev_cargo::{Assets, CheckKind, CliCommand, Opts},
 	poison_girl_dev_error::{PoisonGirlB, X},
-	poison_girl_dev_orchestrate::decl_manage::{
-		PoisonGirlCargoInterface,
-		crate_::{CrateAction, PoisonGirlCrateChart},
+	poison_girl_dev_orchestrate::{
+		AsCargoOpt,
+		decl_manage::{
+			PoisonGirlCargoInterface,
+			crate_::{CrateAction, PoisonGirlCrateChart},
+		},
 	},
 };
 
@@ -102,7 +105,7 @@ impl Xtask
 
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
-		let args = self.opts().as_cargo_opt();
+		let args = self.opts().as_cargo_opt()?;
 		self.ws().build_with(&args,)
 	}
 

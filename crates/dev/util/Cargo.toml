@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 poison_girl_dev_error = { workspace = true }
+toml = { workspace = true }
 
 [dev-dependencies]
 poison_girl_dev_test = { workspace = true }

@@ -1,8 +1,11 @@
 use {
-	crate::decl_manage::crate_::{
-		Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
+	crate::{
+		CompileOpt,
+		decl_manage::crate_::{
+			Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
+		},
 	},
-	poison_girl_dev_cargo::{CompileOpt, Opts, TargetSpec},
+	poison_girl_dev_cargo::{Opts, TargetSpec},
 	poison_girl_dev_error::{
 		PoisonGirlB, X, Y, YourHostPlatformIsOutOfSupport, poison_girl_err,
 	},
@@ -119,8 +122,11 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 	{
 		// 2 TODO: check does xtask managed process really affected parent env
 		// var.
-		if let Some(path,) = option_env!("CARGO_TARGET_DIR") {
-			return X(PathBuf::from(path,),);
+		if let Ok(path,) = std::env::var("CARGO_TARGET_DIR",) {
+			// CARGO_TARGET_DIR specifies relative path to current directory
+			let mut target_dir = std::env::current_dir()?;
+			target_dir.push(path,);
+			return X(target_dir,);
 		}
 
 		// 3
@@ -128,7 +134,7 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 		// not exists or empty
 		let config_toml = self.ws.cargo_conf();
 		match config_toml {
-			Some(X(conf,),) => {
+			X(conf,) => {
 				if let Some(Some(toml::Value::String(target_dir,),),) = conf
 					.get("build",)
 					.map(|build_section| build_section.get("target-dir",),)
@@ -136,8 +142,7 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 					return X(PathBuf::from(target_dir,),);
 				}
 			},
-			None => (),
-			Some(Y(e,),) => return Y(e,),
+			Y(e,) => return Y(e,),
 		}
 
 		// 4
@@ -161,9 +166,7 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 		// TODO: extract kernel's vendor-os resolver logic. they should no be
 		// tied to here
 		let vendor_runtime = match chart {
-			PoisonGirlCrateChart::Kernel => {
-				"sugiura_hiromiti-poison_girl-elf.json"
-			},
+			PoisonGirlCrateChart::Kernel => "sugiura_hiromiti-poison_girl-elf",
 			PoisonGirlCrateChart::Loader => "unknown-uefi",
 			_ => match std::env::consts::OS {
 				"linux" => "unknown-linux",

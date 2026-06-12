@@ -172,6 +172,7 @@
                   cargo-nextest
                   cargo-udeps
                   cargo-audit
+                  nil
                 ]
                 ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
                 ]

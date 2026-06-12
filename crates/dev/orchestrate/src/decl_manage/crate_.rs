@@ -15,6 +15,7 @@ use {
 		CARGO_CONFIG, CARGO_MANIFEST, all_crates_in, read_toml,
 		search_upstream_at,
 	},
+	poison_girl_dev_util::toml_tools::TomlMerge,
 	poison_girl_macro_def_from_path_buf::FromPathBuf,
 	std::{ffi::OsStr, fmt::Debug, path::PathBuf, process::Command},
 };
@@ -164,15 +165,45 @@ pub trait CrateInfo: CrateCalled
 	{
 		let cargo_toml = self.path().join(CARGO_MANIFEST,);
 		read_toml(cargo_toml,)
+			.map(|toml| toml.unwrap_or(toml::map::Map::new(),),)
 	}
 
-	fn cargo_conf(&self,) -> Option<PoisonGirlB<toml::Table,>,>
+	/// NOTE: we've changed return type from `PoisonGirlB<Option<toml::Table>>`
+	/// to `PoisonGirlB<toml::Table>` this is because, `cargo.toml` is
+	/// originally optional and it has default fallback. so empty `cargo.toml`
+	/// is completely vaild, in this case, distinguishing the file existence is
+	/// meaningless. instead, this function provides simple semantics: the
+	/// config value exists or not.
+	fn cargo_conf(&self,) -> PoisonGirlB<toml::Table,>
 	{
-		let config_toml = self.path().join(CARGO_CONFIG,);
-		if !config_toml.exists() {
-			return None;
-		}
-		Some(read_toml(config_toml,),)
+		// let config_toml = self.path().join(CARGO_CONFIG,);
+		// if !config_toml.exists() {
+		// 	return None;
+		// }
+		// Some(read_toml(config_toml,),)
+		let mut path = self.path().join(CARGO_CONFIG,);
+		// we can treat this as true depth of the path because `path` is
+		// canonicalized.
+		let depth = path.components().collect::<Vec<_,>>().len() - 1;
+		let global_cargo_config_path = std::env::var("CARGO_HOME",)
+			.map_or_else(|_| std::env::home_dir(), |s| Some(PathBuf::from(s,),),)
+			.reshape(poison_girl_err!(PathNotFound::new("home directory")),)?;
+
+		(0..depth)
+			.map(|_| {
+				path.pop();
+				path.push(CARGO_CONFIG,);
+				path.clone()
+				// read_toml(&path,)
+			},)
+			.chain([global_cargo_config_path,],)
+			.map(read_toml,)
+			.try_fold(toml::Table::new(), |acc, config| {
+				let config = config?;
+				let Some(config,) = config else { return X(acc,) };
+				let acc = acc.into_updated_by(config,);
+				X(acc,)
+			},)
 	}
 
 	fn name(&self,) -> PoisonGirlB<String,>
@@ -352,21 +383,32 @@ impl PackageSurvey for PoisonGirlCrate
 {
 	fn default_target(&self,) -> PoisonGirlB<impl Into<String,>,>
 	{
-		X(match self.cargo_conf() {
-			Some(conf,) => {
-				let conf = conf?;
-				let conf = conf.get("build",);
+		// X(match self.cargo_conf() {
+		// 	Some(conf,) => {
+		// 		let conf = conf?;
+		// 		let conf = conf.get("build",);
 
-				if let Some(toml::Value::Table(t,),) = conf
-					&& let Some(toml::Value::String(s,),) = t.get("target",)
-				{
-					s.clone()
-				} else {
-					host_tuple_by_rustc()?
-				}
-			},
-			None => host_tuple_by_rustc()?,
-		},)
+		// 		if let Some(toml::Value::Table(t,),) = conf
+		// 			&& let Some(toml::Value::String(s,),) = t.get("target",)
+		// 		{
+		// 			s.clone()
+		// 		} else {
+		// 			host_tuple_by_rustc()?
+		// 		}
+		// 	},
+		// None => host_tuple_by_rustc()?,
+		// },)
+		let conf = self.cargo_conf()?;
+		let tuple = if conf.is_empty() {
+			host_tuple_by_rustc()?
+		} else {
+			let Some(toml::Value::String(s,),) = conf.get("target",) else {
+				return host_tuple_by_rustc();
+			};
+			s.clone()
+		};
+
+		X(tuple,)
 	}
 }
 

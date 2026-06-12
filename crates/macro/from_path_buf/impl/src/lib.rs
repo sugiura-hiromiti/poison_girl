@@ -2,7 +2,7 @@
 use {
 	poison_girl_dev_error::{InvalidManifest, poison_girl_err},
 	poison_girl_dev_fs::{CARGO_MANIFEST, all_crates, read_toml},
-	poison_girl_dev_util::CaseConvert,
+	poison_girl_dev_util::case_conversion::CaseConvert,
 	poison_girl_macro_error::rslt::Rslt,
 	proc_macro2::TokenStream,
 	quote::format_ident,
@@ -77,6 +77,12 @@ impl EnumParts
 					match self {
 						#(Self::#variants => #bin_names,)*
 					}
+				}
+			}
+
+			impl From<#name,> for PathBuf {
+				fn from(value: #name,) -> Self {
+					value.to_path_buf()
 				}
 			}
 
@@ -212,7 +218,7 @@ impl Manifest
 fn extract_manifest(p: impl AsRef<Path,>,) -> Rslt<Manifest,>
 {
 	let manifest = p.as_ref().join(CARGO_MANIFEST,);
-	let manifest = read_toml(manifest,)?;
+	let manifest = read_toml(manifest,)??;
 
 	let toml::Value::String(package_name,) = manifest
 		.get("package",)

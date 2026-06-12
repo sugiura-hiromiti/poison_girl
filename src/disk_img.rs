@@ -149,7 +149,7 @@ impl DiskImageBuilder
 		let size = buf.len();
 		let mut written_size = 0;
 		while written_size < size {
-			let written = boot_loader_writer.write(&buf,)?;
+			let written = boot_loader_writer.write(&buf[written_size..],)?;
 			written_size += written;
 		}
 
