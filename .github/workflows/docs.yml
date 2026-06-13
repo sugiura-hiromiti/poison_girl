@@ -33,7 +33,6 @@ jobs:
           nix build -L --show-trace ".#checks.${system}.workspace_doc"
           mkdir -p pages
           cp -R result/share/doc/. pages/
-          echo '<meta http-equiv="refresh" content="0; url=poison_girl/">' > pages/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
