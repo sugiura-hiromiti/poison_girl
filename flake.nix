@@ -148,7 +148,7 @@
               workspaceArgs
               // {
                 cargoDocExtraArgs = "--no-deps --document-private-items";
-					 RSTDOCFLAGS="-Z unstable-options --enable-index-page";
+					 RUSTDOCFLAGS="-Z unstable-options --enable-index-page";
               }
             );
             workspace_fmt = craneLib.cargoFmt {
