@@ -83,7 +83,9 @@ cfg_if! {
 fn panic(info: &core::panic::PanicInfo,) -> !
 {
 	println!("{}", info);
-	wfe()
+	loop {
+		wfe()
+	}
 }
 
 fn app() -> PoisonGirlB<(),>

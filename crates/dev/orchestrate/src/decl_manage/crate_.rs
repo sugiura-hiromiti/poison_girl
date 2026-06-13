@@ -189,14 +189,19 @@ pub trait CrateInfo: CrateCalled
 			.map_or_else(|_| std::env::home_dir(), |s| Some(PathBuf::from(s,),),)
 			.reshape(poison_girl_err!(PathNotFound::new("home directory")),)?;
 
+		path.pop();
 		(0..depth)
 			.map(|_| {
 				path.pop();
-				path.push(CARGO_CONFIG,);
+				// path.push(CARGO_CONFIG,);
 				path.clone()
 				// read_toml(&path,)
 			},)
 			.chain([global_cargo_config_path,],)
+			.map(|mut p| {
+				p.push(CARGO_CONFIG,);
+				p
+			},)
 			.map(read_toml,)
 			.try_fold(toml::Table::new(), |acc, config| {
 				let config = config?;
@@ -402,7 +407,10 @@ impl PackageSurvey for PoisonGirlCrate
 		let tuple = if conf.is_empty() {
 			host_tuple_by_rustc()?
 		} else {
-			let Some(toml::Value::String(s,),) = conf.get("target",) else {
+			let Some(toml::Value::Table(build,),) = conf.get("build",) else {
+				return host_tuple_by_rustc();
+			};
+			let Some(toml::Value::String(s,),) = build.get("target",) else {
 				return host_tuple_by_rustc();
 			};
 			s.clone()
