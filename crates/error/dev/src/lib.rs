@@ -232,6 +232,27 @@ impl From<YourHostPlatformIsOutOfSupport,> for PoisonGirlError
 	}
 }
 
+impl From<PointerOperationFailed,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: PointerOperationFailed,) -> Self
+	{
+		Self {
+			loc: Location::caller(),
+			src: DevError::PointerOperationFailed(value,),
+		}
+	}
+}
+
+impl From<strum::ParseError,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: strum::ParseError,) -> Self
+	{
+		Self { loc: Location::caller(), src: DevError::StrumError(value,), }
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -254,6 +275,8 @@ enum DevError
 	InvalidCurrentCratePath(InvalidCurrentCratePath,),
 	InvalidHostName(InvalidHostName,),
 	YourHostPlatformIsOutOfSupport(YourHostPlatformIsOutOfSupport,),
+	PointerOperationFailed(PointerOperationFailed,),
+	StrumError(strum::ParseError,),
 }
 
 #[derive(Debug,)]
@@ -308,6 +331,9 @@ impl InvalidHostName
 
 #[derive(Debug,)]
 pub struct YourHostPlatformIsOutOfSupport;
+
+#[derive(Debug,)]
+pub struct PointerOperationFailed;
 
 #[macro_export]
 macro_rules! poison_girl_err {

@@ -204,7 +204,7 @@ const fn bytes_is_even<const BYTES: usize,>() -> bool
 	BYTES.is_multiple_of(2,)
 }
 
-impl<const N: usize,> const BytesToInt<N,> for [Hex; N]
+const impl<const N: usize,> BytesToInt<N,> for [Hex; N]
 where [Hex; N]: BytesNotTooLong<true,>
 {
 	fn le_u128(&self,) -> u128
@@ -226,7 +226,7 @@ pub const trait AsBytes<const BYTES: usize, O = Self,>
 	fn as_bytes(&self,) -> Self::Output;
 }
 
-impl<const BYTES: usize,> const AsBytes<BYTES, [u8; BYTES / 2],>
+const impl<const BYTES: usize,> AsBytes<BYTES, [u8; BYTES / 2],>
 	for [Hex; BYTES]
 where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 {
@@ -245,7 +245,7 @@ where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 	}
 }
 
-impl<const BYTES: usize,> const AsBytes<BYTES, [u8; BYTES],> for [Hex; BYTES]
+const impl<const BYTES: usize,> AsBytes<BYTES, [u8; BYTES],> for [Hex; BYTES]
 {
 	fn as_bytes(&self,) -> Self::Output
 	{
@@ -266,7 +266,7 @@ const trait AsLeBytes<const BYTES: usize, O = Self,>:
 	fn as_le_bytes(&self,) -> Self::Output;
 }
 
-impl<const BYTES: usize,> const AsLeBytes<BYTES, [u8; BYTES],> for [Hex; BYTES]
+const impl<const BYTES: usize,> AsLeBytes<BYTES, [u8; BYTES],> for [Hex; BYTES]
 where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 {
 	fn as_le_bytes(&self,) -> Self::Output

@@ -2,7 +2,9 @@ use {
 	crate::decl_manage::crate_::{
 		Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
 	},
-	poison_girl_dev_error::{PoisonGirlB, X},
+	poison_girl_dev_error::{
+		PointerOperationFailed, PoisonGirlB, ReShape, X, poison_girl_err,
+	},
 	std::ffi::OsStr,
 };
 
@@ -28,26 +30,31 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	{
 		self.cargo_xxx_at("build", at,)
 	}
+
 	fn test_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
 		self.cargo_xxx_at("test", at,)
 	}
+
 	fn run_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
 		self.cargo_xxx_at("run", at,)
 	}
+
 	fn check_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
 		self.cargo_xxx_at("check", at,)
 	}
+
 	fn fmt_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
 		self.cargo_xxx_at("fmt", at,)
 	}
+
 	fn cargo_xxx_at(
 		&self,
 		cmd: impl AsRef<OsStr,>,
@@ -71,6 +78,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	{
 		self.cargo_xxx_at_with("build", at, opt,)
 	}
+
 	fn test_at_with(
 		&self,
 		at: impl CrateCalled,
@@ -81,6 +89,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	{
 		self.cargo_xxx_at_with("test", at, opt,)
 	}
+
 	fn run_at_with(
 		&self,
 		at: impl CrateCalled,
@@ -91,6 +100,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	{
 		self.cargo_xxx_at_with("run", at, opt,)
 	}
+
 	fn check_at_with(
 		&self,
 		at: impl CrateCalled,
@@ -101,6 +111,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	{
 		self.cargo_xxx_at_with("check", at, opt,)
 	}
+
 	fn fmt_at_with(
 		&self,
 		at: impl CrateCalled,
@@ -111,6 +122,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	{
 		self.cargo_xxx_at_with("fmt", at, opt,)
 	}
+
 	fn cargo_xxx_at_with(
 		&self,
 		cmd: impl AsRef<OsStr,>,
@@ -122,8 +134,8 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	{
 		let current = self.whoami();
 		//  this operation is safe due to `&self` is valid
-		let self_mut =
-			unsafe { (self as *const Self).cast_mut().as_mut().unwrap() };
+		let self_mut = unsafe { (self as *const Self).cast_mut().as_mut() }
+			.reshape(poison_girl_err!(PointerOperationFailed),)?;
 		self_mut.land_on(at,);
 		self_mut.cargo_xxx_with(cmd, opt,)?;
 		self_mut.land_on(current,);

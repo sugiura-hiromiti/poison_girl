@@ -193,21 +193,19 @@ pub fn search_upstream_at(
 	}
 }
 
-pub fn read_toml(path: impl AsRef<Path,>,) -> PoisonGirlB<toml::Table,>
+pub fn read_toml(path: impl AsRef<Path,>,)
+-> PoisonGirlB<Option<toml::Table,>,>
 {
 	if !path.as_ref().exists() {
-		return Y(PathNotFound(
-			path.as_ref().to_str().unwrap_or_default().to_string(),
-		)
-		.into(),);
+		return X(None,);
 	}
 
-	let read_toml_ = || -> PoisonGirlB<toml::Table,> {
+	let read_toml_ = || -> PoisonGirlB<Option<toml::Table,>,> {
 		let be_toml = std::fs::read(path,)?;
 		let be_toml = String::from_utf8(be_toml,)?;
 		let be_toml = be_toml.as_str();
 		let be_toml: toml::Table = toml::de::from_str(be_toml,)?;
-		X(be_toml,)
+		X(Some(be_toml,),)
 	};
 
 	read_toml_()

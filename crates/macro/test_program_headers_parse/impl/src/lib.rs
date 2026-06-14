@@ -3,10 +3,10 @@
 use {
 	poison_girl_dev_cargo::{Arch, BuildMode, Opts},
 	poison_girl_dev_orchestrate::decl_manage::{
-		PoisonGirlCargoInterface, WorkspaceOrchestrate,
+		OrchestrationResolver, PoisonGirlCargoInterface,
 		crate_::PoisonGirlCrateChart,
 	},
-	poison_girl_proc_macro_helper::rslt::Rslt,
+	poison_girl_macro_error::rslt::Rslt,
 	proc_macro2::{Span, TokenStream},
 	std::{process::Command, str::FromStr},
 };
@@ -60,10 +60,10 @@ pub fn test_program_headers_parse(
 	rslt: syn::punctuated::Punctuated<syn::Ident, syn::Token![,],>,
 ) -> Rslt<TokenStream,>
 {
-	let var_name = rslt.get(0,).expect("expect asserted variable name",);
-	let arch = rslt.get(1,).expect("arch not specified",).to_string();
-	let build_mode =
-		rslt.get(2,).expect("build mode not specified",).to_string();
+	// let var_name = rslt.get(0,).expect("expect asserted variable name",);
+	let var_name = rslt.get(0,)?;
+	let arch = rslt.get(1,)?.to_string();
+	let build_mode = rslt.get(2,)?.to_string();
 	program_headers_info(arch, build_mode,).replace_by(|v| {
 		Rslt::new(quote::quote! {
 			if cfg!(debug_assertions) {
@@ -146,14 +146,12 @@ pub fn readelf_l(arch: String, build_mode: String,) -> Rslt<Vec<ReadElfL,>,>
 						s.split(" ",).filter(|s| !s.is_empty(),).collect();
 
 					let ty = fields_info[0].to_string();
-					let offset = parse_str_hex_repr(fields_info[1],)??;
-					let virtual_address = parse_str_hex_repr(fields_info[2],)??;
-					let physical_address =
-						parse_str_hex_repr(fields_info[3],)??;
-					let file_size = parse_str_hex_repr(fields_info[4],)??;
-					let memory_size = parse_str_hex_repr(fields_info[5],)??;
-					let (flags, align,) =
-						parse_flags_and_align(&fields_info,)??;
+					let offset = parse_str_hex_repr(fields_info[1],)?;
+					let virtual_address = parse_str_hex_repr(fields_info[2],)?;
+					let physical_address = parse_str_hex_repr(fields_info[3],)?;
+					let file_size = parse_str_hex_repr(fields_info[4],)?;
+					let memory_size = parse_str_hex_repr(fields_info[5],)?;
+					let (flags, align,) = parse_flags_and_align(&fields_info,)?;
 
 					Rslt::new(ReadElfL {
 						ty,
@@ -178,7 +176,7 @@ fn readelf_l_out(arch: String, build_mode: String,) -> Rslt<Vec<String,>,>
 		PoisonGirlCrateChart::Kernel,
 		Opts { arch, build_mode, ..Default::default() },
 	);
-	let kernel_bin_path = kernel_crate.build_artifact()?;
+	let kernel_bin_path = kernel_crate.build_artifact()?.path();
 
 	let program_headers_info = Command::new("readelf",)
 		.arg("-l",)
@@ -204,11 +202,9 @@ fn program_headers_count(info: &str,) -> Rslt<usize,>
 	}
 	let program_header_count: usize = info
 		.lines()
-		.nth(desc_lines_count - 2,)
-		.unwrap()
+		.nth(desc_lines_count - 2,)?
 		.split(" ",)
-		.nth(2,)
-		.unwrap()
+		.nth(2,)?
 		.parse()?;
 	Rslt::new(program_header_count,)
 }
@@ -253,10 +249,10 @@ fn parse_flags_and_align(fields_info: &[&str],) -> Rslt<(u32, u64,),>
 			flags |= 0b1;
 		};
 
-		let align = parse_str_hex_repr(fields_info[7],)??;
+		let align = parse_str_hex_repr(fields_info[7],)?;
 		(flags, align,)
 	} else if fields_info.len() == 9 {
-		let align = parse_str_hex_repr(fields_info[8],)??;
+		let align = parse_str_hex_repr(fields_info[8],)?;
 		(0b101, align,)
 	} else {
 		return Rslt::new_err(format!(
@@ -283,7 +279,7 @@ mod tests
 	#[test]
 	fn test_int_field_u32_parse_valid_hex() -> Rslt<(),>
 	{
-		let result = u32::parse("1a2b",)??;
+		let result = u32::parse("1a2b",)?;
 		assert_eq!(result, 0x1a2b);
 		Rslt::new((),)
 	}
@@ -291,7 +287,7 @@ mod tests
 	#[test]
 	fn test_int_field_u32_parse_zero() -> Rslt<(),>
 	{
-		let result = u32::parse("0",)??;
+		let result = u32::parse("0",)?;
 		assert_eq!(result, 0);
 		Rslt::new((),)
 	}
@@ -299,7 +295,7 @@ mod tests
 	#[test]
 	fn test_int_field_u32_parse_max_value() -> Rslt<(),>
 	{
-		let result = u32::parse("ffffffff",)??;
+		let result = u32::parse("ffffffff",)?;
 		assert_eq!(result, u32::MAX);
 		Rslt::new((),)
 	}
@@ -322,7 +318,7 @@ mod tests
 	#[test]
 	fn test_int_field_u64_parse_valid_hex() -> Rslt<(),>
 	{
-		let result = u64::parse("1a2b3c4d5e6f",)??;
+		let result = u64::parse("1a2b3c4d5e6f",)?;
 		assert_eq!(result, 0x1a2b3c4d5e6f);
 		Rslt::new((),)
 	}
@@ -330,7 +326,7 @@ mod tests
 	#[test]
 	fn test_int_field_u64_parse_zero() -> Rslt<(),>
 	{
-		let result = u64::parse("0",)??;
+		let result = u64::parse("0",)?;
 		assert_eq!(result, 0);
 		Rslt::new((),)
 	}
@@ -338,7 +334,7 @@ mod tests
 	#[test]
 	fn test_int_field_u64_parse_max_value() -> Rslt<(),>
 	{
-		let result = u64::parse("ffffffffffffffff",)??;
+		let result = u64::parse("ffffffffffffffff",)?;
 		assert_eq!(result, u64::MAX);
 		Rslt::new((),)
 	}
@@ -389,7 +385,7 @@ mod tests
 	#[test]
 	fn test_parse_str_hex_repr_with_0x_prefix() -> Rslt<(),>
 	{
-		let result: u64 = parse_str_hex_repr("0x1000",)??;
+		let result: u64 = parse_str_hex_repr("0x1000",)?;
 		assert_eq!(result, 0x1000);
 		Rslt::new((),)
 	}
@@ -397,7 +393,7 @@ mod tests
 	#[test]
 	fn test_parse_str_hex_repr_without_0x_prefix() -> Rslt<(),>
 	{
-		let result: u64 = parse_str_hex_repr("1000",)??;
+		let result: u64 = parse_str_hex_repr("1000",)?;
 		assert_eq!(result, 0x1000);
 		Rslt::new((),)
 	}
@@ -405,7 +401,7 @@ mod tests
 	#[test]
 	fn test_parse_str_hex_repr_zero() -> Rslt<(),>
 	{
-		let result: u64 = parse_str_hex_repr("0x0",)??;
+		let result: u64 = parse_str_hex_repr("0x0",)?;
 		assert_eq!(result, 0);
 		Rslt::new((),)
 	}
@@ -437,7 +433,7 @@ mod tests
 		let test_line = "There are 4 program headers, starting at offset \
 		                 64\n\n"
 			.to_string();
-		let count = program_headers_count(&test_line,)??;
+		let count = program_headers_count(&test_line,)?;
 		assert_eq!(count, 4);
 		Rslt::new((),)
 	}
@@ -448,7 +444,7 @@ mod tests
 		let test_line = "There are 2 program headers, starting at offset \
 		                 128\n\n"
 			.to_string();
-		let count = program_headers_count(&test_line,)??;
+		let count = program_headers_count(&test_line,)?;
 		assert_eq!(count, 2);
 		Rslt::new((),)
 	}
@@ -534,7 +530,7 @@ mod tests
 		];
 
 		for (input, expected,) in test_cases {
-			let result: u64 = parse_str_hex_repr(input,)??;
+			let result: u64 = parse_str_hex_repr(input,)?;
 			assert_eq!(result, expected, "Failed for input: {}", input);
 		}
 
@@ -573,7 +569,7 @@ mod tests
 		];
 
 		// Test program header count extraction
-		let count = program_headers_count(&mock_readelf_output[3],)??;
+		let count = program_headers_count(&mock_readelf_output[3],)?;
 		assert_eq!(count, 2);
 
 		let replaced = mock_readelf_output[3].replace('\n', "",);

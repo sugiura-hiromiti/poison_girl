@@ -33,7 +33,9 @@ use {
 fn panic(panic: &core::panic::PanicInfo,) -> !
 {
 	println!("{panic:#?}");
-	wfe()
+	loop {
+		wfe()
+	}
 }
 
 /// UEFI application entry point

@@ -2,7 +2,7 @@
 use {
 	poison_girl_dev_error::{InvalidManifest, poison_girl_err},
 	poison_girl_dev_fs::{CARGO_MANIFEST, all_crates, read_toml},
-	poison_girl_dev_util::CaseConvert,
+	poison_girl_dev_util::case_conversion::CaseConvert,
 	poison_girl_macro_error::rslt::Rslt,
 	proc_macro2::TokenStream,
 	quote::format_ident,
@@ -47,19 +47,17 @@ struct EnumParts
 	variants:      Vec<proc_macro2::TokenStream,>,
 	variants_attr: Vec<Option<proc_macro2::TokenStream,>,>,
 	paths:         Vec<proc_macro2::TokenStream,>,
+	bin_names:     Vec<proc_macro2::TokenStream,>,
 }
 
 impl EnumParts
 {
 	pub fn dump(&self,) -> proc_macro2::TokenStream
 	{
-		let name = &self.name;
-		let variants = &self.variants;
-		let variants_attr = &self.variants_attr;
-		let paths = &self.paths;
+		let Self { name, variants, variants_attr, paths, bin_names, } = self;
 
 		quote::quote! {
-			#[derive(Default, PartialEq, Eq, Clone, Debug)]
+			#[derive(Default, PartialEq, Eq, Clone, Debug, Copy)]
 			pub enum #name {
 				#(
 					#variants_attr
@@ -73,6 +71,18 @@ impl EnumParts
 					match self {
 						#(Self::#variants => PathBuf::from_str(#paths).unwrap(),)*
 					}
+				}
+
+				pub fn bin_name(&self)-> &str {
+					match self {
+						#(Self::#variants => #bin_names,)*
+					}
+				}
+			}
+
+			impl From<#name,> for PathBuf {
+				fn from(value: #name,) -> Self {
+					value.to_path_buf()
 				}
 			}
 
@@ -103,10 +113,15 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 		.map(|(i, pb,)| {
 			let path = pb.to_str().ok_or("failed convert PathBuf to &str",)?;
 			let path = quote::quote! {#path};
-			extract_variant_name(pb,).replace_by(|name| {
+			extract_manifest(pb,).replace_by(|manifest| {
+				let name = manifest.name();
 				let variant = format_ident!("{name}");
 				let variant = quote::quote! {
 					#variant
+				};
+				let bin_name = manifest.bin_name();
+				let bin_name = quote::quote! {
+					#bin_name
 				};
 
 				let attr = if i == 0 {
@@ -116,7 +131,7 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 				} else {
 					None
 				};
-				Rslt::new((variant, attr, path,),)
+				Rslt::new((variant, attr, path, bin_name,),)
 			},)
 		},)
 		.fold(Rslt::new(vec![],), |acc, item| acc.push_elem(item,),)
@@ -125,16 +140,19 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 			let mut variants = Vec::with_capacity(len,);
 			let mut variants_attr = Vec::with_capacity(len,);
 			let mut paths = Vec::with_capacity(len,);
-			val.into_iter().for_each(|(v, a, p,)| {
+			let mut bin_names = Vec::with_capacity(len,);
+			val.into_iter().for_each(|(v, a, p, b,)| {
 				variants.push(v,);
 				variants_attr.push(a,);
 				paths.push(p,);
+				bin_names.push(b,);
 			},);
 			let rslt = Rslt::new(EnumParts {
 				name,
-				variants: variants.clone(),
+				variants,
 				variants_attr,
 				paths,
+				bin_names,
 			},);
 
 			#[cfg(feature = "debug-diagnostics")]
@@ -158,10 +176,50 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 		},)
 }
 
-fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,>
+struct Manifest
+{
+	/// the package name which is written in Cargo.toml
+	package_name: String,
+	/// the name of variant
+	name:         String,
+	/// the name of build artifact
+	bin_name:     Option<String,>,
+}
+
+impl Manifest
+{
+	pub fn new(
+		package_name: impl Into<String,>,
+		name: impl Into<String,>,
+		bin_name: Option<impl Into<String,>,>,
+	) -> Self
+	{
+		Self {
+			package_name: package_name.into(),
+			name:         name.into(),
+			bin_name:     bin_name.map(|bin_name| bin_name.into(),),
+		}
+	}
+
+	pub fn name(&self,) -> String
+	{
+		self.name.clone()
+	}
+
+	pub fn bin_name(&self,) -> String
+	{
+		match &self.bin_name {
+			Some(n,) => n.clone(),
+			None => self.package_name.clone(),
+		}
+	}
+}
+
+fn extract_manifest(p: impl AsRef<Path,>,) -> Rslt<Manifest,>
 {
 	let manifest = p.as_ref().join(CARGO_MANIFEST,);
-	let manifest = read_toml(manifest,)?;
+	let manifest = read_toml(manifest,)??;
+
 	let toml::Value::String(package_name,) = manifest
 		.get("package",)
 		.ok_or(InvalidManifest::new("package",),)?
@@ -173,15 +231,28 @@ fn extract_variant_name(p: impl AsRef<Path,>,) -> Rslt<String,>
 		))),);
 	};
 
+	let bin_name = manifest
+		.get("bin",)
+		.and_then(toml::Value::as_array,)
+		.into_iter()
+		.flatten()
+		.next()
+		.map(|v| {
+			v.get("name",)
+				.and_then(toml::Value::as_str,)
+				.unwrap_or(package_name,)
+				.to_owned()
+		},);
+
 	// 頭の`poison_girl_`部分は長ったらしいので除く
-	let name = if package_name != "poison_girl" {
+	let name: String = if package_name != "poison_girl" {
 		package_name.split("poison_girl_",).nth(1,)?
 	} else {
 		package_name
 	}
 	.to_string()
 	.to_camel();
-	Rslt::new(name,)
+	Rslt::new(Manifest::new(package_name, name, bin_name,),)
 }
 
 fn detect_chart_type(

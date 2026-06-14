@@ -4,9 +4,11 @@
 // TODO: workspace内の未使用クレーとを検出
 
 use {
-	poison_girl_dev_cargo::{Arch, Assets, Opts, TargetSpec},
-	poison_girl_dev_orchestrate::decl_manage::crate_::PoisonGirlCrate,
-	std::{path::PathBuf, process::Command},
+	poison_girl_dev_cargo::{Assets, Opts},
+	poison_girl_dev_orchestrate::decl_manage::{
+		PoisonGirlCargoInterface, crate_::PoisonGirlCrate,
+	},
+	std::path::PathBuf,
 };
 
 /// orchestrate running qemu process
@@ -20,17 +22,21 @@ mod target_spec;
 
 pub struct Xtask
 {
-	opts:   Opts,
-	ws:     PoisonGirlCrate,
-	assets: Assets,
+	interface: PoisonGirlCargoInterface,
+	assets:    Assets,
 }
 
 impl Xtask
 {
-	// fn arch(&self,) -> Arch
-	// {
-	// 	self.opts.arch
-	// }
+	fn opts(&self,) -> Opts
+	{
+		self.interface.opts()
+	}
+
+	fn ws(&self,) -> PoisonGirlCrate
+	{
+		self.interface.ws()
+	}
 
 	fn firmware_code(&self,) -> &PathBuf
 	{

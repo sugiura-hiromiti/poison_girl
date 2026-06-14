@@ -2,25 +2,11 @@ use {
 	clap::{Parser, Subcommand},
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{
-		HostTupleNotFound, InvalidHostName, PoisonGirlB, ReShape, X, Y,
-		poison_girl_err,
+		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
-	poison_girl_macro_def_features::features,
 	std::{path::PathBuf, process::Command, str::FromStr},
 	strum_macros::Display,
 };
-
-pub trait CompileOpt
-{
-	fn build_mode(&self,) -> impl Into<String,>;
-	fn feature_flags(&self,) -> Vec<impl Into<String,>,>;
-}
-
-pub trait AsCargoOpt
-{
-	type Out;
-	fn as_cargo_opt(&self,) -> Self::Out;
-}
 
 pub trait TargetSpec
 {
@@ -29,39 +15,12 @@ pub trait TargetSpec
 	fn runtime(&self,) -> Runtime;
 }
 
-#[features]
-#[derive(
-	strum_macros::AsRefStr,
-	strum_macros::EnumIs,
-	strum_macros::EnumString,
-	Clone,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum Feature {}
-
-impl AsCargoOpt for Vec<Feature,>
-{
-	type Out = Vec<String,>;
-
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		if self.is_empty() {
-			return vec![];
-		}
-
-		vec![
-			"-F".to_string(),
-			self.iter().map(|f| f.as_ref(),).collect::<Vec<_,>>().join(",",),
-		]
-	}
-}
-
-#[derive(Default,)]
+#[derive(Default, Clone,)]
 pub struct Opts
 {
 	pub command:       CliCommand,
 	pub build_mode:    BuildMode,
-	pub feature_flags: Vec<Feature,>,
+	pub feature_flags: Vec<String,>,
 	pub arch:          Arch,
 	pub lock_deps:     bool,
 }
@@ -74,43 +33,6 @@ impl Opts
 	}
 }
 
-impl AsCargoOpt for Opts
-{
-	type Out = Vec<String,>;
-
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		let Self { command, build_mode, feature_flags, lock_deps, .. } = self;
-		let Some(command,) = command.as_cargo_opt() else { return vec![] };
-		let build_mode = build_mode.as_cargo_opt();
-		let feature_flags = feature_flags.as_cargo_opt();
-		// single architecture info itself is useless
-		// target tuple is truth
-		// let arch = arch.as_cargo_opt();
-		let lock_deps =
-			if *lock_deps { Some("--locked".to_string(),) } else { None };
-
-		std::iter::once(command,)
-			.chain(build_mode,)
-			.chain(feature_flags,)
-			.chain(lock_deps,)
-			.collect()
-	}
-}
-
-impl CompileOpt for Opts
-{
-	fn build_mode(&self,) -> impl Into<String,>
-	{
-		self.build_mode.as_ref()
-	}
-
-	fn feature_flags(&self,) -> Vec<impl Into<String,>,>
-	{
-		self.feature_flags.iter().map(|f| f.as_ref(),).collect()
-	}
-}
-
 #[derive(clap::Parser, Default,)]
 #[command(version, about)]
 pub struct Cli
@@ -118,7 +40,9 @@ pub struct Cli
 	#[arg(value_enum, short)]
 	pub build_mode:    Option<BuildMode,>,
 	#[arg(short)]
-	pub feature_flags: Option<Vec<Feature,>,>,
+	/// this is not Option<Vec<Feature,>,> in order to prevent cyclic
+	/// referencing
+	pub feature_flags: Option<Vec<String,>,>,
 	#[arg(short)]
 	pub arch:          Option<Arch,>,
 	#[command(subcommand)]
@@ -162,20 +86,9 @@ pub enum BuildMode
 	Debug,
 }
 
-impl AsCargoOpt for BuildMode
-{
-	type Out = Option<String,>;
-
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		match self {
-			Self::Release => Some("-r".to_string(),),
-			Self::Debug => None,
-		}
-	}
-}
-
-#[derive(Subcommand, Default, strum_macros::EnumIs, strum_macros::AsRefStr,)]
+#[derive(
+	Subcommand, Default, strum_macros::EnumIs, strum_macros::AsRefStr, Clone,
+)]
 #[strum(serialize_all = "snake_case")]
 pub enum CliCommand
 {
@@ -194,21 +107,7 @@ pub enum CliCommand
 	Fix,
 }
 
-impl AsCargoOpt for CliCommand
-{
-	type Out = Option<String,>;
-
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		match self {
-			Self::Check { .. } => None,
-			Self::Fixture => None,
-			_ => Some(self.as_ref().to_string(),),
-		}
-	}
-}
-
-#[derive(Subcommand, strum_macros::EnumIter,)]
+#[derive(Subcommand, strum_macros::EnumIter, Clone,)]
 pub enum CheckKind
 {
 	KernelAarch64,
@@ -218,47 +117,24 @@ pub enum CheckKind
 
 pub enum Runtime
 {
-	Mac,
-	Linux,
+	Host,
 	Efi,
 	PoisonGirl,
 }
 
 impl Runtime
 {
-	pub fn host() -> PoisonGirlB<Self,>
-	{
-		let host_name = host_tuple_by_rustc()?;
-		let host_name = host_name.split('-',).next().reshape(
-			poison_girl_err!(InvalidHostName::new(
-				"host's target tuple of rustc is weird. they do not contain \
-				 `-`."
-			)),
-		)?;
-		Runtime::from_str(host_name,)
-	}
-
-	fn from_str(value: &str,) -> PoisonGirlB<Self,>
-	{
-		let runtime = match value {
-			"mac" | "darwin" => Self::Mac,
-			"linux" => Self::Linux,
-			"poison_girl" | "pg" => Self::PoisonGirl,
-			"efi" => Self::Efi,
-			a => return Y(poison_girl_err!(InvalidHostName::new(a)),),
-		};
-		X(runtime,)
-	}
-
-	fn as_target_tuple_runtime(&self,) -> &str
-	{
-		match self {
-			Self::Mac => "apple-darwin",
-			Self::Linux => "unknown-linux",
-			Self::Efi => "unknown-uefi",
-			Self::PoisonGirl => todo!("generate custom target json from xtask"),
-		}
-	}
+	// pub fn host() -> PoisonGirlB<Self,>
+	// {
+	// 	let host_name = host_tuple_by_rustc()?;
+	// 	let host_name = host_name.split('-',).next().reshape(
+	// 		poison_girl_err!(InvalidHostName::new(
+	// 			"host's target tuple of rustc is weird. they do not contain \
+	// 			 `-`."
+	// 		)),
+	// 	)?;
+	// 	Runtime::from_str(host_name,)
+	// }
 }
 
 pub struct Assets
@@ -272,7 +148,7 @@ impl Assets
 	pub fn new(arch: Arch,) -> PoisonGirlB<Self,>
 	{
 		let firmware = Firmware::new(arch,)?;
-		X(Self { firmware, host: Runtime::host()?, },)
+		X(Self { firmware, host: Runtime::Host, },)
 	}
 }
 

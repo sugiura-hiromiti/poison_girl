@@ -21,7 +21,9 @@ use {
 	chibi_uefi::{protocol::HandleSearchType, table::boot_services},
 	core::ptr::NonNull,
 	poison_girl_macro::cfg_if,
-	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfi},
+	poison_girl_no_std::{
+		bridge::device_tree::DeviceTreeAddress, idle_cpu_forever,
+	},
 	poison_girl_no_std_error::{
 		Container, PoisonGirlB, UefiError, X, Y, poison_girl_err,
 	},
@@ -152,5 +154,5 @@ pub fn exec_kernel(kernel_entry: u64, device_tree_ptr: DeviceTreeAddress,)
 	entry_point(device_tree_ptr,);
 
 	// If we reach here, kernel execution failed
-	wfi();
+	idle_cpu_forever();
 }

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 poison_girl_no_std_error = { workspace = true }
+poison_girl_macro = { workspace = true }
 
 [lints]
 workspace = true

@@ -1006,7 +1006,6 @@ mod tests
 			section_header_entry_size: "64".to_string(),
 			section_header_count: "10".to_string(),
 			section_header_index_of_section_name_string_table: "9".to_string(),
-			..Default::default()
 		};
 
 		assert_eq!(
