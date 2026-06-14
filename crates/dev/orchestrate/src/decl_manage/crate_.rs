@@ -198,6 +198,7 @@ pub trait CrateInfo: CrateCalled
 				// read_toml(&path,)
 			},)
 			.chain([global_cargo_config_path,],)
+			.rev()
 			.map(|mut p| {
 				p.push(CARGO_CONFIG,);
 				p

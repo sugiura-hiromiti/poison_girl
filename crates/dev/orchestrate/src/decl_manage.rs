@@ -10,7 +10,7 @@ use {
 		PoisonGirlB, X, Y, YourHostPlatformIsOutOfSupport, poison_girl_err,
 	},
 	poison_girl_dev_fs::{current_crate_path, project_root_path},
-	std::path::PathBuf,
+	std::{ffi::OsStr, path::PathBuf},
 };
 
 pub mod crate_;
@@ -86,6 +86,37 @@ impl PoisonGirlCargoInterface
 	{
 		self.ws.clone()
 	}
+
+	fn _resolve_target_dir(&self,) -> PoisonGirlB<PathBuf,>
+	{
+		// 2 TODO: check does xtask managed process really affected parent env
+		// var.
+		if let Some(path,) = env_var_path("CARGO_TARGET_DIR",)? {
+			return X(path,);
+		}
+		if let Some(path,) = env_var_path("CARGO_BUILD_TARGET_DIR",)? {
+			return X(path,);
+		}
+
+		// 3
+		// TODO: make sure that cargo_conf method do not fails when config.toml
+		// not exists or empty
+		let config_toml = self.ws.cargo_conf();
+		match config_toml {
+			X(conf,) => {
+				if let Some(Some(toml::Value::String(target_dir,),),) = conf
+					.get("build",)
+					.map(|build_section| build_section.get("target-dir",),)
+				{
+					return X(PathBuf::from(target_dir,),);
+				}
+			},
+			Y(e,) => return Y(e,),
+		}
+
+		// 4
+		X(project_root()?.path().join("target",),)
+	}
 }
 
 impl OrchestrationResolver for PoisonGirlCargoInterface
@@ -120,33 +151,14 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 	/// for rule 1, we ignore by filtering in xtask. this keeps things easy
 	fn resolve_target_dir(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		// 2 TODO: check does xtask managed process really affected parent env
-		// var.
-		if let Ok(path,) = std::env::var("CARGO_TARGET_DIR",) {
-			// CARGO_TARGET_DIR specifies relative path to current directory
-			let mut target_dir = std::env::current_dir()?;
-			target_dir.push(path,);
-			return X(target_dir,);
+		let mut path = self._resolve_target_dir()?;
+		if path.is_relative() {
+			let mut cwd = std::env::current_dir()?;
+			cwd.push(path,);
+			path = cwd;
 		}
 
-		// 3
-		// TODO: make sure that cargo_conf method do not fails when config.toml
-		// not exists or empty
-		let config_toml = self.ws.cargo_conf();
-		match config_toml {
-			X(conf,) => {
-				if let Some(Some(toml::Value::String(target_dir,),),) = conf
-					.get("build",)
-					.map(|build_section| build_section.get("target-dir",),)
-				{
-					return X(PathBuf::from(target_dir,),);
-				}
-			},
-			Y(e,) => return Y(e,),
-		}
-
-		// 4
-		X(project_root()?.path().join("target",),)
+		X(path,)
 	}
 
 	/// if --target do not specified, profile name comes after target/
@@ -254,4 +266,21 @@ pub fn current_crate() -> PoisonGirlB<PoisonGirlCrate,>
 	let ccp = current_crate_path()?;
 
 	X(PoisonGirlCrate::from(ccp,),)
+}
+
+fn env_var_path(path: impl AsRef<OsStr,>,) -> PoisonGirlB<Option<PathBuf,>,>
+{
+	if let Ok(path,) = std::env::var(path,) {
+		// CARGO_TARGET_DIR specifies relative path to current directory
+		let path = PathBuf::from(path,);
+		// if path.is_relative() {
+		// 	let mut target_dir = std::env::current_dir()?;
+		// 	target_dir.push(path,);
+		// 	path = target_dir;
+		// }
+
+		PoisonGirlB::X(Some(path,),)
+	} else {
+		X(None,)
+	}
 }
