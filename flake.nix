@@ -60,8 +60,8 @@
             filter =
               path: type:
               (craneLib.filterCargoSources path type)
-              || lib.hasSuffix "/crates/kernel/aarch64-unknown-none-elf.json" path
-              || lib.hasSuffix "/crates/kernel/x86_64-unknown-none-elf.json" path
+              || lib.hasSuffix "/crates/kernel/aarch64-sugiura_hiromiti-poison_girl-elf.json" path
+              || lib.hasSuffix "/crates/kernel/x86_64-sugiura_hiromiti-poison_girl-elf.json" path
               || lib.hasInfix "/crates/kernel/resource/" path
               || lib.hasInfix "/crates/macro/status/impl/status_" path;
           };

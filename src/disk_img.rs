@@ -181,6 +181,8 @@ impl Xtask
 		let boot_loader = boot_loader_crate.build_artifact()?.path();
 		let boot_loader_file_name =
 			self.opts().arch.boot_file_name().to_string();
+
+		// TODO: copy kernel binary to disk image
 		let disk_img_bldr = DiskImageBuilder::new(
 			disk_img.clone(),
 			boot_loader,

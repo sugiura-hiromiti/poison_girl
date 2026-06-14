@@ -1,5 +1,5 @@
 [build]
-target = "aarch64-unknown-none-elf.json"
+target = "aarch64-sugiura_hiromiti-poison_girl-elf.json"
 
 [unstable]
 # build-std = ["core", "alloc"]
