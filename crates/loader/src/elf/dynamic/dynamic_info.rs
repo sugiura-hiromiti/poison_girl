@@ -1,7 +1,12 @@
-use crate::elf::{
-	ProgramHeader,
-	dynamic::{dynamic::Dynamic, dynmc::Dyn},
-	vm_to_offset,
+use {
+	crate::elf::{
+		ProgramHeader,
+		dynamic::{dynamic::Dynamic, dynmc::Dyn},
+		vm_to_offset,
+	},
+	poison_girl_no_std_error::{
+		ElfParseError, PoisonGirlB, X, Y, poison_girl_err,
+	},
 };
 
 #[derive(Default,)]
@@ -48,12 +53,16 @@ pub struct DynamicInfo
 
 impl DynamicInfo
 {
-	pub fn update(&mut self, phdrs: &[ProgramHeader], dynamic: &Dyn,)
+	pub fn update(
+		&mut self,
+		phdrs: &[ProgramHeader],
+		dynamic: &Dyn,
+	) -> PoisonGirlB<(),>
 	{
 		match dynamic.tag {
 			Dynamic::DT_RELA => {
 				self.relocation_addend =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+					required_vm_offset(phdrs, dynamic,)? as usize
 			}, // .rela.dyn
 			Dynamic::DT_RELASZ => {
 				self.relocation_addend_size = dynamic.val as usize
@@ -63,8 +72,7 @@ impl DynamicInfo
 				self.relocation_addend_entry_count = dynamic.val as usize
 			},
 			Dynamic::DT_REL => {
-				self.relocation =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+				self.relocation = required_vm_offset(phdrs, dynamic,)? as usize
 			}, /* .rel.dyn */
 			Dynamic::DT_RELSZ => self.relocation_size = dynamic.val as usize,
 			Dynamic::DT_RELENT => self.relocation_entry = dynamic.val,
@@ -77,12 +85,12 @@ impl DynamicInfo
 			Dynamic::DT_HASH => self.hash = vm_to_offset(phdrs, dynamic.val,),
 			Dynamic::DT_STRTAB => {
 				self.string_table_address =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+					required_vm_offset(phdrs, dynamic,)? as usize
 			},
 			Dynamic::DT_STRSZ => self.string_table_size = dynamic.val as usize,
 			Dynamic::DT_SYMTAB => {
 				self.symbol_table =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+					required_vm_offset(phdrs, dynamic,)? as usize
 			},
 			Dynamic::DT_SYMENT => {
 				self.symbol_table_entry = dynamic.val as usize
@@ -96,43 +104,41 @@ impl DynamicInfo
 			Dynamic::DT_PLTREL => self.plt_relocation_type = dynamic.val,
 			Dynamic::DT_JMPREL => {
 				self.jmp_relocation_address =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,) as usize
+					required_vm_offset(phdrs, dynamic,)? as usize
 			}, /* .rela.plt */
 			Dynamic::DT_VERDEF => {
-				self.version_definition_count =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.virsion_definition_table_address =
+					required_vm_offset(phdrs, dynamic,)?
 			},
 			Dynamic::DT_VERDEFNUM => {
-				self.version_definition_count =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.version_definition_count = dynamic.val
 			},
 			Dynamic::DT_VERNEED => {
 				self.version_need_table_address =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+					required_vm_offset(phdrs, dynamic,)?
 			},
 			Dynamic::DT_VERNEEDNUM => self.version_need_count = dynamic.val,
 			Dynamic::DT_VERSYM => {
 				self.version_symbol_table_address =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+					required_vm_offset(phdrs, dynamic,)?
 			},
 			Dynamic::DT_INIT => {
-				self.init_fn_address =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+				self.init_fn_address = required_vm_offset(phdrs, dynamic,)?
 			},
 			Dynamic::DT_FINI => {
 				self.finalization_fn_address =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+					required_vm_offset(phdrs, dynamic,)?
 			},
 			Dynamic::DT_INIT_ARRAY => {
 				self.init_fn_array_address =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+					required_vm_offset(phdrs, dynamic,)?
 			},
 			Dynamic::DT_INIT_ARRAYSZ => {
 				self.init_fn_array_len = dynamic.val as usize
 			},
 			Dynamic::DT_FINI_ARRAY => {
 				self.finalization_fn_array_address =
-					vm_to_offset(phdrs, dynamic.val,).unwrap_or(0,)
+					required_vm_offset(phdrs, dynamic,)?
 			},
 			Dynamic::DT_FINI_ARRAYSZ => {
 				self.finalization_fn_array_len = dynamic.val as usize
@@ -146,5 +152,48 @@ impl DynamicInfo
 			Dynamic::DT_TEXTREL => self.text_section_relocation = true,
 			_ => (),
 		}
+		X((),)
+	}
+}
+
+fn required_vm_offset(
+	phdrs: &[ProgramHeader],
+	dynamic: &Dyn,
+) -> PoisonGirlB<u64,>
+{
+	match vm_to_offset(phdrs, dynamic.val,) {
+		Some(offset,) => X(offset,),
+		None => Y(poison_girl_err!(ElfParseError::InvalidDynamicAddress {
+			tag:     dynamic.tag,
+			address: dynamic.val,
+		}),),
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*, crate::elf::program_header::ProgramHeaderType,
+		poison_girl_no_std_error::Y,
+	};
+
+	#[test]
+	fn invalid_required_dynamic_address_returns_error()
+	{
+		let mut info = DynamicInfo::default();
+		let phdrs = [ProgramHeader {
+			ty:               ProgramHeaderType::Load,
+			flags:            0,
+			offset:           0x40,
+			virtual_address:  0x1000,
+			physical_address: 0x1000,
+			file_size:        0x100,
+			memory_size:      0x100,
+			align:            0,
+		},];
+		let dynamic = Dyn { tag: Dynamic::DT_STRTAB, val: 0x3000, };
+
+		assert!(matches!(info.update(&phdrs, &dynamic,), Y(_)));
 	}
 }

@@ -157,6 +157,11 @@ pub enum ElfParseError
 		min_chain:     usize,
 		bloom_size:    usize,
 	},
+	InvalidDynamicAddress
+	{
+		tag:     u64,
+		address: u64,
+	},
 }
 
 #[derive(Debug,)]
@@ -178,6 +183,7 @@ pub enum ParserError {}
 pub enum GraphicError
 {
 	InvalidCoordinate,
+	InvalidColor,
 }
 
 #[macro_export]

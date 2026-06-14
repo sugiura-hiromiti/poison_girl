@@ -1,3 +1,5 @@
+#![feature(exit_status_error)]
+
 use {
 	clap::{Parser, Subcommand},
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
@@ -263,7 +265,8 @@ impl Arch
 
 pub fn host_tuple_by_rustc() -> PoisonGirlB<String,>
 {
-	let target = Command::new("rustc",).arg("-vV",).output()?.stdout;
+	let target =
+		checked_stdout(Command::new("rustc",).arg("-vV",), "rustc -vV",)?;
 	let target = String::from_utf8(target,)?;
 	target
 		.lines()
@@ -277,10 +280,25 @@ pub fn host_tuple_by_rustc() -> PoisonGirlB<String,>
 		.reshape(poison_girl_err!(HostTupleNotFound),)
 }
 
+fn checked_stdout(
+	command: &mut Command,
+	context: &str,
+) -> PoisonGirlB<Vec<u8,>,>
+{
+	let output = command.output()?;
+	if let Err(status,) = output.status.exit_ok() {
+		let stderr = String::from_utf8_lossy(&output.stderr,);
+		return poison_girl_dev_error::Y(poison_girl_err!(format!(
+			"{context} failed with {status}: {stderr}"
+		)),);
+	}
+	X(output.stdout,)
+}
+
 #[cfg(test)]
 mod tests
 {
-	use super::*;
+	use {super::*, poison_girl_dev_error::Y};
 
 	/// defaultが効いてるかも確認できるテスト
 	#[test]
@@ -294,5 +312,16 @@ mod tests
 		assert!(opts.arch.is_aarch_64());
 		assert!(opts.command.is_run());
 		assert!(!opts.lock_deps);
+	}
+
+	#[test]
+	fn checked_stdout_fails_on_non_zero_status()
+	{
+		let rslt = checked_stdout(
+			Command::new("sh",).args(["-c", "printf stderr-msg >&2; exit 7",],),
+			"test command",
+		);
+
+		assert!(matches!(rslt, Y(_)));
 	}
 }

@@ -68,10 +68,10 @@ macro_rules! def {
 		let rslt = poison_girl_proc_macro_impl::$name($($param,)+);
 		if let Some(err) = rslt.err() {
 			let msg = format!("{err:?}");
-			return match format!("compile_error!({msg:?});").parse() {
-				Ok(tokens) => tokens,
-				Err(_,) => proc_macro::TokenStream::new(),
-			};
+			return quote::quote! {
+				compile_error!(#msg);
+			}
+			.into();
 		}
 
 		rslt.notation().iter().for_each(|d| match d {
@@ -89,10 +89,10 @@ macro_rules! def {
 			Some(value,) => value.into(),
 			None => {
 				let msg = "proc macro returned neither value nor error";
-				match format!("compile_error!({msg:?});").parse() {
-					Ok(tokens) => tokens,
-					Err(_,) => proc_macro::TokenStream::new(),
+				quote::quote! {
+					compile_error!(#msg);
 				}
+				.into()
 			},
 		}
 	};

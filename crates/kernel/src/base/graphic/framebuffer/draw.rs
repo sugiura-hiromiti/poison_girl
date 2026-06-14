@@ -158,7 +158,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 	{
 		let pos = self.pos(coord,);
 		let pxl = self.slice_mut(pos, 3,);
-		let color = self.drawer.color_repr(color,);
+		let color = self.drawer.try_color_repr(color,)?;
 		pxl[0] = color[0];
 		pxl[1] = color[1];
 		pxl[2] = color[2];
@@ -223,7 +223,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 
 		// Convert color once for performance optimization
 		// This reduces pixel format determination to just once per rectangle
-		let color = self.drawer.color_repr(color,);
+		let color = self.drawer.try_color_repr(color,)?;
 		let mut coord = (left_top.x(), left_top.y(),);
 
 		// Fill rectangle row by row
@@ -301,7 +301,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		let height = right_bottom.y() - left_top.y() - 1;
 
 		// Convert color once for performance
-		let color = self.drawer.color_repr(color,);
+		let color = self.drawer.try_color_repr(color,)?;
 		let mut coord = (left_top.x(), left_top.y(),);
 
 		// Draw top horizontal line

@@ -1,6 +1,16 @@
+use poison_girl_no_std_error::{
+	GraphicError, PoisonGirlB, X, Y, poison_girl_err,
+};
+
 pub trait PixelFormat: PixFmtNew
 {
 	fn color_repr(&self, color: &impl ColorRpr,) -> [u8; 3];
+
+	fn try_color_repr(&self, color: &impl ColorRpr,) -> PoisonGirlB<[u8; 3],>
+	{
+		let color = color.try_to_color()?;
+		X(self.color_repr(&color,),)
+	}
 }
 
 pub const trait PixFmtNew
@@ -92,13 +102,34 @@ pub trait ColorRpr
 	{
 		Color { red: self.red(), green: self.green(), blue: self.blue(), }
 	}
+	fn try_to_color(&self,) -> PoisonGirlB<Color,>
+	{
+		X(self.to_color(),)
+	}
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq,)]
 pub struct Color
 {
 	red:   u8,
 	green: u8,
 	blue:  u8,
+}
+
+impl Color
+{
+	pub fn try_from_hex(value: &str,) -> PoisonGirlB<Self,>
+	{
+		if value.len() != 7 || !value.starts_with('#',) {
+			return Y(poison_girl_err!(GraphicError::InvalidColor),);
+		}
+
+		X(Self {
+			red:   try_hex_component(value, 1, 3,)?,
+			green: try_hex_component(value, 3, 5,)?,
+			blue:  try_hex_component(value, 5, 7,)?,
+		},)
+	}
 }
 
 impl ColorRpr for Color
@@ -199,6 +230,23 @@ impl ColorRpr for &str
 	{
 		todo!()
 	}
+
+	fn try_to_color(&self,) -> PoisonGirlB<Color,>
+	{
+		Color::try_from_hex(self,)
+	}
+}
+
+fn try_hex_component(value: &str, start: usize, end: usize,)
+-> PoisonGirlB<u8,>
+{
+	match value
+		.get(start..end,)
+		.and_then(|hex| u8::from_str_radix(hex, 16,).ok(),)
+	{
+		Some(component,) => X(component,),
+		None => Y(poison_girl_err!(GraphicError::InvalidColor),),
+	}
 }
 
 fn hex_component(value: &str, start: usize, end: usize,) -> u8
@@ -217,5 +265,35 @@ impl From<(u8, u8, u8,),> for Color
 	fn from(value: (u8, u8, u8,),) -> Self
 	{
 		Color { red: value.0, green: value.1, blue: value.2, }
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		poison_girl_no_std_error::{X, Y},
+	};
+
+	#[test]
+	fn invalid_short_color_hex_returns_error()
+	{
+		assert!(matches!(Color::try_from_hex("#12345",), Y(_)));
+	}
+
+	#[test]
+	fn invalid_color_hex_character_returns_error()
+	{
+		assert!(matches!(Color::try_from_hex("#12345z",), Y(_)));
+	}
+
+	#[test]
+	fn valid_color_hex_parses_components()
+	{
+		assert!(matches!(
+			Color::try_from_hex("#0a1Bff",),
+			X(Color { red: 0x0a, green: 0x1b, blue: 0xff, })
+		));
 	}
 }

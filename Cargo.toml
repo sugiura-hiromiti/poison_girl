@@ -67,6 +67,7 @@ ureq = { version = "*", features = ["cookies"] }
 hadris-fat = { version = "*", features = ["sync", "write"] }
 
 [workspace.lints.clippy]
+let_underscore_must_use = "warn"
 tabs_in_doc_comments = "allow"
 mut_from_ref = "allow"
 # panicing APIs
@@ -76,6 +77,9 @@ panic = "deny"
 todo = "deny"
 unimplemented = "deny"
 unreachable = "deny"
+
+[workspace.lints.rust]
+unused_must_use = "warn"
 
 # [profile.dev.package.poison_girl]
 # opt-level = 3

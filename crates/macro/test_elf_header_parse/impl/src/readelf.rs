@@ -112,10 +112,11 @@ impl Property for Vec<&str,>
 pub fn readelf_h() -> Rslt<ReadElfH,>
 {
 	// Execute readelf command to get header information
-	let header_info = Command::new("readelf",)
-		.args(["-h", "target/poison_girl_kernel.elf",],)
-		.output()?
-		.stdout;
+	let header_info = checked_stdout(
+		Command::new("readelf",)
+			.args(["-h", "target/poison_girl_kernel.elf",],),
+		"readelf -h target/poison_girl_kernel.elf",
+	)?;
 
 	// Convert command output to string
 	let header_info = String::from_utf8(header_info,)?;
@@ -195,7 +196,36 @@ pub fn readelf_h() -> Rslt<ReadElfH,>
 	},)?;
 
 	// Clean up the parsed fields by removing extra whitespace and comments
-	header.fix();
+	header.fix()?;
 
 	Rslt::new(header,)
+}
+
+fn checked_stdout(command: &mut Command, context: &str,) -> Rslt<Vec<u8,>,>
+{
+	let output = command.output()?;
+	if let Err(status,) = output.status.exit_ok() {
+		let stderr = String::from_utf8_lossy(&output.stderr,);
+		return Rslt::new_err(format!(
+			"{context} failed with {status}: {stderr}"
+		),);
+	}
+	Rslt::new(output.stdout,)
+}
+
+#[cfg(test)]
+mod tests
+{
+	use super::*;
+
+	#[test]
+	fn checked_stdout_fails_on_non_zero_status()
+	{
+		let rslt = checked_stdout(
+			Command::new("sh",).args(["-c", "printf stderr-msg >&2; exit 7",],),
+			"test command",
+		);
+
+		assert!(rslt.has_err());
+	}
 }

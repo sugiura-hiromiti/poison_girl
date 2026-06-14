@@ -1,5 +1,7 @@
 use {
-	super::{Handle, image_handle, table::boot_services},
+	super::{
+		Handle, drop_uefi_cleanup_result, image_handle, table::boot_services,
+	},
 	crate::{
 		guid,
 		raw::{
@@ -284,7 +286,7 @@ impl<P: Protocol,> Drop for ProtocolInterface<P,>
 	fn drop(&mut self,)
 	{
 		if let X(bt,) = boot_services() {
-			let _rslt = unsafe {
+			let rslt = unsafe {
 				(bt.close_protocol)(
 					self.handles.handle_ptr(),
 					&P::GUID,
@@ -293,6 +295,7 @@ impl<P: Protocol,> Drop for ProtocolInterface<P,>
 				)
 			}
 			.x_or();
+			drop_uefi_cleanup_result(rslt,);
 		}
 	}
 }

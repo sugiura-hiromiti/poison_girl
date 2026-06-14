@@ -1,5 +1,5 @@
 use {
-	super::table::boot_services,
+	super::{drop_uefi_cleanup_result, table::boot_services},
 	crate::raw::{
 		service::BootServices,
 		types::{
@@ -46,7 +46,7 @@ unsafe impl GlobalAlloc for LoaderAllocator
 		if let X(bs,) = boot_services()
 			&& let Some(ptr,) = unsafe { ptr.as_mut() }
 		{
-			let _ = bs.free_pool(ptr,);
+			drop_uefi_cleanup_result(bs.free_pool(ptr,),);
 		}
 	}
 }

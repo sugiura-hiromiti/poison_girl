@@ -65,6 +65,13 @@ pub mod service;
 /// System table access and management
 pub mod table;
 
+pub fn drop_uefi_cleanup_result<T,>(result: PoisonGirlB<T,>,)
+{
+	match result {
+		X(_,) | Y(_,) => (),
+	}
+}
+
 /// Global storage for the UEFI image handle
 ///
 /// This atomic pointer stores the image handle for the current UEFI
@@ -185,12 +192,7 @@ impl BootServices
 		let mem_ty = MemoryType::BOOT_SERVICES_DATA;
 
 		let mut buf = MemoryMapBackingMemory::new(mem_ty,)?;
-		let status =
-			unsafe { self.try_exit_boot_services(buf.as_mut_slice(),)? };
-
-		if !status.is_success() {
-			todo!("failed to exit boot service. reset the machine");
-		}
+		unsafe { self.try_exit_boot_services(buf.as_mut_slice(),)? }.x_or()?;
 		X((),)
 	}
 

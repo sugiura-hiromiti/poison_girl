@@ -121,6 +121,15 @@ impl From<&str,> for PoisonGirlError
 	}
 }
 
+impl From<String,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: String,) -> Self
+	{
+		Self { loc: Location::caller(), src: DevError::Todo(value,), }
+	}
+}
+
 impl From<toml::ser::Error,> for PoisonGirlError
 {
 	#[track_caller]

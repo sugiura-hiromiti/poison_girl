@@ -1,8 +1,7 @@
-use {super::table::boot_services, poison_girl_no_std_error::X};
+use {super::table::boot_services, poison_girl_no_std_error::PoisonGirlB};
 
-pub fn exit_boot_services()
+pub fn exit_boot_services() -> PoisonGirlB<(),>
 {
-	if let X(bs,) = boot_services() {
-		let _ = bs.exit_boot_services();
-	}
+	let bs = boot_services()?;
+	bs.exit_boot_services()
 }

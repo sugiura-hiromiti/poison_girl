@@ -6,6 +6,7 @@ use {
 		types::{Boolean, Status, UnsafeHandle},
 	},
 	core::ptr,
+	poison_girl_no_std_error::PoisonGirlB,
 };
 
 impl BootServices
@@ -18,7 +19,7 @@ impl BootServices
 		driver_image_handle: Option<Handle,>,
 		remaining_device_path: Option<DevicePathProtocol,>,
 		recursive: Boolean,
-	) -> Status
+	) -> PoisonGirlB<Status,>
 	{
 		let driver_image_handle = match driver_image_handle {
 			Some(h,) => h.as_ptr(),
@@ -37,5 +38,6 @@ impl BootServices
 				recursive,
 			)
 		}
+		.x_or()
 	}
 }

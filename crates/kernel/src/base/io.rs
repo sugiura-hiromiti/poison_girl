@@ -406,6 +406,11 @@ macro_rules! print {
 /// ```
 pub fn print(args: core::fmt::Arguments,)
 {
+	drop_fmt_result(try_print(args,),);
+}
+
+fn try_print(args: core::fmt::Arguments,) -> core::fmt::Result
+{
 	use core::fmt::Write;
 	if let Some(console,) = unsafe {
 		// SAFETY: We're obtaining a mutable reference to the static CONSOLE
@@ -418,7 +423,15 @@ pub fn print(args: core::fmt::Arguments,)
 			as *mut TextBuf<(usize, usize,),>)
 			.as_mut()
 	} {
-		let _ = console.write_fmt(args,);
+		return console.write_fmt(args,);
+	}
+	Ok((),)
+}
+
+fn drop_fmt_result(result: core::fmt::Result,)
+{
+	match result {
+		Ok((),) | Err(_,) => (),
 	}
 }
 

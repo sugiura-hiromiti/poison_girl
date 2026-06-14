@@ -66,7 +66,7 @@ impl Dynamic
 
 				let mut info = DynamicInfo::default();
 				for dynamic in &dyns {
-					info.update(program_headers, dynamic,);
+					info.update(program_headers, dynamic,)?;
 				}
 
 				return X(Dynamic(Some(DynamicInner { dyns, info, },),),);

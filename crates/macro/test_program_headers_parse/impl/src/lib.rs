@@ -1,4 +1,5 @@
 #![feature(iter_array_chunks)]
+#![feature(exit_status_error)]
 
 use {
 	poison_girl_dev_cargo::{Arch, BuildMode, Opts},
@@ -177,11 +178,10 @@ fn readelf_l_out(arch: String, build_mode: String,) -> Rslt<Vec<String,>,>
 	);
 	let kernel_bin_path = kernel_crate.build_artifact()?.path();
 
-	let program_headers_info = Command::new("readelf",)
-		.arg("-l",)
-		.arg(kernel_bin_path,)
-		.output()?
-		.stdout;
+	let program_headers_info = checked_stdout(
+		Command::new("readelf",).arg("-l",).arg(kernel_bin_path,),
+		"readelf -l",
+	)?;
 	let program_headers_info = String::from_utf8(program_headers_info,)?;
 	let program_headers_info: Vec<_,> = program_headers_info
 		.split("Program Headers:",)
@@ -189,6 +189,35 @@ fn readelf_l_out(arch: String, build_mode: String,) -> Rslt<Vec<String,>,>
 		.collect();
 
 	Rslt::new(program_headers_info,)
+}
+
+fn checked_stdout(command: &mut Command, context: &str,) -> Rslt<Vec<u8,>,>
+{
+	let output = command.output()?;
+	if let Err(status,) = output.status.exit_ok() {
+		let stderr = String::from_utf8_lossy(&output.stderr,);
+		return Rslt::new_err(format!(
+			"{context} failed with {status}: {stderr}"
+		),);
+	}
+	Rslt::new(output.stdout,)
+}
+
+#[cfg(test)]
+mod command_tests
+{
+	use super::*;
+
+	#[test]
+	fn checked_stdout_fails_on_non_zero_status()
+	{
+		let rslt = checked_stdout(
+			Command::new("sh",).args(["-c", "printf stderr-msg >&2; exit 7",],),
+			"test command",
+		);
+
+		assert!(rslt.has_err());
+	}
 }
 
 fn program_headers_count(info: &str,) -> Rslt<usize,>

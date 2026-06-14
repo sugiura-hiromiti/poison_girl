@@ -23,11 +23,24 @@ macro_rules! println {
 
 pub fn print(args: core::fmt::Arguments,)
 {
+	drop_fmt_result(try_print(args,),);
+}
+
+fn try_print(args: core::fmt::Arguments,) -> core::fmt::Result
+{
 	use core::fmt::Write;
 	if let X(st,) = system_table()
 		&& let Some(stdout,) = unsafe { st.as_ref().stdout.as_mut() }
 	{
-		let _ = stdout.write_fmt(args,);
+		return stdout.write_fmt(args,);
+	}
+	Ok((),)
+}
+
+fn drop_fmt_result(result: core::fmt::Result,)
+{
+	match result {
+		Ok((),) | Err(_,) => (),
 	}
 }
 

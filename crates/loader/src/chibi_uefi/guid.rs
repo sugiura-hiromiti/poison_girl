@@ -1,5 +1,6 @@
 use {
 	crate::raw::types::Guid,
+	alloc::vec::Vec,
 	poison_girl_no_std_error::{GuidError, PoisonGirlB, X, Y, poison_girl_err},
 };
 
@@ -16,11 +17,7 @@ impl Guid
 	#[track_caller]
 	pub fn gen_from_str(s: impl AsRef<str,>,) -> PoisonGirlB<Self,>
 	{
-		let mut s = s
-			.as_ref()
-			.chars()
-			.filter_map(|c| Hex::try_from(c,).ok(),)
-			.map(|h| h as u8,);
+		let mut s = guid_hexes(s.as_ref(),)?.into_iter();
 		let mut time_low = next_hex_chunk::<4, _,>(&mut s,)?;
 		time_low.reverse();
 		let mut time_mid = next_hex_chunk::<2, _,>(&mut s,)?;
@@ -32,6 +29,10 @@ impl Guid
 		let clock_seq_low = next_hex(&mut s,)?;
 		let mut node = next_hex_chunk::<6, _,>(&mut s,)?;
 		node.reverse();
+
+		if s.next().is_some() {
+			return Y(poison_girl_err!(GuidError::InvalidLength),);
+		}
 
 		X(Self::new(
 			time_low,
@@ -66,6 +67,21 @@ impl Guid
 			node,
 		)
 	}
+}
+
+fn guid_hexes(s: &str,) -> PoisonGirlB<Vec<u8,>,>
+{
+	let mut hexes = Vec::with_capacity(32,);
+	for c in s.chars() {
+		if c == '-' {
+			continue;
+		}
+		match Hex::try_from(c,) {
+			Ok(hex,) => hexes.push(hex as u8,),
+			Err(err,) => return Y(poison_girl_err!(err),),
+		}
+	}
+	X(hexes,)
 }
 
 fn next_hex(hexes: &mut impl Iterator<Item = u8,>,) -> PoisonGirlB<u8,>
@@ -175,6 +191,31 @@ impl TryFrom<char,> for Hex
 			},
 		};
 		Ok(code,)
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		poison_girl_no_std_error::{X, Y},
+	};
+
+	#[test]
+	fn invalid_guid_character_returns_error()
+	{
+		let guid = Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723_",);
+
+		assert!(matches!(guid, Y(_)));
+	}
+
+	#[test]
+	fn valid_guid_with_hyphens_parses()
+	{
+		let guid = Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723b",);
+
+		assert!(matches!(guid, X(_)));
 	}
 }
 

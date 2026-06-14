@@ -77,7 +77,10 @@ pub extern "efiapi" fn efi_image_entry_point(
 ) -> Status
 {
 	// Initialize UEFI environment and connect devices
-	init(image_handle, system_table,);
+	if let Y(e,) = init(image_handle, system_table,) {
+		println!("error arise while initializing loader: {e:?}");
+		return Status::EFI_LOAD_ERROR;
+	}
 
 	// Load kernel and prepare for execution
 	let (kernel_entry, device_tree_ptr,) = match app() {
@@ -89,7 +92,10 @@ pub extern "efiapi" fn efi_image_entry_point(
 	};
 
 	// Exit UEFI boot services - point of no return
-	exit_boot_services();
+	if let Y(e,) = exit_boot_services() {
+		println!("error arise while exiting boot services: {e:?}");
+		return Status::EFI_LOAD_ERROR;
+	}
 
 	// Transfer control to kernel
 	exec_kernel(kernel_entry, device_tree_ptr,);

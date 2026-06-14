@@ -48,49 +48,50 @@ macro_rules! on_error {
 	}};
 }
 
-pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,)
+pub fn init(
+	image_handle: UnsafeHandle,
+	syst: *const SystemTable,
+) -> PoisonGirlB<(),>
 {
 	// Clear console output for clean startup
-	clear_console(syst,);
+	clear_console(syst,)?;
 
 	// Initialize UEFI table access
 	chibi_uefi::table::set_system_table_panicking(syst,);
 	chibi_uefi::set_image_handle_panicking(image_handle,);
 
 	// Connect all available devices
-	let X(bs,) = boot_services() else {
-		return;
-	};
+	let bs = boot_services()?;
 
 	// UEFI only installs DevicePathProtocol on devices that are fully connected
 	// `AllHandles` is the only way to find unconnected devices
-	let X(handles,) =
-		(unsafe { bs.locate_handle_buffer(HandleSearchType::AllHandles,) })
-	else {
-		return;
-	};
+	let handles =
+		unsafe { bs.locate_handle_buffer(HandleSearchType::AllHandles,)? };
 
-	// Connect each device, ignoring connection errors
-	handles.iter().for_each(|handle| {
-		// Ignore errors from connect_controller intentionally
+	for handle in handles {
 		unsafe {
 			bs.connect_controller(
 				*handle,
 				None,
 				None,
 				raw::types::Boolean::TRUE,
-			)
+			)?
 		};
-	},);
+	}
+
+	X((),)
 }
 
-fn clear_console(syst: *const SystemTable,)
+fn clear_console(syst: *const SystemTable,) -> PoisonGirlB<(),>
 {
-	if let Some(syst,) = unsafe { syst.as_ref() }
-		&& let Some(stdout,) = unsafe { syst.stdout.as_mut() }
-	{
-		let _ = stdout.clear();
-	}
+	let Some(syst,) = (unsafe { syst.as_ref() }) else {
+		return Y(poison_girl_err!(UefiError::Custom("system table is null")),);
+	};
+	let Some(stdout,) = (unsafe { syst.stdout.as_mut() }) else {
+		return Y(poison_girl_err!(UefiError::Custom("stdout is null")),);
+	};
+	stdout.clear()?;
+	X((),)
 }
 
 fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,>

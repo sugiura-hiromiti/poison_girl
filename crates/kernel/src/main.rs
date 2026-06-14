@@ -10,7 +10,7 @@ use {
 	poison_girl_no_std::{
 		bridge::device_tree::DeviceTreeAddress, idle_cpu_forever, wfe,
 	},
-	poison_girl_no_std_error::{PoisonGirlB, X},
+	poison_girl_no_std_error::{PoisonGirlB, X, Y},
 };
 
 cfg_if! {
@@ -31,7 +31,10 @@ cfg_if! {
 			init();
 
 			// Launch the main kernel application
-			let _ = app();
+			if let Y(e,) = app() {
+				println!("error arise while executing kernel application: {e:?}");
+				idle_cpu_forever();
+			}
 
 			// Enter wait-for-interrupt state for power efficiency
 			// This stops the CPU until an interrupt occurs, conserving power
