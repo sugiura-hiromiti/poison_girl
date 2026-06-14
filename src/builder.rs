@@ -19,6 +19,7 @@ use {
 		decl_manage::{
 			PoisonGirlCargoInterface,
 			crate_::{CrateAction, PoisonGirlCrateChart},
+			workspace::WorkspaceAction,
 		},
 	},
 };
@@ -97,23 +98,26 @@ impl Xtask
 				Some(CheckKind::Clippy,) => self.clippy(),
 				None => self.check(),
 			},
-			CliCommand::Fmt => self.fmt(),
 			CliCommand::Fixture => self.fixture(),
 			CliCommand::Fix => self.fix(),
 		}
 	}
 
+	/// this is workspace build.
+	/// not a package build
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
 		let args = self.opts().as_cargo_opt()?;
-		self.ws().build_with(&args,)
+		self.ws().build_at_with(PoisonGirlCrateChart::KERNEL, &args,)?;
+		self.ws().build_at_with(PoisonGirlCrateChart::LOADER, &args,)?;
 	}
 
+	/// this is workspace run.
+	/// not a package run
 	fn run(&self,) -> PoisonGirlB<(),>
 	{
 		self.build()?;
-
-		todo!()
+		self.qemu_run()
 	}
 
 	fn check(&self,) -> PoisonGirlB<(),>
@@ -135,7 +139,6 @@ impl Xtask
 
 	fn clippy(&self,) -> PoisonGirlB<(),>
 	{
-		todo!()
 	}
 
 	fn fixture(&self,) -> PoisonGirlB<(),>
@@ -148,13 +151,9 @@ impl Xtask
 		todo!()
 	}
 
-	fn fmt(&self,) -> PoisonGirlB<(),>
-	{
-		todo!()
-	}
-
 	fn fix(&self,) -> PoisonGirlB<(),>
 	{
-		todo!()
+		let args = self.opts().as_cargo_opt()?;
+		self.ws().cargo_xxx_with("fix", &args,)
 	}
 }

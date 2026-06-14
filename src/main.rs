@@ -42,15 +42,5 @@ fn main() -> PoisonGirlB<(),>
 
 	let app = || poison_girl.runner();
 
-	match app() {
-		X(_,) => println!("\n\nprogram run successfully\nexit"),
-		Y(e,) => {
-			eprintln!(
-				"{} error msg:\n```rust\n{e:#?}\n```",
-				"program panicked".red().bold()
-			)
-		},
-	}
-
-	X((),)
+	app()
 }

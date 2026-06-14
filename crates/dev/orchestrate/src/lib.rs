@@ -101,8 +101,7 @@ impl AsCargoOpt for Opts
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		let Self { command, build_mode, feature_flags, lock_deps, .. } = self;
-		let Some(command,) = command.as_cargo_opt() else { return X(vec![],) };
+		let Self { build_mode, feature_flags, lock_deps, .. } = self;
 		let build_mode = build_mode.as_cargo_opt();
 		let feature_flags = feature_flags
 			.iter()
@@ -115,8 +114,8 @@ impl AsCargoOpt for Opts
 		let lock_deps =
 			if *lock_deps { Some("--locked".to_string(),) } else { None };
 
-		X(std::iter::once(command,)
-			.chain(build_mode,)
+		X(build_mode
+			.into_iter()
 			.chain(feature_flags,)
 			.chain(lock_deps,)
 			.collect(),)

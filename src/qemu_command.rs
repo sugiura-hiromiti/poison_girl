@@ -19,6 +19,7 @@ impl Xtask
 {
 	pub fn qemu_run(&self,) -> PoisonGirlB<(),>
 	{
+		self.build_boot_disk_img()?;
 		Command::new(self.qemu(),).args(self.qemu_args()?,).run()
 	}
 
@@ -60,7 +61,7 @@ impl Xtask
 		// args.push("-drive".to_string(),);
 		// args.push("format=raw,file=fat:rw:",);
 
-		let block_device = block_device(&self.build_boot_disk_img()?,);
+		let block_device = block_device(&self.disk_img_path()?,);
 		args.extend(block_device,);
 
 		// setting the boot menu timeout to zero particularly speeds up the boot
@@ -105,7 +106,17 @@ fn basic_args(arch: Arch,) -> Vec<String,>
 			// // keep using ramfb until implementing Linux-style driver
 			// "ramfb".to_string(),
 		],
-		Arch::Riscv64 => todo!(),
+		Arch::Riscv64 => vec![
+			// generic RISC-V virtual environment
+			"-machine".to_string(),
+			"virt".to_string(),
+			// generic 64-bit RISC-V cpu
+			"-cpu".to_string(),
+			"rv64".to_string(),
+			// graphics device
+			"-device".to_string(),
+			"virtio-gpu-pci".to_string(),
+		],
 		// Architecture::X86_64 => {
 		// 	vec![
 		// 		"-machine".to_string(),

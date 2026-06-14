@@ -161,7 +161,7 @@ impl DiskImageBuilder
 const fn check_volume_label(label: &str,) -> &str
 {
 	if label.len() > 11 {
-		panic!()
+		return "POISON GIRL";
 	}
 
 	label
@@ -194,7 +194,7 @@ impl Xtask
 
 	/// 起動用のディスクイメージへのパスを返す
 	/// NOTE: 存在確認やセットアップはこの関数の責務ではない
-	fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
+	pub(crate) fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
 	{
 		X(self.asset_dir()?.join(DISK_IMG_NAME,),)
 	}

@@ -4,7 +4,7 @@ use {
 	poison_girl_dev_error::{
 		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
-	std::{path::PathBuf, process::Command, str::FromStr},
+	std::{ffi::OsStr, path::PathBuf, process::Command, str::FromStr},
 	strum_macros::Display,
 };
 
@@ -30,6 +30,14 @@ impl Opts
 	pub fn new() -> Self
 	{
 		Cli::parse().to_opts()
+	}
+}
+
+impl<'a,> AsRef<[&'a OsStr],> for Opts
+{
+	fn as_ref(&self,) -> &[&'a OsStr]
+	{
+		todo!()
 	}
 }
 
@@ -102,8 +110,8 @@ pub enum CliCommand
 		#[command(subcommand)]
 		kind: Option<CheckKind,>,
 	},
-	Fmt,
 	Fixture,
+	/// cargo fix
 	Fix,
 }
 

@@ -5,7 +5,7 @@ use {
 			Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
 		},
 	},
-	poison_girl_dev_cargo::host_tuple_by_rustc,
+	poison_girl_dev_cargo::{CliCommand, Opts, host_tuple_by_rustc},
 	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{
 		Container, PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X,
@@ -40,8 +40,10 @@ pub trait CrateSurvey: CrateInfo
 		let path = self.path();
 		X(search_upstream_at(&path, CARGO_MANIFEST,)?.is_some(),)
 	}
+
 	fn go_parent(&mut self,) -> PoisonGirlB<(),>;
-	fn fix(&self,) -> PoisonGirlB<(),>
+
+	fn fix_manifest(&self,) -> PoisonGirlB<(),>
 	{
 		let mut manifest = self.toml()?;
 		if let Some(pkg,) = manifest.get_mut("package",)
@@ -57,6 +59,7 @@ pub trait CrateSurvey: CrateInfo
 		};
 		X((),)
 	}
+
 	fn land_on(&mut self, on: impl CrateCalled,);
 }
 
@@ -67,62 +70,71 @@ pub trait CrateAction: CrateInfo
 
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("build",)
+		self.cargo_xxx(CliCommand::Build,)
 	}
+
 	fn test(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("test",)
+		self.cargo_xxx(CliCommand::Test,)
 	}
+
 	fn run(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("run",)
+		self.cargo_xxx(CliCommand::Run,)
 	}
+
 	fn check(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("check",)
+		self.cargo_xxx(CliCommand::Check { kind: None, },)
 	}
-	fn format(&self,) -> PoisonGirlB<(),>
+
+	fn cargo_xxx(&self, cmd: CliCommand,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("fmt",)
-	}
-	fn cargo_xxx(&self, cmd: impl AsRef<OsStr,>,) -> PoisonGirlB<(),>
-	{
-		self.cargo_xxx_with(cmd, &["",],)
+		self.cargo_xxx_with(cmd, &Opts::default(),)
 	}
 
 	// actions for all packages with specific options
 
-	fn build_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
-	{
-		self.cargo_xxx_with("build", opt,)
-	}
-	fn test_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
-	{
-		self.cargo_xxx_with("test", opt,)
-	}
-	fn run_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
-	{
-		self.cargo_xxx_with("run", opt,)
-	}
-	fn ckeck_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
-	{
-		self.cargo_xxx_with("check", opt,)
-	}
-	fn fmt_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
-	{
-		self.cargo_xxx_with("fmt", opt,)
-	}
-	fn cargo_xxx_with(
+	fn build_with<'a,>(
 		&self,
-		cmd: impl AsRef<OsStr,>,
-		opt: &[impl AsRef<OsStr,>],
+		opt: &impl AsRef<[&'a OsStr],>,
+	) -> PoisonGirlB<(),>
+	{
+		self.cargo_xxx_with(CliCommand::Build, opt,)
+	}
+
+	fn test_with<'a,>(
+		&self, opt: &impl AsRef<[&'a OsStr],>,
+	) -> PoisonGirlB<(),>
+	{
+		self.cargo_xxx_with(CliCommand::Test, opt,)
+	}
+
+	fn run_with<'a,>(&self, opt: &impl AsRef<[&'a OsStr],>,)
+	-> PoisonGirlB<(),>
+	{
+		self.cargo_xxx_with(CliCommand::Run, opt,)
+	}
+
+	fn ckeck_with<'a,>(
+		&self,
+		opt: &impl AsRef<[&'a OsStr],>,
+	) -> PoisonGirlB<(),>
+	{
+		self.cargo_xxx_with(CliCommand::Check { kind: None, }, opt,)
+	}
+
+	fn cargo_xxx_with<'a,>(
+		&self,
+		cmd: CliCommand,
+		opt: &impl AsRef<[&'a OsStr],>,
 	) -> PoisonGirlB<(),>
 	{
 		let mut cargo = Command::new("cargo",);
-		let cargo = cargo.arg(cmd,);
+		let cargo = cargo.arg(cmd.as_ref(),);
 
 		let opt: Vec<_,> =
-			opt.iter().filter(|s| !s.as_ref().is_empty(),).collect();
+			opt.as_ref().iter().filter(|s| !s.as_ref().is_empty(),).collect();
 		if !opt.is_empty() {
 			cargo.args(opt,);
 		}
@@ -142,6 +154,7 @@ pub trait CrateInfo: CrateCalled
 			None => X(false,),
 		}
 	}
+
 	fn is_workspace(&self,) -> PoisonGirlB<bool,>
 	{
 		let pkg_sec = self.toml()?;
@@ -151,6 +164,7 @@ pub trait CrateInfo: CrateCalled
 			None => X(false,),
 		}
 	}
+
 	fn is_pkg_and_ws(&self,) -> PoisonGirlB<bool,>
 	{
 		X(self.is_package()? && self.is_workspace()?,)
