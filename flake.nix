@@ -147,8 +147,8 @@
             workspace_doc = craneLib.cargoDoc (
               workspaceArgs
               // {
-                cargoArtifacts = workspaceDeps;
                 cargoDocExtraArgs = "--no-deps --document-private-items";
+					 RUSTDOCFLAGS="-Z unstable-options --enable-index-page";
               }
             );
             workspace_fmt = craneLib.cargoFmt {
