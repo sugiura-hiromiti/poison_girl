@@ -45,7 +45,7 @@ use {
 		ptr::NonNull,
 		sync::atomic::{AtomicPtr, Ordering},
 	},
-	poison_girl_no_std_error::Container,
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, Y, poison_girl_err},
 };
 
 /// Console input/output operations
@@ -180,27 +180,31 @@ impl BootServices
 	/// This is a one-way transition - once boot services are exited, they
 	/// cannot be re-entered. This should only be called when ready to
 	/// transfer control to the kernel.
-	pub fn exit_boot_services(&self,)
+	pub fn exit_boot_services(&self,) -> PoisonGirlB<(),>
 	{
 		let mem_ty = MemoryType::BOOT_SERVICES_DATA;
 
-		let mut buf = MemoryMapBackingMemory::new(mem_ty,)
-			.expect("failed to allocate memory",);
+		let mut buf = MemoryMapBackingMemory::new(mem_ty,)?;
 		let status =
-			unsafe { self.try_exit_boot_services(buf.as_mut_slice(),) };
+			unsafe { self.try_exit_boot_services(buf.as_mut_slice(),)? };
 
 		if !status.is_success() {
 			todo!("failed to exit boot service. reset the machine");
 		}
+		X((),)
 	}
 
-	unsafe fn try_exit_boot_services(&self, buf: &mut [u8],) -> Status
+	unsafe fn try_exit_boot_services(
+		&self,
+		buf: &mut [u8],
+	) -> PoisonGirlB<Status,>
 	{
-		let mem_map = self.get_memory_map(buf,).expect("failed to get memmap",);
+		let mem_map = self.get_memory_map(buf,)?;
 		// core::mem::forget(mem_map,);
-		unsafe {
-			(self.exit_boot_services)(image_handle().as_ptr(), mem_map.map_key,)
-		}
+		let image_handle = image_handle()?;
+		X(unsafe {
+			(self.exit_boot_services)(image_handle.as_ptr(), mem_map.map_key,)
+		},)
 	}
 }
 
@@ -245,11 +249,14 @@ impl RuntimeServices
 ///
 /// Panics if `set_image_handle_panicking` has not been called to initialize the
 /// handle.
-pub fn image_handle() -> Handle
+pub fn image_handle() -> PoisonGirlB<Handle,>
 {
 	let p = IMAGE_HANDLE.load(Ordering::Acquire,);
-	unsafe {
-		Handle::from_ptr(p,).expect("set_image_handle has not been called",)
+	match unsafe { Handle::from_ptr(p,) } {
+		Some(handle,) => X(handle,),
+		None => Y(poison_girl_err!(UefiError::Custom(
+			"set_image_handle has not been called",
+		)),),
 	}
 }
 /// Sets the global image handle (unsafe version)
@@ -285,8 +292,9 @@ pub(crate) fn set_image_handle_panicking(image_handle: UnsafeHandle,)
 {
 	assert!(!image_handle.is_null());
 
-	let image_handle = unsafe { Handle::from_ptr(image_handle,).unwrap() };
-	unsafe { set_image_handle(image_handle,) };
+	if let Some(image_handle,) = unsafe { Handle::from_ptr(image_handle,) } {
+		unsafe { set_image_handle(image_handle,) };
+	}
 
 	assert!(!IMAGE_HANDLE.load(Ordering::Acquire,).is_null());
 }

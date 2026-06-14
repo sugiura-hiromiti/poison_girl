@@ -1,15 +1,12 @@
-use {
-	crate::{
-		chibi_uefi::table::boot_services,
-		raw::types::{
-			Status,
-			graphic::{
-				GraphicsOutputBltOperation, GraphicsOutputBltPixel,
-				GraphicsOutputModeInfo, GraphicsOutputProtocolMode,
-			},
+use crate::{
+	chibi_uefi::table::boot_services,
+	raw::types::{
+		Status,
+		graphic::{
+			GraphicsOutputBltOperation, GraphicsOutputBltPixel,
+			GraphicsOutputModeInfo, GraphicsOutputProtocolMode,
 		},
 	},
-	poison_girl_no_std_error::Container,
 };
 
 #[repr(C)]
@@ -49,13 +46,12 @@ impl GraphicsOutputProtocol
 		}
 		.x_or_with(|_| {
 			let _info = unsafe { *info_heap_ptr };
-			let info_heap_ptr = unsafe {
-				info_heap_ptr.cast::<u8>().cast_mut().as_mut().unwrap()
-			};
-
-			boot_services()
-				.free_pool(info_heap_ptr,)
-				.expect("buffer should be deallocatable",);
+			if let Some(info_heap_ptr,) =
+				unsafe { info_heap_ptr.cast::<u8>().cast_mut().as_mut() }
+				&& let poison_girl_no_std_error::X(bs,) = boot_services()
+			{
+				let _ = bs.free_pool(info_heap_ptr,);
+			}
 		},);
 	}
 

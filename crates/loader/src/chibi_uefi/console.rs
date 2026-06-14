@@ -24,8 +24,11 @@ macro_rules! println {
 pub fn print(args: core::fmt::Arguments,)
 {
 	use core::fmt::Write;
-	let st = unsafe { system_table().as_ref() };
-	unsafe { st.stdout.as_mut() }.unwrap().write_fmt(args,).unwrap();
+	if let X(st,) = system_table()
+		&& let Some(stdout,) = unsafe { st.as_ref().stdout.as_mut() }
+	{
+		let _ = stdout.write_fmt(args,);
+	}
 }
 
 impl core::fmt::Write for TextOutputProtocol
@@ -33,9 +36,8 @@ impl core::fmt::Write for TextOutputProtocol
 	fn write_str(&mut self, s: &str,) -> core::fmt::Result
 	{
 		match self.output(s,) {
-			X(_s,) => (),
-			Y(e,) => panic!("{e:?}"),
+			X(_s,) => Ok((),),
+			Y(_e,) => Err(core::fmt::Error,),
 		}
-		Ok((),)
 	}
 }

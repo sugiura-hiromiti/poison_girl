@@ -15,10 +15,14 @@ use {
 	alloc::{string::String, vec::Vec},
 	core::{
 		iter::Sum,
+		mem::size_of,
 		ops::{
 			Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shl, Shr, Sub,
 			SubAssign,
 		},
+	},
+	poison_girl_no_std_error::{
+		ElfParseError, ElfParseStage, PoisonGirlB, X, Y, poison_girl_err,
 	},
 	program_header::ProgramHeaderType,
 };
@@ -180,6 +184,24 @@ where
 	let val = (&binary[*offset..]).as_int();
 	*offset += size;
 	Some(val,)
+}
+
+fn read_le_bytes_or<I: PrimitiveInteger,>(
+	offset: &mut usize,
+	binary: &[u8],
+	parser_pos: &'static str,
+	stage: ElfParseStage,
+) -> PoisonGirlB<I,>
+where
+	for<'a> &'a [u8]: AsInt<I,>,
+{
+	match read_le_bytes(offset, binary,) {
+		Some(value,) => X(value,),
+		None => Y(poison_girl_err!(ElfParseError::EndOfBinary {
+			parser_pos,
+			stage
+		}),),
+	}
 }
 
 pub struct Interpreter(Option<Vec<u8,>,>,);
@@ -375,168 +397,31 @@ trait AsInt<T: PrimitiveInteger,>
 	fn as_int(&self,) -> T;
 }
 
-impl AsInt<u8,> for &[u8]
-{
-	fn as_int(&self,) -> u8
-	{
-		*self.first().unwrap()
-	}
-}
-
-impl AsInt<u16,> for &[u8]
-{
-	fn as_int(&self,) -> u16
-	{
-		// unsafe { *(&self[..2] as *const _ as *const u16) }
-		let mut rslt = 0;
-		for i in (0..size_of::<u16,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as u16;
+macro_rules! impl_as_int {
+	($ty:ty) => {
+		impl AsInt<$ty,> for &[u8]
+		{
+			fn as_int(&self,) -> $ty
+			{
+				let mut bytes = [0; size_of::<$ty,>()];
+				for (dst, src,) in bytes.iter_mut().zip(self.iter().copied(),) {
+					*dst = src;
+				}
+				<$ty>::from_le_bytes(bytes,)
+			}
 		}
-
-		rslt
-	}
+	};
 }
 
-impl AsInt<u32,> for &[u8]
-{
-	fn as_int(&self,) -> u32
-	{
-		// unsafe { *(&self[..4] as *const _ as *const u32) }
-		let mut rslt = 0;
-		for i in (0..size_of::<u32,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as u32;
-		}
-
-		rslt
-	}
-}
-
-impl AsInt<u64,> for &[u8]
-{
-	fn as_int(&self,) -> u64
-	{
-		// unsafe { *(&self[..8] as *const _ as *const u64) }
-		let mut rslt = 0;
-		for i in (0..size_of::<u64,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as u64;
-		}
-
-		rslt
-	}
-}
-
-impl AsInt<u128,> for &[u8]
-{
-	fn as_int(&self,) -> u128
-	{
-		// unsafe { *(&self[..16] as *const _ as *const u128) }
-		let mut rslt = 0;
-		for i in (0..size_of::<u128,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as u128;
-		}
-
-		rslt
-	}
-}
-
-impl AsInt<usize,> for &[u8]
-{
-	fn as_int(&self,) -> usize
-	{
-		// unsafe { *(&self[..8] as *const _ as *const usize) }
-		let mut rslt = 0;
-		for i in (0..size_of::<usize,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as usize;
-		}
-
-		rslt
-	}
-}
-
-impl AsInt<i8,> for &[u8]
-{
-	fn as_int(&self,) -> i8
-	{
-		*self.first().unwrap() as i8
-	}
-}
-
-impl AsInt<i16,> for &[u8]
-{
-	fn as_int(&self,) -> i16
-	{
-		// unsafe { *(&self[..2] as *const _ as *const u16) }
-		let mut rslt = 0;
-		for i in (0..size_of::<i16,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as i16;
-		}
-
-		rslt
-	}
-}
-
-impl AsInt<i32,> for &[u8]
-{
-	fn as_int(&self,) -> i32
-	{
-		// unsafe { *(&self[..4] as *const _ as *const u32) }
-		let mut rslt = 0;
-		for i in (0..size_of::<i32,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as i32;
-		}
-
-		rslt
-	}
-}
-
-impl AsInt<i64,> for &[u8]
-{
-	fn as_int(&self,) -> i64
-	{
-		// unsafe { *(&self[..8] as *const _ as *const u64) }
-		let mut rslt = 0;
-		for i in (0..size_of::<i64,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as i64;
-		}
-
-		rslt
-	}
-}
-
-impl AsInt<i128,> for &[u8]
-{
-	fn as_int(&self,) -> i128
-	{
-		// unsafe { *(&self[..16] as *const _ as *const u128) }
-		let mut rslt = 0;
-		for i in (0..size_of::<i128,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as i128;
-		}
-
-		rslt
-	}
-}
-
-impl AsInt<isize,> for &[u8]
-{
-	fn as_int(&self,) -> isize
-	{
-		// unsafe { *(&self[..8] as *const _ as *const usize) }
-		let mut rslt = 0;
-		for i in (0..size_of::<isize,>()).rev() {
-			rslt <<= 8;
-			rslt |= *self.get(i,).unwrap() as isize;
-		}
-
-		rslt
-	}
-}
+impl_as_int!(u8);
+impl_as_int!(u16);
+impl_as_int!(u32);
+impl_as_int!(u64);
+impl_as_int!(u128);
+impl_as_int!(usize);
+impl_as_int!(i8);
+impl_as_int!(i16);
+impl_as_int!(i32);
+impl_as_int!(i64);
+impl_as_int!(i128);
+impl_as_int!(isize);

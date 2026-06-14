@@ -1,9 +1,12 @@
 use {
-	crate::elf::{Interpreter, read_le_bytes, string_context::StringContext},
+	crate::elf::{
+		Interpreter, read_le_bytes_or, string_context::StringContext,
+	},
 	alloc::{format, vec::Vec},
 	poison_girl_macro::cfg_if,
 	poison_girl_no_std_error::{
-		ElfParseError, PoisonGirlB, PoisonGirlError, X, poison_girl_err,
+		ElfParseError, ElfParseStage, PoisonGirlB, PoisonGirlError, X,
+		poison_girl_err,
 	},
 };
 
@@ -79,14 +82,54 @@ impl ProgramHeader
 		let mut program_headers = Vec::with_capacity(count,);
 
 		for _ in 0..count {
-			let ty: u32 = read_le_bytes(offset, binary,).unwrap();
-			let flags = read_le_bytes(offset, binary,).unwrap();
-			let segment_offset = read_le_bytes(offset, binary,).unwrap();
-			let virtual_address = read_le_bytes(offset, binary,).unwrap();
-			let physical_address = read_le_bytes(offset, binary,).unwrap();
-			let file_size = read_le_bytes(offset, binary,).unwrap();
-			let memory_size = read_le_bytes(offset, binary,).unwrap();
-			let align = read_le_bytes(offset, binary,).unwrap();
+			let ty: u32 = read_le_bytes_or(
+				offset,
+				binary,
+				"program header type",
+				ElfParseStage::ProgramHeader,
+			)?;
+			let flags = read_le_bytes_or(
+				offset,
+				binary,
+				"program header flags",
+				ElfParseStage::ProgramHeader,
+			)?;
+			let segment_offset = read_le_bytes_or(
+				offset,
+				binary,
+				"program header segment offset",
+				ElfParseStage::ProgramHeader,
+			)?;
+			let virtual_address = read_le_bytes_or(
+				offset,
+				binary,
+				"program header virtual address",
+				ElfParseStage::ProgramHeader,
+			)?;
+			let physical_address = read_le_bytes_or(
+				offset,
+				binary,
+				"program header physical address",
+				ElfParseStage::ProgramHeader,
+			)?;
+			let file_size = read_le_bytes_or(
+				offset,
+				binary,
+				"program header file size",
+				ElfParseStage::ProgramHeader,
+			)?;
+			let memory_size = read_le_bytes_or(
+				offset,
+				binary,
+				"program header memory size",
+				ElfParseStage::ProgramHeader,
+			)?;
+			let align = read_le_bytes_or(
+				offset,
+				binary,
+				"program header alignment",
+				ElfParseStage::ProgramHeader,
+			)?;
 
 			let ty = ProgramHeaderType::try_from(ty,)?;
 

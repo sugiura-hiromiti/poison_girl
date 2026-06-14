@@ -17,7 +17,7 @@ impl PixelFormat for Rgb
 	}
 }
 
-impl const PixFmtNew for Rgb
+const impl PixFmtNew for Rgb
 {
 	fn new_pix() -> Self
 	{
@@ -34,7 +34,7 @@ impl PixelFormat for Bgr
 	}
 }
 
-impl const PixFmtNew for Bgr
+const impl PixFmtNew for Bgr
 {
 	fn new_pix() -> Self
 	{
@@ -52,7 +52,7 @@ impl PixelFormat for Bitmask
 	}
 }
 
-impl const PixFmtNew for Bitmask
+const impl PixFmtNew for Bitmask
 {
 	fn new_pix() -> Self
 	{
@@ -70,7 +70,7 @@ impl PixelFormat for BltOnly
 	}
 }
 
-impl const PixFmtNew for BltOnly
+const impl PixFmtNew for BltOnly
 {
 	fn new_pix() -> Self
 	{
@@ -172,20 +172,17 @@ impl ColorRpr for &str
 {
 	fn red(&self,) -> u8
 	{
-		u8::from_str_radix(&self[1..3], 16,)
-			.expect("incorrect representation of color format",)
+		hex_component(self, 1, 3,)
 	}
 
 	fn green(&self,) -> u8
 	{
-		u8::from_str_radix(&self[3..5], 16,)
-			.expect("incorrect representation of color format",)
+		hex_component(self, 3, 5,)
 	}
 
 	fn blue(&self,) -> u8
 	{
-		u8::from_str_radix(&self[5..7], 16,)
-			.expect("incorrect representation of color format",)
+		hex_component(self, 5, 7,)
 	}
 
 	fn red_mut(&mut self, _val: u8,)
@@ -201,6 +198,17 @@ impl ColorRpr for &str
 	fn blue_mut(&mut self, _val: u8,)
 	{
 		todo!()
+	}
+}
+
+fn hex_component(value: &str, start: usize, end: usize,) -> u8
+{
+	match value
+		.get(start..end,)
+		.and_then(|hex| u8::from_str_radix(hex, 16,).ok(),)
+	{
+		Some(component,) => component,
+		None => 0,
 	}
 }
 

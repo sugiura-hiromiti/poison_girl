@@ -9,7 +9,7 @@ pub enum Endian
 	Big,
 }
 
-impl const Default for Endian
+const impl Default for Endian
 {
 	fn default() -> Self
 	{

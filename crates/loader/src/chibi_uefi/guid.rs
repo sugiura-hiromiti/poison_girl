@@ -1,6 +1,6 @@
 use {
 	crate::raw::types::Guid,
-	poison_girl_no_std_error::{GuidError, PoisonGirlB, X},
+	poison_girl_no_std_error::{GuidError, PoisonGirlB, X, Y, poison_girl_err},
 };
 
 #[macro_export]
@@ -21,16 +21,16 @@ impl Guid
 			.chars()
 			.filter_map(|c| Hex::try_from(c,).ok(),)
 			.map(|h| h as u8,);
-		let mut time_low: [u8; 4] = s.next_chunk().unwrap();
+		let mut time_low = next_hex_chunk::<4, _,>(&mut s,)?;
 		time_low.reverse();
-		let mut time_mid: [u8; 2] = s.next_chunk().unwrap();
+		let mut time_mid = next_hex_chunk::<2, _,>(&mut s,)?;
 		time_mid.reverse();
-		let mut time_high_and_version: [u8; 2] = s.next_chunk().unwrap();
+		let mut time_high_and_version = next_hex_chunk::<2, _,>(&mut s,)?;
 		time_high_and_version.reverse();
 
-		let clock_seq_high_and_reserved = s.next().unwrap();
-		let clock_seq_low = s.next().unwrap();
-		let mut node: [u8; 6] = s.next_chunk().unwrap();
+		let clock_seq_high_and_reserved = next_hex(&mut s,)?;
+		let clock_seq_low = next_hex(&mut s,)?;
+		let mut node = next_hex_chunk::<6, _,>(&mut s,)?;
 		node.reverse();
 
 		X(Self::new(
@@ -66,6 +66,25 @@ impl Guid
 			node,
 		)
 	}
+}
+
+fn next_hex(hexes: &mut impl Iterator<Item = u8,>,) -> PoisonGirlB<u8,>
+{
+	match hexes.next() {
+		Some(hex,) => X(hex,),
+		None => Y(poison_girl_err!(GuidError::InvalidLength),),
+	}
+}
+
+fn next_hex_chunk<const N: usize, I: Iterator<Item = u8,>,>(
+	hexes: &mut I,
+) -> PoisonGirlB<[u8; N],>
+{
+	let mut chunk = [0; N];
+	for hex in &mut chunk {
+		*hex = next_hex(hexes,)?;
+	}
+	X(chunk,)
 }
 
 pub const fn read_to_hex<const N: usize,>(s: &str, buf: &mut [Hex; N],)

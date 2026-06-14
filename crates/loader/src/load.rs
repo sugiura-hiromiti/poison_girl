@@ -70,7 +70,7 @@ pub fn kernel() -> PoisonGirlB<PhysicalAddress,>
 
 	// Allocate memory for the kernel at the required address
 	let page_count = required_pages(kernel_size,);
-	let alloc_head = boot_services().allocate_pages(
+	let alloc_head = boot_services()?.allocate_pages(
 		AllocateType::ALLOCATE_ADDRESS,
 		crate::raw::types::memory::MemoryType::LOADER_DATA,
 		page_count,
@@ -111,7 +111,7 @@ fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,>
 	let open_mode = OpenMode::READ;
 	let attrs = FileAttributes(0,);
 
-	let bs = boot_services();
+	let bs = boot_services()?;
 
 	// Locate the file system protocol
 	let sfs_handle =
@@ -120,7 +120,7 @@ fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,>
 	// Open the root volume
 	let volume = unsafe {
 		bs.open_protocol_exclusive::<SimpleFileSystemProtocol>(sfs_handle,)?
-			.interface()
+			.interface()?
 			.as_mut()
 	}
 	.open_volume()?;
@@ -128,9 +128,7 @@ fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,>
 	// Open the kernel file
 	let kernel_file =
 		volume.open("poison_girl_kernel.elf", open_mode, attrs,)?;
-	let non_null_kernel_file =
-		NonNull::new(kernel_file,).expect("reference can't be null",);
-	X(non_null_kernel_file,)
+	X(NonNull::from(kernel_file,),)
 }
 
 /// Calculates the memory address range required for all loadable ELF segments
@@ -250,11 +248,11 @@ fn copy_load_segment(elf: &Elf, src: &[u8],)
 /// initialization to enable graphics output capabilities.
 pub fn graphic_config() -> PoisonGirlB<FrameBufConf,>
 {
-	let bs = boot_services();
+	let bs = boot_services()?;
 
 	// Open Graphics Output Protocol
 	let mut gout =
-		bs.open_protocol_with::<GraphicsOutputProtocol>()?.interface();
+		bs.open_protocol_with::<GraphicsOutputProtocol>()?.interface()?;
 	let gout = unsafe { gout.as_mut() };
 
 	// Query current graphics mode information

@@ -1,6 +1,9 @@
-use crate::elf::{
-	elf_container_size::ElfContainerSize, elf_context::ElfContext,
-	read_le_bytes,
+use {
+	crate::elf::{
+		elf_container_size::ElfContainerSize, elf_context::ElfContext,
+		read_le_bytes_or,
+	},
+	poison_girl_no_std_error::{ElfParseStage, PoisonGirlB},
 };
 
 pub struct Dyn
@@ -22,10 +25,20 @@ impl Dyn
 		}
 	}
 
-	pub fn parse(bytes: &[u8], offset: &mut usize,) -> Self
+	pub fn parse(bytes: &[u8], offset: &mut usize,) -> PoisonGirlB<Self,>
 	{
-		let tag = read_le_bytes(offset, bytes,).unwrap();
-		let val = read_le_bytes(offset, bytes,).unwrap();
-		Self { tag, val, }
+		let tag = read_le_bytes_or(
+			offset,
+			bytes,
+			"dynamic tag",
+			ElfParseStage::Dynamic,
+		)?;
+		let val = read_le_bytes_or(
+			offset,
+			bytes,
+			"dynamic value",
+			ElfParseStage::Dynamic,
+		)?;
+		poison_girl_no_std_error::X(Self { tag, val, },)
 	}
 }

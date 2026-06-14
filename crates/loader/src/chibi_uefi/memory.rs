@@ -13,7 +13,7 @@ use {
 		alloc::{GlobalAlloc, Layout},
 		ptr::NonNull,
 	},
-	poison_girl_no_std_error::{Container, PoisonGirlB, X},
+	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
 #[global_allocator]
@@ -26,23 +26,28 @@ unsafe impl GlobalAlloc for LoaderAllocator
 	unsafe fn alloc(&self, layout: core::alloc::Layout,) -> *mut u8
 	{
 		if layout.align() > 8 {
-			panic!()
+			return core::ptr::null_mut();
 		}
 		let mem_ty = MemoryType::LOADER_DATA;
-		let bs = boot_services();
-		bs.allocate_pool(mem_ty, layout.size(),)
-			.expect("allocation failed",)
-			.as_ptr()
+		let X(bs,) = boot_services() else {
+			return core::ptr::null_mut();
+		};
+		match bs.allocate_pool(mem_ty, layout.size(),) {
+			X(ptr,) => ptr.as_ptr(),
+			poison_girl_no_std_error::Y(_,) => core::ptr::null_mut(),
+		}
 	}
 
 	unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout,)
 	{
 		if layout.align() > 8 {
-			panic!()
+			return;
 		}
-		let bs = boot_services();
-		bs.free_pool(unsafe { ptr.as_mut_unchecked() },)
-			.expect("deallocation failed",);
+		if let X(bs,) = boot_services()
+			&& let Some(ptr,) = unsafe { ptr.as_mut() }
+		{
+			let _ = bs.free_pool(ptr,);
+		}
 	}
 }
 

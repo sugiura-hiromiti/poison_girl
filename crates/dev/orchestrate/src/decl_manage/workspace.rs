@@ -58,7 +58,8 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where
 		Self: WorkspaceSurvey,
 	{
-		self.cargo_xxx_at_with(cmd, at, &["",],)
+		let opt: &[&OsStr] = &[];
+		self.cargo_xxx_at_with(cmd, at, &opt,)
 	}
 
 	// actions for specific package with specific options
@@ -176,12 +177,12 @@ pub trait WorkspaceInfo: Sized + CrateInfo
 	///     assert!(cargo_toml.exists());
 	/// }
 	/// ```
-	fn members(&self,) -> Vec<impl Crate,>;
+	fn members(&self,) -> PoisonGirlB<Vec<impl Crate,>,>;
 
 	fn members_with_target(
 		&self,
 		target: impl Into<String,> + Clone,
-	) -> Vec<impl Crate,>;
+	) -> PoisonGirlB<Vec<impl Crate,>,>;
 }
 
 #[cfg(test)]

@@ -11,7 +11,7 @@ use {
 	},
 	alloc::vec::Vec,
 	core::ptr::{self, NonNull},
-	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, poison_girl_err},
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, Y, poison_girl_err},
 };
 
 impl SimpleFileSystemProtocol
@@ -19,9 +19,13 @@ impl SimpleFileSystemProtocol
 	pub fn open_volume(&mut self,) -> PoisonGirlB<&mut FileProtocolV1,>
 	{
 		let mut root = ptr::null_mut();
-		unsafe { (self.open_volume)(self, &mut root,) }.x_or_with(|_| {
-			unsafe { root.as_mut() }.expect("root directory handle is null",)
-		},)
+		unsafe { (self.open_volume)(self, &mut root,) }.x_or()?;
+		match unsafe { root.as_mut() } {
+			Some(root,) => X(root,),
+			None => Y(poison_girl_err!(UefiError::Custom(
+				"root directory handle is null",
+			)),),
+		}
 	}
 }
 
@@ -40,10 +44,13 @@ impl FileProtocolV1
 
 		let mut file = ptr::null_mut();
 
-		let s = unsafe { (self.open)(self, &mut file, path, mode, attrs,) };
-		s.x_or_with(|_| {
-			unsafe { file.as_mut() }.expect("file handle is null",)
-		},)
+		unsafe { (self.open)(self, &mut file, path, mode, attrs,) }.x_or()?;
+		match unsafe { file.as_mut() } {
+			Some(file,) => X(file,),
+			None => {
+				Y(poison_girl_err!(UefiError::Custom("file handle is null",)),)
+			},
+		}
 	}
 
 	/// reads file content to buf

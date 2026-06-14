@@ -4,7 +4,7 @@ use {
 	poison_girl_dev_error::{
 		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
-	std::{ffi::OsStr, path::PathBuf, process::Command, str::FromStr},
+	std::{ffi::OsStr, path::PathBuf, process::Command},
 	strum_macros::Display,
 };
 
@@ -185,7 +185,7 @@ impl Firmware
 	/// A new Firmware instance or an error if initialization fails
 	pub fn new(arch: Arch,) -> PoisonGirlB<Self,>
 	{
-		let path = PathBuf::from_str("/tmp/",).unwrap();
+		let path = PathBuf::from("/tmp/",);
 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
 		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
 		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);

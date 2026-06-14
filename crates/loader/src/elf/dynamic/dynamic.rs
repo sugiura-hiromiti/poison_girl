@@ -56,7 +56,7 @@ impl Dynamic
 				let mut dyns = Vec::with_capacity(count,);
 				let offset = &mut 0;
 				for _ in 0..count {
-					let dynamic = Dyn::parse(bytes, offset,);
+					let dynamic = Dyn::parse(bytes, offset,)?;
 					let tag = dynamic.tag;
 					dyns.push(dynamic,);
 					if tag == Self::DT_NULL {
@@ -278,6 +278,9 @@ impl Dynamic
 			.chain(dynamic_relocation.iter(),)
 			.chain(procedure_linkage_table_relocation.iter(),)
 			.fold(0, |count, relocation| {
+				let X(relocation,) = relocation else {
+					return count;
+				};
 				cmp::max(count, relocation.symbol_index,)
 			},);
 

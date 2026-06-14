@@ -1,11 +1,11 @@
 use {
-	super::read_le_bytes,
+	super::read_le_bytes_or,
 	crate::elf::{
 		ElfHeader, elf_container_size::ElfContainerSize,
 		elf_context::ElfContext,
 	},
 	poison_girl_no_std_error::{
-		ElfParseError, PoisonGirlB, X, Y, poison_girl_err,
+		ElfParseError, ElfParseStage, PoisonGirlB, X, Y, poison_girl_err,
 	},
 };
 
@@ -15,12 +15,24 @@ pub fn gnu_hash_len(
 	context: &ElfContext,
 ) -> PoisonGirlB<usize,>
 {
-	let buckets_count =
-		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
-	let min_chain =
-		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
-	let bloom_size =
-		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize;
+	let buckets_count = read_le_bytes_or::<u32,>(
+		&mut offset,
+		binary,
+		"gnu hash bucket count",
+		ElfParseStage::Hash,
+	)? as usize;
+	let min_chain = read_le_bytes_or::<u32,>(
+		&mut offset,
+		binary,
+		"gnu hash minimum chain",
+		ElfParseStage::Hash,
+	)? as usize;
+	let bloom_size = read_le_bytes_or::<u32,>(
+		&mut offset,
+		binary,
+		"gnu hash bloom size",
+		ElfParseStage::Hash,
+	)? as usize;
 	if buckets_count == 0 || min_chain == 0 || bloom_size == 0 {
 		return Y(poison_girl_err!(ElfParseError::InvalidGnuHash {
 			buckets_count,
@@ -35,9 +47,12 @@ pub fn gnu_hash_len(
 		* if context.container == ElfContainerSize::Big { 8 } else { 4 };
 	let mut max_chain = 0;
 	for bucket in 0..buckets_count {
-		let chain =
-			read_le_bytes::<u32,>(&mut (buckets_offset + bucket * 4), binary,)
-				.unwrap() as usize;
+		let chain = read_le_bytes_or::<u32,>(
+			&mut (buckets_offset + bucket * 4),
+			binary,
+			"gnu hash bucket chain",
+			ElfParseStage::Hash,
+		)? as usize;
 		if max_chain < chain {
 			max_chain = chain;
 		}
@@ -51,8 +66,12 @@ pub fn gnu_hash_len(
 	let mut chain_offset =
 		buckets_offset + buckets_count * 4 + (max_chain - min_chain) * 4;
 	loop {
-		let hash =
-			read_le_bytes::<u32,>(&mut chain_offset, binary,).unwrap() as usize;
+		let hash = read_le_bytes_or::<u32,>(
+			&mut chain_offset,
+			binary,
+			"gnu hash chain",
+			ElfParseStage::Hash,
+		)? as usize;
 		max_chain += 1;
 		if hash & 1 != 0 {
 			return X(max_chain,);
@@ -72,9 +91,19 @@ pub fn hash_len(
 		|| machine == ElfHeader::EM_S390)
 		&& context.container == ElfContainerSize::Big
 	{
-		read_le_bytes::<u64,>(&mut offset, binary,).unwrap() as usize
+		read_le_bytes_or::<u64,>(
+			&mut offset,
+			binary,
+			"sysv hash chain count",
+			ElfParseStage::Hash,
+		)? as usize
 	} else {
-		read_le_bytes::<u32,>(&mut offset, binary,).unwrap() as usize
+		read_le_bytes_or::<u32,>(
+			&mut offset,
+			binary,
+			"sysv hash chain count",
+			ElfParseStage::Hash,
+		)? as usize
 	};
 	X(nchain,)
 }

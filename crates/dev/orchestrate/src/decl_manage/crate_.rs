@@ -8,7 +8,7 @@ use {
 	poison_girl_dev_cargo::{CliCommand, Opts, host_tuple_by_rustc},
 	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{
-		Container, PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X,
+		PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X,
 		poison_girl_err,
 	},
 	poison_girl_dev_fs::{
@@ -133,8 +133,8 @@ pub trait CrateAction: CrateInfo
 		let mut cargo = Command::new("cargo",);
 		let cargo = cargo.arg(cmd.as_ref(),);
 
-		let opt: Vec<_,> =
-			opt.as_ref().iter().filter(|s| !s.as_ref().is_empty(),).collect();
+		let opt: Vec<&OsStr,> =
+			opt.as_ref().iter().copied().filter(|s| !s.is_empty(),).collect();
 		if !opt.is_empty() {
 			cargo.args(opt,);
 		}
@@ -364,32 +364,29 @@ impl WorkspaceSurvey for PoisonGirlCrate
 impl WorkspaceInfo for PoisonGirlCrate
 {
 	#[allow(refining_impl_trait)]
-	fn members(&self,) -> Vec<PoisonGirlCrate,>
+	fn members(&self,) -> PoisonGirlB<Vec<PoisonGirlCrate,>,>
 	{
-		all_crates_in(&self.path(),)
-			.expect("failed to get some crates within workspace",)
+		X(all_crates_in(&self.path(),)?
 			.iter()
 			.map(|p| PoisonGirlCrate::from(p.clone(),),)
-			.collect()
+			.collect(),)
 	}
 
 	#[allow(refining_impl_trait)]
 	fn members_with_target(
 		&self,
 		target: impl Into<String,> + Clone,
-	) -> Vec<PoisonGirlCrate,>
+	) -> PoisonGirlB<Vec<PoisonGirlCrate,>,>
 	{
-		self.members()
-			.into_iter()
-			.filter(|c| {
-				let dflt_target: String = c
-					.default_target()
-					.expect("failed to determine default target",)
-					.into();
-				let target: String = target.clone().into();
-				dflt_target == target
-			},)
-			.collect()
+		let target: String = target.into();
+		let mut members = vec![];
+		for c in self.members()? {
+			let dflt_target: String = c.default_target()?.into();
+			if dflt_target == target {
+				members.push(c,);
+			}
+		}
+		X(members,)
 	}
 }
 

@@ -189,7 +189,7 @@
 //
 // 		// At this point, `p` points to the node before the target node
 // 		// We need to store a reference to the node after the target node
-// 		let next_to_target = p.as_mut().unwrap().next.as_mut().unwrap();
+// 		let next_to_target = p.as_mut()?.next.as_mut()?;
 // 		let next_to_target = unsafe {
 // 			// SAFETY: We're creating a raw pointer to work around borrow checker
 // 			// limitations. The pointer is immediately converted back to a reference
@@ -198,7 +198,7 @@
 // 			let raw_pointer_to_next_to_target = *next_to_target as *mut Node<'a, T,>;
 // 			raw_pointer_to_next_to_target.as_mut()
 // 		};
-// 		p.replace(next_to_target.unwrap(),);
+// 		p.replace(next_to_target?,);
 // 	}
 //
 // 	/// Returns a reference to the node at the specified index
@@ -253,7 +253,7 @@
 // 			// SAFETY: We're extending the lifetime of the reference to match
 // 			// the lifetime parameter 'a. This is safe because the node is
 // 			// guaranteed to live at least as long as 'a by the type system.
-// 			let ref_to_next = *p.as_ref().unwrap() as *const Node<'a, T,>;
+// 			let ref_to_next = *p.as_ref()? as *const Node<'a, T,>;
 // 			ref_to_next.as_ref()
 // 		}
 // 	}

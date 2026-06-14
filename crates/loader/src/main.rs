@@ -14,14 +14,14 @@ use {
 		chibi_uefi::service::exit_boot_services,
 		exec_kernel, get_device_tree, init,
 		load::kernel,
-		println,
+		print, println,
 		raw::{
 			table::SystemTable,
 			types::{Status, UnsafeHandle},
 		},
 	},
 	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe},
-	poison_girl_no_std_error::{PoisonGirlB, X},
+	poison_girl_no_std_error::{PoisonGirlB, X, Y},
 };
 
 /// Custom panic handler for the UEFI environment
@@ -80,8 +80,13 @@ pub extern "efiapi" fn efi_image_entry_point(
 	init(image_handle, system_table,);
 
 	// Load kernel and prepare for execution
-	let (kernel_entry, device_tree_ptr,) =
-		app().expect("error arise while executing application",);
+	let (kernel_entry, device_tree_ptr,) = match app() {
+		X(value,) => value,
+		Y(e,) => {
+			println!("error arise while executing application: {e:?}");
+			return Status::EFI_LOAD_ERROR;
+		},
+	};
 
 	// Exit UEFI boot services - point of no return
 	exit_boot_services();
@@ -114,7 +119,7 @@ pub extern "efiapi" fn efi_image_entry_point(
 /// - The ELF parsing fails
 /// - Memory allocation for kernel loading fails
 /// - Device tree cannot be retrieved from UEFI
-fn app() -> Rslt<(u64, DeviceTreeAddress,),>
+fn app() -> PoisonGirlB<(u64, DeviceTreeAddress,),>
 {
 	// Load kernel ELF file and get entry point
 	let kernel_addr = kernel()?;

@@ -37,7 +37,7 @@ impl StringContext
 	}
 }
 
-impl const Default for StringContext
+const impl Default for StringContext
 {
 	fn default() -> Self
 	{

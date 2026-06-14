@@ -1,7 +1,6 @@
 #![no_std]
 #![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
-#![feature(iter_next_chunk)]
 #![feature(const_trait_impl)]
 #![feature(generic_const_exprs)]
 #![feature(associated_type_defaults)]
@@ -24,9 +23,7 @@ use {
 	poison_girl_no_std::{
 		bridge::device_tree::DeviceTreeAddress, idle_cpu_forever,
 	},
-	poison_girl_no_std_error::{
-		Container, PoisonGirlB, UefiError, X, Y, poison_girl_err,
-	},
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, Y, poison_girl_err},
 	raw::{
 		table::SystemTable,
 		types::{Status, UnsafeHandle},
@@ -61,13 +58,16 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,)
 	chibi_uefi::set_image_handle_panicking(image_handle,);
 
 	// Connect all available devices
-	let bs = boot_services();
+	let X(bs,) = boot_services() else {
+		return;
+	};
 
 	// UEFI only installs DevicePathProtocol on devices that are fully connected
 	// `AllHandles` is the only way to find unconnected devices
-	let handles = unsafe {
-		bs.locate_handle_buffer(HandleSearchType::AllHandles,)
-			.expect("failed to locate all handles ",)
+	let X(handles,) =
+		(unsafe { bs.locate_handle_buffer(HandleSearchType::AllHandles,) })
+	else {
+		return;
 	};
 
 	// Connect each device, ignoring connection errors
@@ -86,7 +86,11 @@ pub fn init(image_handle: UnsafeHandle, syst: *const SystemTable,)
 
 fn clear_console(syst: *const SystemTable,)
 {
-	unsafe { syst.as_ref().unwrap().stdout.as_mut().unwrap().clear().unwrap() };
+	if let Some(syst,) = unsafe { syst.as_ref() }
+		&& let Some(stdout,) = unsafe { syst.stdout.as_mut() }
+	{
+		let _ = stdout.clear();
+	}
 }
 
 fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,>
@@ -98,7 +102,7 @@ fn into_null_terminated_utf16(s: impl AsRef<str,>,) -> Vec<u16,>
 
 pub fn get_device_tree() -> PoisonGirlB<NonNull<ConfigTable,>,>
 {
-	match unsafe { system_table().as_ref() }.device_tree() {
+	match unsafe { system_table()?.as_ref() }.device_tree() {
 		X(Some(dt,),) => X(dt,),
 		X(None,) => {
 			Y(poison_girl_err!(UefiError::Custom("failed to get device tree")),)

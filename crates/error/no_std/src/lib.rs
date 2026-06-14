@@ -118,6 +118,7 @@ pub enum UefiError
 pub enum GuidError
 {
 	InvalidHexChar,
+	InvalidLength,
 }
 
 #[derive(Debug,)]
@@ -165,6 +166,9 @@ pub enum ElfParseStage
 	ProgramHeader,
 	SectionHeader,
 	StringTable,
+	Dynamic,
+	Hash,
+	Relocation,
 }
 
 #[derive(Debug,)]

@@ -66,8 +66,12 @@ macro_rules! def {
 
 		// poison_girl_proc_macro_impl::$name::$name($($param,)+).unwrap_or_emit().into()
 		let rslt = poison_girl_proc_macro_impl::$name($($param,)+);
-		if rslt.has_err() {
-			panic!("{:?}",rslt.into_err());
+		if let Some(err) = rslt.err() {
+			let msg = format!("{err:?}");
+			return match format!("compile_error!({msg:?});").parse() {
+				Ok(tokens) => tokens,
+				Err(_,) => proc_macro::TokenStream::new(),
+			};
 		}
 
 		rslt.notation().iter().for_each(|d| match d {
@@ -81,6 +85,15 @@ macro_rules! def {
 				proc_macro::Diagnostic::new(proc_macro::Level::Help, msg,).emit();
 			},
 		});
-		rslt.into_value().unwrap().into()
+		match rslt.into_value() {
+			Some(value,) => value.into(),
+			None => {
+				let msg = "proc macro returned neither value nor error";
+				match format!("compile_error!({msg:?});").parse() {
+					Ok(tokens) => tokens,
+					Err(_,) => proc_macro::TokenStream::new(),
+				}
+			},
+		}
 	};
 }

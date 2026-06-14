@@ -1,10 +1,10 @@
 use {
 	crate::elf::{
 		elf_container_size::ElfContainerSize, elf_context::ElfContext,
-		read_le_bytes,
+		read_le_bytes_or,
 	},
 	alloc::vec::Vec,
-	poison_girl_no_std_error::{Container as _, PoisonGirlB, X},
+	poison_girl_no_std_error::{ElfParseStage, PoisonGirlB, X},
 };
 
 #[derive_const(Default)]
@@ -90,7 +90,7 @@ pub struct RelocationIterator
 
 impl Iterator for RelocationIterator
 {
-	type Item = Relocation;
+	type Item = PoisonGirlB<Relocation,>;
 
 	fn next(&mut self,) -> Option<Self::Item,>
 	{
@@ -98,7 +98,11 @@ impl Iterator for RelocationIterator
 			None
 		} else {
 			self.index += 1;
-			Some(Relocation::parse(&self.bytes, &mut self.offset, &self.context,).unwrap(),)
+			Some(Relocation::parse(
+				&self.bytes,
+				&mut self.offset,
+				&self.context,
+			),)
 		}
 	}
 }
@@ -130,11 +134,11 @@ impl Relocation
 		let relocation = match (is_relocation_addrend, &context.container,) {
 			(true, ElfContainerSize::Little,) => todo!(),
 			(true, ElfContainerSize::Big,) => {
-				RelocAddend::parse(bytes, offset,).into()
+				RelocAddend::parse(bytes, offset,)?.into()
 			},
 			(false, ElfContainerSize::Little,) => todo!(),
 			(false, ElfContainerSize::Big,) => {
-				Reloc::parse(bytes, offset,).into()
+				Reloc::parse(bytes, offset,)?.into()
 			},
 		};
 		X(relocation,)
@@ -150,12 +154,27 @@ pub struct RelocAddend
 
 impl RelocAddend
 {
-	fn parse(binary: &[u8], offset: &mut usize,) -> Self
+	fn parse(binary: &[u8], offset: &mut usize,) -> PoisonGirlB<Self,>
 	{
-		let reloc_offset: u64 = read_le_bytes(offset, binary,).unwrap();
-		let info: u64 = read_le_bytes(offset, binary,).unwrap();
-		let addend: i64 = read_le_bytes(offset, binary,).unwrap();
-		Self { offset: reloc_offset, info, addend, }
+		let reloc_offset: u64 = read_le_bytes_or(
+			offset,
+			binary,
+			"relocation addend offset",
+			ElfParseStage::Relocation,
+		)?;
+		let info: u64 = read_le_bytes_or(
+			offset,
+			binary,
+			"relocation addend info",
+			ElfParseStage::Relocation,
+		)?;
+		let addend: i64 = read_le_bytes_or(
+			offset,
+			binary,
+			"relocation addend",
+			ElfParseStage::Relocation,
+		)?;
+		X(Self { offset: reloc_offset, info, addend, },)
 	}
 }
 
@@ -194,11 +213,21 @@ pub struct Reloc
 
 impl Reloc
 {
-	fn parse(binary: &[u8], offset: &mut usize,) -> Self
+	fn parse(binary: &[u8], offset: &mut usize,) -> PoisonGirlB<Self,>
 	{
-		let reloc_offset: u64 = read_le_bytes(offset, binary,).unwrap();
-		let info: u64 = read_le_bytes(offset, binary,).unwrap();
-		Self { offset: reloc_offset, info, }
+		let reloc_offset: u64 = read_le_bytes_or(
+			offset,
+			binary,
+			"relocation offset",
+			ElfParseStage::Relocation,
+		)?;
+		let info: u64 = read_le_bytes_or(
+			offset,
+			binary,
+			"relocation info",
+			ElfParseStage::Relocation,
+		)?;
+		X(Self { offset: reloc_offset, info, },)
 	}
 }
 
