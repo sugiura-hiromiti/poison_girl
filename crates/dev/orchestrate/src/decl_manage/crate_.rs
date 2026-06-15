@@ -64,7 +64,7 @@ pub trait CrateSurvey: CrateInfo
 		X((),)
 	}
 
-	fn land_on(&mut self, on: impl CrateCalled,);
+	fn land_on(&mut self, on: impl CrateCalled,) -> PoisonGirlB<(),>;
 }
 
 /// methods provided keeps environment e.g. current path
@@ -284,10 +284,12 @@ impl CrateAction for PoisonGirlCrate
 }
 impl CrateSurvey for PoisonGirlCrate
 {
-	fn land_on(&mut self, on: impl CrateCalled,)
+	fn land_on(&mut self, on: impl CrateCalled,) -> PoisonGirlB<(),>
 	{
 		let path = on.path_buf();
+		std::env::set_current_dir(&path,)?;
 		*self = Self::from(path,);
+		X((),)
 	}
 
 	fn go_parent(&mut self,) -> PoisonGirlB<(),>
@@ -298,7 +300,7 @@ impl CrateSurvey for PoisonGirlCrate
 				PathNotFound::new("parent directory do not exist")
 			),)?;
 			let parent = PoisonGirlCrateChart::from(parent.to_path_buf(),);
-			self.land_on(parent,);
+			self.land_on(parent,)?;
 			X((),)
 		} else {
 			X((),)
@@ -440,7 +442,11 @@ pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> + Debug
 #[cfg(test)]
 mod tests
 {
-	use {super::*, std::path::PathBuf};
+	use {
+		super::*,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		std::path::PathBuf,
+	};
 
 	// Note: The FromPathBuf macro validates paths and panics on non-existent
 	// paths This is a suspected program bug - tests should be able to use mock
@@ -572,15 +578,16 @@ mod tests
 	}
 
 	#[test]
-	fn test_workspace_survey_land_on()
+	fn test_workspace_survey_land_on() -> PoisonGirlTestB
 	{
 		let mut crate_obj =
 			PoisonGirlCrate::from(PoisonGirlCrateChart::DevOrchestrate,);
 		let target_crate = PoisonGirlCrate::from(PoisonGirlCrateChart::DevFs,);
 		let target_path = target_crate.path();
 
-		crate_obj.land_on(target_crate,);
+		crate_obj.land_on(target_crate,)?;
 
 		assert_eq!(crate_obj.path(), target_path);
+		success!()
 	}
 }

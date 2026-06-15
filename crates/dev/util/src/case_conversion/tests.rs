@@ -494,11 +494,11 @@ fn test_pathbuf_enhanced_integration() -> PoisonGirlTestB
 
 // Error condition tests
 #[test]
-#[should_panic(expected = "failed to get file/dir name")]
 fn test_pathbuf_dump_string_no_filename()
 {
 	let path = <std::path::PathBuf as std::convert::From<&str,>>::from("/",);
-	let _ = path.dump_string();
+	let rslt = path.dump_string();
+	assert!(rslt.is_y())
 }
 
 // Test special characters and edge cases

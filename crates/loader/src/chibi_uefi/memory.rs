@@ -16,6 +16,13 @@ use {
 	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
+/**
+TODO:
+P1 crates/loader/src/chibi_uefi/memory.rs:19: the UEFI allocator is still installed as the global
+   allocator for loader tests. cargo test -p poison_girl_loader --lib now builds, but aborts at runtime with
+   memory allocation of 4 bytes failed because LoaderAllocator depends on UEFI boot services that are not
+   initialized in host tests.
+*/
 #[global_allocator]
 static LOADER_ALLOCATOR: LoaderAllocator = LoaderAllocator;
 
@@ -51,7 +58,15 @@ unsafe impl GlobalAlloc for LoaderAllocator
 	}
 }
 
-#[alloc_error_handler]
+/// TODO:
+/// P1 crates/loader/src/chibi_uefi/memory.rs:54: #[cfg_attr(not(test),
+/// alloc_error_handler)] still emits #[alloc_error_handler] when the loader
+/// library is compiled as a normal dependency of the loader bin test.
+/// cfg(test) is only true for the crate currently being built as a test
+/// target, so cargo test -p poison_girl_loader --all-targets --no-run still
+/// fails with the std allocation handler conflict. This  needs a gate tied to
+/// the real boot target or a feature, not only cfg(test).
+#[cfg_attr(not(test), alloc_error_handler)]
 fn alloc_error(layout: Layout,) -> !
 {
 	panic!("system run out of memory: {layout:#?}")

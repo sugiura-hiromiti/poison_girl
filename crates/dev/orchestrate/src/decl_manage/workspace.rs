@@ -123,9 +123,9 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		//  this operation is safe due to `&self` is valid
 		let self_mut = unsafe { (self as *const Self).cast_mut().as_mut() }
 			.reshape(poison_girl_err!(PointerOperationFailed),)?;
-		self_mut.land_on(at,);
+		self_mut.land_on(at,)?;
 		self_mut.cargo_xxx_with(cmd, opt,)?;
-		self_mut.land_on(current,);
+		self_mut.land_on(current,)?;
 		X((),)
 	}
 }
@@ -193,18 +193,20 @@ mod tests
 		crate::decl_manage::crate_::{
 			CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
 		},
+		poison_girl_dev_test::{PoisonGirlTestB, success},
 	};
 
 	#[test]
-	fn test_workspace_survey_land_on()
+	fn test_workspace_survey_land_on() -> PoisonGirlTestB
 	{
 		let mut workspace =
 			PoisonGirlCrate::from(PoisonGirlCrateChart::DevOrchestrate,);
 		let target = PoisonGirlCrate::from(PoisonGirlCrateChart::DevFs,);
 		let target_path = target.path();
 
-		workspace.land_on(target,);
+		workspace.land_on(target,)?;
 
 		assert_eq!(workspace.path(), target_path);
+		success!()
 	}
 }

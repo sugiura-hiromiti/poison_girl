@@ -5,7 +5,7 @@
 //! initialization through kernel handoff.
 
 #![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_main)]
 
 extern crate alloc;
 
@@ -29,6 +29,7 @@ use {
 /// This panic handler prints debug information and enters a wait-for-event loop
 /// instead of terminating the program, which is appropriate for a UEFI
 /// application.
+#[cfg(not(test))]
 #[panic_handler]
 fn panic(panic: &core::panic::PanicInfo,) -> !
 {

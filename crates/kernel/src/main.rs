@@ -1,5 +1,5 @@
 #![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_main)]
 // Enable ARM-specific hints when needed
 #![feature(stdarch_arm_hints)]
 
@@ -82,6 +82,7 @@ cfg_if! {
 /// // This will trigger the panic handler
 /// panic!("Critical kernel error occurred");
 /// ```
+#[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo,) -> !
 {
