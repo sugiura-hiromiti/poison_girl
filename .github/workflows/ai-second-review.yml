@@ -14,7 +14,7 @@ on:
 permissions:
    contents: read
    issues: write
-   pull-requests: read
+   pull-requests: write
    models: read
 
 concurrency:
@@ -126,6 +126,7 @@ jobs:
            uses: actions/github-script@v7
            env:
               AI_RESPONSE_FILE: ${{ steps.ai.outputs.response-file }}
+              AI_INFERENCE_OUTCOME: ${{ steps.ai.outcome }}
               AI_SECOND_REVIEW_MODEL: ${{ env.AI_SECOND_REVIEW_MODEL }}
            with:
               script: |
@@ -133,7 +134,8 @@ jobs:
                  const review = require('./.github/scripts/ai-second-review');
                  const reviewContext = JSON.parse(fs.readFileSync('second_review_context.json', 'utf8'));
                  const secondReview = review.parseSecondReviewResponse({
-                   responseFile: process.env.AI_RESPONSE_FILE
+                   responseFile: process.env.AI_RESPONSE_FILE,
+                   inferenceOutcome: process.env.AI_INFERENCE_OUTCOME
                  });
                  fs.writeFileSync('second_review.md', review.renderSecondReviewComment({
                    reviewContext,

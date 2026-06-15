@@ -5,8 +5,8 @@ const fs = require("fs");
 const COMMENT_MARKER = "<!-- ai-second-review -->";
 const COMMENT_MARKERS = [COMMENT_MARKER, "<!-- ai-second-review:deepseek -->"];
 const MAX_FILES = 80;
-const MAX_PATCH_CHARS = 60000;
-const MAX_PATCH_CHARS_PER_FILE = 12000;
+const MAX_PATCH_CHARS = 8000;
+const MAX_PATCH_CHARS_PER_FILE = 2500;
 const REVIEW_SEVERITIES = new Set(["critical", "moderate", "minor"]);
 const VERDICTS = new Set(["approve", "comment", "changes_requested"]);
 const RISK_LEVELS = new Set(["high", "medium", "low"]);
@@ -19,10 +19,17 @@ function stripControlText(value) {
 
 function truncate(value, maxChars) {
   const text = stripControlText(value).trim();
+  if (maxChars <= 0) {
+    return "";
+  }
   if (text.length <= maxChars) {
     return text;
   }
-  return `${text.slice(0, Math.max(0, maxChars - 16)).trimEnd()}\n[truncated]`;
+  const suffix = "\n[truncated]";
+  if (maxChars <= suffix.length) {
+    return text.slice(0, maxChars).trimEnd();
+  }
+  return `${text.slice(0, maxChars - suffix.length).trimEnd()}${suffix}`;
 }
 
 function readText(path, fallback = "") {
@@ -313,7 +320,7 @@ async function buildSecondReviewPrompt({ github, context, pullNumber, outPath })
     "",
     "# Context JSON",
     "```json",
-    JSON.stringify(reviewContext, null, 2),
+    JSON.stringify(reviewContext),
     "```",
   ].join("\n");
 
@@ -339,14 +346,17 @@ function normalizeFinding(value) {
   };
 }
 
-function fallbackReview(message) {
+function fallbackReview(
+  message,
+  testMessage = "Inspect the PR diff manually because the AI second review did not return structured output.",
+) {
   return {
     verdict: "comment",
     risk_level: "medium",
     summary: message,
     findings: [],
     questions: [],
-    tests: ["Inspect the PR diff manually because the AI second review did not return structured output."],
+    tests: [testMessage],
   };
 }
 
@@ -368,16 +378,26 @@ function normalizeSecondReview(raw) {
   };
 }
 
-function parseSecondReviewResponse({ responseFile }) {
+function parseSecondReviewResponse({ responseFile, inferenceOutcome } = {}) {
   const response = readText(responseFile, "");
   if (!response.trim()) {
-    return normalizeSecondReview(fallbackReview("AI second review did not return a response."));
+    const inferenceFailed = String(inferenceOutcome || "").toLowerCase() === "failure";
+    const message = inferenceFailed
+      ? "AI inference failed before returning a response."
+      : "AI inference returned no response.";
+    return normalizeSecondReview(fallbackReview(
+      message,
+      "Inspect the PR diff manually because AI inference failed or returned no response.",
+    ));
   }
 
   try {
     return normalizeSecondReview(parseJsonObject(response));
   } catch (_) {
-    return normalizeSecondReview(fallbackReview("AI second review returned invalid JSON."));
+    return normalizeSecondReview(fallbackReview(
+      "AI second review returned invalid JSON.",
+      "Inspect the PR diff manually because the AI second review did not return valid structured output.",
+    ));
   }
 }
 
