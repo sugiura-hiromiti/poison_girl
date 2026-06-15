@@ -147,6 +147,8 @@ impl ProgramHeader
 			program_headers.push(program_header,);
 		}
 
+		// rustdoc does not build the kernel ELF fixture that this macro reads.
+		#[cfg(not(doc))]
 		tphp_arch!(program_headers);
 		// cfg_if! {
 		// 	if #[cfg(target_arch = "aarch64")] {
