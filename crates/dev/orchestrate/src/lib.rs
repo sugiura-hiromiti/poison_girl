@@ -6,7 +6,8 @@ use {
 		OrchestrationResolver, PoisonGirlCargoInterface,
 		crate_::PoisonGirlCrateChart,
 	},
-	poison_girl_dev_cargo::{Arch, BuildMode, CliCommand, Opts},
+	clap::Parser,
+	poison_girl_dev_cargo::{Arch, BuildMode, Cli, CliCommand},
 	poison_girl_dev_error::{PathNotFound, PoisonGirlB, X, Y},
 	poison_girl_macro_def_features::features,
 	std::{path::PathBuf, str::FromStr},
@@ -29,7 +30,10 @@ pub fn check_poison_girl_kernel(
 {
 	let kernel_crate = PoisonGirlCargoInterface::new(
 		PoisonGirlCrateChart::Kernel,
-		Opts { arch, build_mode, ..Default::default() },
+		Task {
+			opts: Opts { arch, build_mode, ..Default::default() },
+			..Default::default()
+		},
 	);
 	// Construct the expected path to the kernel ELF file
 	let target_path = kernel_crate.build_artifact()?.path();
@@ -41,6 +45,71 @@ pub fn check_poison_girl_kernel(
 		Y(PathNotFound(target_path.display().to_string(),),)
 	}?;
 	X((),)
+}
+
+#[derive(Default, Clone,)]
+pub struct Opts
+{
+	pub build_mode:    BuildMode,
+	pub feature_flags: Vec<Feature,>,
+	pub arch:          Arch,
+	pub lock_deps:     bool,
+}
+
+#[derive(Default, Clone,)]
+pub struct Task
+{
+	cmd:  CliCommand,
+	opts: Opts,
+}
+
+impl Task
+{
+	pub fn from_cli(cli: Cli,) -> PoisonGirlB<Self,>
+	{
+		X(Self {
+			cmd:  cli.command.unwrap_or_default(),
+			opts: Opts {
+				build_mode:    cli.build_mode.unwrap_or_default(),
+				feature_flags: cli
+					.feature_flags
+					.map(|features| -> PoisonGirlB<_,> {
+						let rslt = features
+							.into_iter()
+							.map(|feature| Feature::from_str(&feature,),)
+							.try_collect()?;
+						X(rslt,)
+					},)
+					.unwrap_or(X(vec![],),)?,
+				arch:          cli.arch.unwrap_or_default(),
+				lock_deps:     cli.lock_deps,
+			},
+		},)
+	}
+
+	pub fn new() -> PoisonGirlB<Self,>
+	{
+		let cli = Cli::parse();
+		Self::from_cli(cli,)
+	}
+
+	pub fn opts(&self,) -> &Opts
+	{
+		&self.opts
+	}
+
+	pub fn cmd(&self,) -> CliCommand
+	{
+		self.cmd
+	}
+
+	pub fn from_arch_build_mode(arch: Arch, build_mode: BuildMode,) -> Self
+	{
+		Self {
+			opts: Opts { build_mode, arch, ..Default::default() },
+			..Default::default()
+		}
+	}
 }
 
 #[features(PoisonGirlCrateChart)]
@@ -85,7 +154,20 @@ impl CompileOpt for Opts
 
 	fn feature_flags(&self,) -> Vec<impl Into<String,>,>
 	{
-		self.feature_flags.clone()
+		self.feature_flags.iter().map(|f| f.as_ref(),).collect()
+	}
+}
+
+impl CompileOpt for Task
+{
+	fn build_mode(&self,) -> impl Into<String,>
+	{
+		self.opts.build_mode()
+	}
+
+	fn feature_flags(&self,) -> Vec<impl Into<String,>,>
+	{
+		self.opts.feature_flags()
 	}
 }
 
@@ -95,33 +177,29 @@ pub trait AsCargoOpt
 	fn as_cargo_opt(&self,) -> Self::Out;
 }
 
-impl AsCargoOpt for Opts
-{
-	type Out = PoisonGirlB<Vec<String,>,>;
+// impl AsCargoOpt for Opts
+// {
+// 	type Out = PoisonGirlB<Vec<String,>,>;
 
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		let Self { command, build_mode, feature_flags, lock_deps, .. } = self;
-		let Some(command,) = command.as_cargo_opt() else { return X(vec![],) };
-		let build_mode = build_mode.as_cargo_opt();
-		let feature_flags = feature_flags
-			.iter()
-			.map(|s| Feature::from_str(s,),)
-			.try_collect::<Vec<_,>>()?
-			.as_cargo_opt();
-		// single architecture info itself is useless
-		// target tuple is truth
-		// let arch = arch.as_cargo_opt();
-		let lock_deps =
-			if *lock_deps { Some("--locked".to_string(),) } else { None };
+// 	fn as_cargo_opt(&self,) -> Self::Out
+// 	{
+// 		let Self { build_mode, feature_flags, lock_deps, .. } = self;
+// 		let build_mode = build_mode.as_cargo_opt();
+// 		let feature_flags: Vec<_,> =
+// 			feature_flags.iter().map(|f| f.as_ref().to_string(),).collect();
+// 		// single architecture info itself is useless
+// 		// target tuple is truth
+// 		// let arch = arch.as_cargo_opt();
+// 		let lock_deps =
+// 			if *lock_deps { Some("--locked".to_string(),) } else { None };
 
-		X(std::iter::once(command,)
-			.chain(build_mode,)
-			.chain(feature_flags,)
-			.chain(lock_deps,)
-			.collect(),)
-	}
-}
+// 		X(build_mode
+// 			.into_iter()
+// 			.chain(feature_flags,)
+// 			.chain(lock_deps,)
+// 			.collect(),)
+// 	}
+// }
 
 impl AsCargoOpt for BuildMode
 {
@@ -136,16 +214,38 @@ impl AsCargoOpt for BuildMode
 	}
 }
 
-impl AsCargoOpt for CliCommand
-{
-	type Out = Option<String,>;
+// impl AsCargoOpt for CliCommand
+// {
+// 	type Out = Option<String,>;
 
-	fn as_cargo_opt(&self,) -> Self::Out
+// 	fn as_cargo_opt(&self,) -> Self::Out
+// 	{
+// 		match self {
+// 			Self::Check { .. } => None,
+// 			Self::Fixture => None,
+// 			_ => Some(self.as_ref().to_string(),),
+// 		}
+// 	}
+// }
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+	};
+
+	#[test]
+	fn test_cli_to_task_with_values() -> PoisonGirlTestB
 	{
-		match self {
-			Self::Check { .. } => None,
-			Self::Fixture => None,
-			_ => Some(self.as_ref().to_string(),),
-		}
+		let cli = Cli::default();
+
+		let task = Task::from_cli(cli,)?;
+		assert!(task.opts.build_mode.is_debug());
+		assert!(task.opts.feature_flags.is_empty());
+		assert!(task.opts.arch.is_aarch_64());
+		assert!(!task.opts.lock_deps);
+		success!()
 	}
 }

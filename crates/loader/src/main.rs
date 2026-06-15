@@ -5,7 +5,7 @@
 //! initialization through kernel handoff.
 
 #![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_main)]
 
 extern crate alloc;
 
@@ -14,14 +14,14 @@ use {
 		chibi_uefi::service::exit_boot_services,
 		exec_kernel, get_device_tree, init,
 		load::kernel,
-		println,
+		print, println,
 		raw::{
 			table::SystemTable,
 			types::{Status, UnsafeHandle},
 		},
 	},
 	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe},
-	poison_girl_no_std_error::{PoisonGirlB, X},
+	poison_girl_no_std_error::{PoisonGirlB, X, Y},
 };
 
 /// Custom panic handler for the UEFI environment
@@ -29,6 +29,7 @@ use {
 /// This panic handler prints debug information and enters a wait-for-event loop
 /// instead of terminating the program, which is appropriate for a UEFI
 /// application.
+#[cfg(not(test))]
 #[panic_handler]
 fn panic(panic: &core::panic::PanicInfo,) -> !
 {
@@ -77,14 +78,25 @@ pub extern "efiapi" fn efi_image_entry_point(
 ) -> Status
 {
 	// Initialize UEFI environment and connect devices
-	init(image_handle, system_table,);
+	if let Y(e,) = init(image_handle, system_table,) {
+		println!("error arise while initializing loader: {e:?}");
+		return Status::EFI_LOAD_ERROR;
+	}
 
 	// Load kernel and prepare for execution
-	let (kernel_entry, device_tree_ptr,) =
-		app().expect("error arise while executing application",);
+	let (kernel_entry, device_tree_ptr,) = match app() {
+		X(value,) => value,
+		Y(e,) => {
+			println!("error arise while executing application: {e:?}");
+			return Status::EFI_LOAD_ERROR;
+		},
+	};
 
 	// Exit UEFI boot services - point of no return
-	exit_boot_services();
+	if let Y(e,) = exit_boot_services() {
+		println!("error arise while exiting boot services: {e:?}");
+		return Status::EFI_LOAD_ERROR;
+	}
 
 	// Transfer control to kernel
 	exec_kernel(kernel_entry, device_tree_ptr,);
@@ -114,7 +126,7 @@ pub extern "efiapi" fn efi_image_entry_point(
 /// - The ELF parsing fails
 /// - Memory allocation for kernel loading fails
 /// - Device tree cannot be retrieved from UEFI
-fn app() -> Rslt<(u64, DeviceTreeAddress,),>
+fn app() -> PoisonGirlB<(u64, DeviceTreeAddress,),>
 {
 	// Load kernel ELF file and get entry point
 	let kernel_addr = kernel()?;

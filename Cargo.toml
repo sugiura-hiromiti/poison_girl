@@ -38,7 +38,7 @@ poison_girl_macro_def_impl_int = { path = "./crates/macro/impl_int/def/" }
 poison_girl_macro_def_status = { path = "./crates/macro/status/def/" }
 poison_girl_macro_def_test_elf_header_parse = { path = "./crates/macro/test_elf_header_parse/def/" }
 poison_girl_macro_def_test_program_headers_parse = { path = "./crates/macro/test_program_headers_parse/def/" }
-poison_girl_macro_def_wrapper = { path = "./crates/macro/wrapper/macro/" }
+poison_girl_macro_def_wrapper = { path = "./crates/macro/wrapper/def/" }
 poison_girl_macro_impl_features = { path = "./crates/macro/features/impl/" }
 poison_girl_macro_impl_font = { path = "./crates/macro/font/impl/" }
 poison_girl_macro_impl_from_path_buf = { path = "./crates/macro/from_path_buf/impl/" }
@@ -67,6 +67,7 @@ ureq = { version = "*", features = ["cookies"] }
 hadris-fat = { version = "*", features = ["sync", "write"] }
 
 [workspace.lints.clippy]
+let_underscore_must_use = "warn"
 tabs_in_doc_comments = "allow"
 mut_from_ref = "allow"
 # panicing APIs
@@ -76,6 +77,9 @@ panic = "deny"
 todo = "deny"
 unimplemented = "deny"
 unreachable = "deny"
+
+[workspace.lints.rust]
+unused_must_use = "warn"
 
 # [profile.dev.package.poison_girl]
 # opt-level = 3

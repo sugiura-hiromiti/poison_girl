@@ -135,25 +135,29 @@ impl MemoryMapBackingMemory
 {
 	pub fn new(mem_ty: MemoryType,) -> PoisonGirlB<Self,>
 	{
-		let bs = boot_services();
+		let bs = boot_services()?;
 		let (map_size, desc_size,) = bs.memory_map_size();
 		let len = Self::safe_allocation_size_hint(map_size, desc_size,);
-		let alloc_pos = bs.allocate_pool(mem_ty, len,)?.as_ptr();
+		let alloc_pos = bs.allocate_pool(mem_ty, len,)?;
 
-		assert_eq!(alloc_pos.align_offset(align_of::<MemoryDescriptor,>()), 0);
+		assert_eq!(
+			alloc_pos.as_ptr().align_offset(align_of::<MemoryDescriptor,>()),
+			0
+		);
 
 		assert_eq!(map_size % desc_size, 0);
 
 		unsafe { X(Self::from_raw(alloc_pos, len,),) }
 	}
 
-	unsafe fn from_raw(alloc_pos: *mut u8, len: usize,) -> Self
+	unsafe fn from_raw(alloc_pos: NonNull<u8,>, len: usize,) -> Self
 	{
-		assert_eq!(alloc_pos.align_offset(align_of::<MemoryDescriptor,>()), 0);
+		assert_eq!(
+			alloc_pos.as_ptr().align_offset(align_of::<MemoryDescriptor,>()),
+			0
+		);
 
-		let ptr = NonNull::new(alloc_pos,)
-			.expect("uefi should never return null ptr",);
-		let slice = NonNull::slice_from_raw_parts(ptr, len,);
+		let slice = NonNull::slice_from_raw_parts(alloc_pos, len,);
 
 		Self(slice,)
 	}

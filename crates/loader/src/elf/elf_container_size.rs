@@ -7,7 +7,7 @@ pub enum ElfContainerSize
 	Big,
 }
 
-impl const Default for ElfContainerSize
+const impl Default for ElfContainerSize
 {
 	fn default() -> Self
 	{

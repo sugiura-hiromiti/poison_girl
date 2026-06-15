@@ -1,14 +1,18 @@
 use {
-	crate::decl_manage::{
-		package::{Package, PackageAction, PackageInfo, PackageSurvey},
-		workspace::{
-			Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
+	crate::{
+		AsCargoOpt, Opts, Task,
+		decl_manage::{
+			PoisonGirlCargoInterface,
+			package::{Package, PackageAction, PackageInfo, PackageSurvey},
+			workspace::{
+				Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
+			},
 		},
 	},
-	poison_girl_dev_cargo::host_tuple_by_rustc,
+	poison_girl_dev_cargo::{CliCommand, host_tuple_by_rustc},
 	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{
-		Container, PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X,
+		PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X,
 		poison_girl_err,
 	},
 	poison_girl_dev_fs::{
@@ -17,7 +21,7 @@ use {
 	},
 	poison_girl_dev_util::toml_tools::TomlMerge,
 	poison_girl_macro_def_from_path_buf::FromPathBuf,
-	std::{ffi::OsStr, fmt::Debug, path::PathBuf, process::Command},
+	std::{fmt::Debug, path::PathBuf, process::Command},
 };
 
 pub trait Crate: Workspace + Package
@@ -40,8 +44,10 @@ pub trait CrateSurvey: CrateInfo
 		let path = self.path();
 		X(search_upstream_at(&path, CARGO_MANIFEST,)?.is_some(),)
 	}
+
 	fn go_parent(&mut self,) -> PoisonGirlB<(),>;
-	fn fix(&self,) -> PoisonGirlB<(),>
+
+	fn fix_manifest(&self,) -> PoisonGirlB<(),>
 	{
 		let mut manifest = self.toml()?;
 		if let Some(pkg,) = manifest.get_mut("package",)
@@ -57,7 +63,8 @@ pub trait CrateSurvey: CrateInfo
 		};
 		X((),)
 	}
-	fn land_on(&mut self, on: impl CrateCalled,);
+
+	fn land_on(&mut self, on: impl CrateCalled,) -> PoisonGirlB<(),>;
 }
 
 /// methods provided keeps environment e.g. current path
@@ -67,62 +74,61 @@ pub trait CrateAction: CrateInfo
 
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("build",)
+		self.cargo_xxx(CliCommand::Build,)
 	}
+
 	fn test(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("test",)
+		self.cargo_xxx(CliCommand::Test,)
 	}
+
 	fn run(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("run",)
+		self.cargo_xxx(CliCommand::Run,)
 	}
+
 	fn check(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("check",)
+		self.cargo_xxx(CliCommand::Check { kind: None, },)
 	}
-	fn format(&self,) -> PoisonGirlB<(),>
+
+	fn cargo_xxx(&self, cmd: CliCommand,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx("fmt",)
-	}
-	fn cargo_xxx(&self, cmd: impl AsRef<OsStr,>,) -> PoisonGirlB<(),>
-	{
-		self.cargo_xxx_with(cmd, &["",],)
+		self.cargo_xxx_with(cmd, &Opts::default(),)
 	}
 
 	// actions for all packages with specific options
 
-	fn build_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+	fn build_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with("build", opt,)
+		self.cargo_xxx_with(CliCommand::Build, opt,)
 	}
-	fn test_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+
+	fn test_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with("test", opt,)
+		self.cargo_xxx_with(CliCommand::Test, opt,)
 	}
-	fn run_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+
+	fn run_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with("run", opt,)
+		self.cargo_xxx_with(CliCommand::Run, opt,)
 	}
-	fn ckeck_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
+
+	fn ckeck_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with("check", opt,)
+		self.cargo_xxx_with(CliCommand::Check { kind: None, }, opt,)
 	}
-	fn fmt_with(&self, opt: &[impl AsRef<OsStr,>],) -> PoisonGirlB<(),>
-	{
-		self.cargo_xxx_with("fmt", opt,)
-	}
-	fn cargo_xxx_with(
-		&self,
-		cmd: impl AsRef<OsStr,>,
-		opt: &[impl AsRef<OsStr,>],
-	) -> PoisonGirlB<(),>
+
+	fn cargo_xxx_with(&self, cmd: CliCommand, opt: &Opts,) -> PoisonGirlB<(),>
 	{
 		let mut cargo = Command::new("cargo",);
-		let cargo = cargo.arg(cmd,);
+		let cargo = cargo.arg(cmd.as_ref(),);
 
-		let opt: Vec<_,> =
-			opt.iter().filter(|s| !s.as_ref().is_empty(),).collect();
+		let interface = PoisonGirlCargoInterface::new(
+			PoisonGirlCrateChart::from(self.path(),),
+			Task { cmd, opts: opt.clone(), },
+		);
+		let opt = interface.as_cargo_opt();
 		if !opt.is_empty() {
 			cargo.args(opt,);
 		}
@@ -142,6 +148,7 @@ pub trait CrateInfo: CrateCalled
 			None => X(false,),
 		}
 	}
+
 	fn is_workspace(&self,) -> PoisonGirlB<bool,>
 	{
 		let pkg_sec = self.toml()?;
@@ -151,6 +158,7 @@ pub trait CrateInfo: CrateCalled
 			None => X(false,),
 		}
 	}
+
 	fn is_pkg_and_ws(&self,) -> PoisonGirlB<bool,>
 	{
 		X(self.is_package()? && self.is_workspace()?,)
@@ -276,10 +284,12 @@ impl CrateAction for PoisonGirlCrate
 }
 impl CrateSurvey for PoisonGirlCrate
 {
-	fn land_on(&mut self, on: impl CrateCalled,)
+	fn land_on(&mut self, on: impl CrateCalled,) -> PoisonGirlB<(),>
 	{
 		let path = on.path_buf();
+		std::env::set_current_dir(&path,)?;
 		*self = Self::from(path,);
+		X((),)
 	}
 
 	fn go_parent(&mut self,) -> PoisonGirlB<(),>
@@ -290,7 +300,7 @@ impl CrateSurvey for PoisonGirlCrate
 				PathNotFound::new("parent directory do not exist")
 			),)?;
 			let parent = PoisonGirlCrateChart::from(parent.to_path_buf(),);
-			self.land_on(parent,);
+			self.land_on(parent,)?;
 			X((),)
 		} else {
 			X((),)
@@ -350,32 +360,29 @@ impl WorkspaceSurvey for PoisonGirlCrate
 impl WorkspaceInfo for PoisonGirlCrate
 {
 	#[allow(refining_impl_trait)]
-	fn members(&self,) -> Vec<PoisonGirlCrate,>
+	fn members(&self,) -> PoisonGirlB<Vec<PoisonGirlCrate,>,>
 	{
-		all_crates_in(&self.path(),)
-			.expect("failed to get some crates within workspace",)
+		X(all_crates_in(&self.path(),)?
 			.iter()
 			.map(|p| PoisonGirlCrate::from(p.clone(),),)
-			.collect()
+			.collect(),)
 	}
 
 	#[allow(refining_impl_trait)]
 	fn members_with_target(
 		&self,
 		target: impl Into<String,> + Clone,
-	) -> Vec<PoisonGirlCrate,>
+	) -> PoisonGirlB<Vec<PoisonGirlCrate,>,>
 	{
-		self.members()
-			.into_iter()
-			.filter(|c| {
-				let dflt_target: String = c
-					.default_target()
-					.expect("failed to determine default target",)
-					.into();
-				let target: String = target.clone().into();
-				dflt_target == target
-			},)
-			.collect()
+		let target: String = target.into();
+		let mut members = vec![];
+		for c in self.members()? {
+			let dflt_target: String = c.default_target()?.into();
+			if dflt_target == target {
+				members.push(c,);
+			}
+		}
+		X(members,)
 	}
 }
 
@@ -435,7 +442,11 @@ pub trait CrateCalled: Eq + Sized + Clone + From<Self::F,> + Debug
 #[cfg(test)]
 mod tests
 {
-	use {super::*, std::path::PathBuf};
+	use {
+		super::*,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		std::path::PathBuf,
+	};
 
 	// Note: The FromPathBuf macro validates paths and panics on non-existent
 	// paths This is a suspected program bug - tests should be able to use mock
@@ -567,15 +578,16 @@ mod tests
 	}
 
 	#[test]
-	fn test_workspace_survey_land_on()
+	fn test_workspace_survey_land_on() -> PoisonGirlTestB
 	{
 		let mut crate_obj =
 			PoisonGirlCrate::from(PoisonGirlCrateChart::DevOrchestrate,);
 		let target_crate = PoisonGirlCrate::from(PoisonGirlCrateChart::DevFs,);
 		let target_path = target_crate.path();
 
-		crate_obj.land_on(target_crate,);
+		crate_obj.land_on(target_crate,)?;
 
 		assert_eq!(crate_obj.path(), target_path);
+		success!()
 	}
 }

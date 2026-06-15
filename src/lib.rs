@@ -4,9 +4,10 @@
 // TODO: workspace内の未使用クレーとを検出
 
 use {
-	poison_girl_dev_cargo::{Assets, Opts},
-	poison_girl_dev_orchestrate::decl_manage::{
-		PoisonGirlCargoInterface, crate_::PoisonGirlCrate,
+	poison_girl_dev_cargo::Assets,
+	poison_girl_dev_orchestrate::{
+		Opts,
+		decl_manage::{PoisonGirlCargoInterface, crate_::PoisonGirlCrate},
 	},
 	std::path::PathBuf,
 };
@@ -28,9 +29,9 @@ pub struct Xtask
 
 impl Xtask
 {
-	fn opts(&self,) -> Opts
+	fn opts(&self,) -> &Opts
 	{
-		self.interface.opts()
+		self.interface.task().opts()
 	}
 
 	fn ws(&self,) -> PoisonGirlCrate

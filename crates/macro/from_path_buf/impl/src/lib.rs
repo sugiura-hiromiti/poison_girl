@@ -67,9 +67,8 @@ impl EnumParts
 
 			impl #name {
 				pub fn to_path_buf(&self) -> PathBuf {
-					use std::str::FromStr;
 					match self {
-						#(Self::#variants => PathBuf::from_str(#paths).unwrap(),)*
+						#(Self::#variants => PathBuf::from(#paths),)*
 					}
 				}
 
@@ -86,12 +85,23 @@ impl EnumParts
 				}
 			}
 
+			impl #name {
+				pub fn try_from_path_buf(value: PathBuf,) -> Result<Self, PathBuf> {
+					let Some(value_str) = value.to_str() else {
+						return Err(value,);
+					};
+					match value_str {
+						#(#paths => Ok(Self::#variants,),)*
+						_ => Err(value,),
+					}
+				}
+			}
+
 			impl From<PathBuf,> for #name {
 				fn from(value: PathBuf,) -> Self {
-					let value = value.to_str().expect("failed to convert PathBuf to &str");
-					match value {
-						#(#paths => Self::#variants,)*
-						a => unreachable!("invalid path {a:#?}"),
+					match Self::try_from_path_buf(value,) {
+						Ok(value,) => value,
+						Err(_,) => Self::default(),
 					}
 				}
 			}

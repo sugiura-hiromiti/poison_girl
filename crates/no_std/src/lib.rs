@@ -48,8 +48,6 @@
 #![no_std]
 // Enable unstable features required for advanced type system usage
 #![feature(unboxed_closures)]
-#![feature(associated_type_defaults)]
-#![feature(impl_trait_in_assoc_type)]
 
 use {core::arch::asm, poison_girl_macro::cfg_if};
 

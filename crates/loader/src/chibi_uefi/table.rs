@@ -7,6 +7,7 @@ use {
 		ptr::NonNull,
 		sync::atomic::{AtomicPtr, Ordering},
 	},
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, Y, poison_girl_err},
 };
 
 static SYSTEM_TABLE: AtomicPtr<SystemTable,> =
@@ -27,23 +28,38 @@ pub(crate) fn set_system_table_panicking(ptr: *const SystemTable,)
 	assert!(!SYSTEM_TABLE.load(Ordering::Acquire).is_null());
 }
 
-pub fn system_table() -> NonNull<SystemTable,>
+pub fn system_table() -> PoisonGirlB<NonNull<SystemTable,>,>
 {
 	let p = SYSTEM_TABLE.load(Ordering::Acquire,);
-	NonNull::new(p,).expect("set_system_table has not been called",)
+	match NonNull::new(p,) {
+		Some(table,) => X(table,),
+		None => Y(poison_girl_err!(UefiError::Custom(
+			"set_system_table has not been called",
+		)),),
+	}
 }
 
 /// # Panics
 ///
 /// if boot_services is null, then panics
-pub fn boot_services<'a,>() -> &'a BootServices
+pub fn boot_services<'a,>() -> PoisonGirlB<&'a BootServices,>
 {
-	let syst = system_table();
-	unsafe { syst.as_ref().boot_services.as_ref() }.unwrap()
+	let syst = system_table()?;
+	match unsafe { syst.as_ref().boot_services.as_ref() } {
+		Some(services,) => X(services,),
+		None => Y(poison_girl_err!(UefiError::Custom(
+			"boot services table is null",
+		)),),
+	}
 }
 
-pub fn runtime_services<'a,>() -> &'a RuntimeServices
+pub fn runtime_services<'a,>() -> PoisonGirlB<&'a RuntimeServices,>
 {
-	let syst = system_table();
-	unsafe { syst.as_ref().runtime_services.as_ref() }.unwrap()
+	let syst = system_table()?;
+	match unsafe { syst.as_ref().runtime_services.as_ref() } {
+		Some(services,) => X(services,),
+		None => Y(poison_girl_err!(UefiError::Custom(
+			"runtime services table is null",
+		)),),
+	}
 }

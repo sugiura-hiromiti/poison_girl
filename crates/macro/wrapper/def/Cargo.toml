@@ -9,6 +9,7 @@ proc-macro = true
 [dependencies]
 poison_girl_macro_impl_wrapper = { workspace = true }
 poison_girl_proc_macro_helper = { workspace = true }
+quote = { workspace = true }
 syn = { workspace = true }
 poison_girl_macro_error = { workspace = true }
 

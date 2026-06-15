@@ -1,10 +1,12 @@
+#![feature(exit_status_error)]
+
 use {
-	clap::{Parser, Subcommand},
+	clap::Subcommand,
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{
 		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
-	std::{path::PathBuf, process::Command, str::FromStr},
+	std::{path::PathBuf, process::Command},
 	strum_macros::Display,
 };
 
@@ -13,24 +15,6 @@ pub trait TargetSpec
 	fn tuple(&self,) -> String;
 	fn arch(&self,) -> Arch;
 	fn runtime(&self,) -> Runtime;
-}
-
-#[derive(Default, Clone,)]
-pub struct Opts
-{
-	pub command:       CliCommand,
-	pub build_mode:    BuildMode,
-	pub feature_flags: Vec<String,>,
-	pub arch:          Arch,
-	pub lock_deps:     bool,
-}
-
-impl Opts
-{
-	pub fn new() -> Self
-	{
-		Cli::parse().to_opts()
-	}
 }
 
 #[derive(clap::Parser, Default,)]
@@ -49,20 +33,6 @@ pub struct Cli
 	pub command:       Option<CliCommand,>,
 	#[arg(short, default_value_t = false)]
 	pub lock_deps:     bool,
-}
-
-impl Cli
-{
-	pub fn to_opts(self,) -> Opts
-	{
-		Opts {
-			build_mode:    self.build_mode.unwrap_or_default(),
-			feature_flags: self.feature_flags.unwrap_or_default(),
-			arch:          self.arch.unwrap_or_default(),
-			command:       self.command.unwrap_or_default(),
-			lock_deps:     self.lock_deps,
-		}
-	}
 }
 
 #[derive(
@@ -87,7 +57,12 @@ pub enum BuildMode
 }
 
 #[derive(
-	Subcommand, Default, strum_macros::EnumIs, strum_macros::AsRefStr, Clone,
+	Subcommand,
+	Default,
+	strum_macros::EnumIs,
+	strum_macros::AsRefStr,
+	Clone,
+	Copy,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum CliCommand
@@ -102,12 +77,12 @@ pub enum CliCommand
 		#[command(subcommand)]
 		kind: Option<CheckKind,>,
 	},
-	Fmt,
 	Fixture,
+	/// cargo fix
 	Fix,
 }
 
-#[derive(Subcommand, strum_macros::EnumIter, Clone,)]
+#[derive(Subcommand, strum_macros::EnumIter, Clone, Copy,)]
 pub enum CheckKind
 {
 	KernelAarch64,
@@ -177,7 +152,7 @@ impl Firmware
 	/// A new Firmware instance or an error if initialization fails
 	pub fn new(arch: Arch,) -> PoisonGirlB<Self,>
 	{
-		let path = PathBuf::from_str("/tmp/",).unwrap();
+		let path = PathBuf::from("/tmp/",);
 		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
 		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
 		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
@@ -255,7 +230,8 @@ impl Arch
 
 pub fn host_tuple_by_rustc() -> PoisonGirlB<String,>
 {
-	let target = Command::new("rustc",).arg("-vV",).output()?.stdout;
+	let target =
+		checked_stdout(Command::new("rustc",).arg("-vV",), "rustc -vV",)?;
 	let target = String::from_utf8(target,)?;
 	target
 		.lines()
@@ -269,22 +245,34 @@ pub fn host_tuple_by_rustc() -> PoisonGirlB<String,>
 		.reshape(poison_girl_err!(HostTupleNotFound),)
 }
 
+fn checked_stdout(
+	command: &mut Command,
+	context: &str,
+) -> PoisonGirlB<Vec<u8,>,>
+{
+	let output = command.output()?;
+	if let Err(status,) = output.status.exit_ok() {
+		let stderr = String::from_utf8_lossy(&output.stderr,);
+		return poison_girl_dev_error::Y(poison_girl_err!(format!(
+			"{context} failed with {status}: {stderr}"
+		)),);
+	}
+	X(output.stdout,)
+}
+
 #[cfg(test)]
 mod tests
 {
-	use super::*;
+	use {super::*, poison_girl_dev_error::Y};
 
-	/// defaultが効いてるかも確認できるテスト
 	#[test]
-	fn test_cli_to_opts_with_values()
+	fn checked_stdout_fails_on_non_zero_status()
 	{
-		let cli = Cli::default();
+		let rslt = checked_stdout(
+			Command::new("sh",).args(["-c", "printf stderr-msg >&2; exit 7",],),
+			"test command",
+		);
 
-		let opts = cli.to_opts();
-		assert!(opts.build_mode.is_debug());
-		assert!(opts.feature_flags.is_empty());
-		assert!(opts.arch.is_aarch_64());
-		assert!(opts.command.is_run());
-		assert!(!opts.lock_deps);
+		assert!(matches!(rslt, Y(_)));
 	}
 }

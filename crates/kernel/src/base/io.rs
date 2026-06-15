@@ -393,7 +393,7 @@ macro_rules! print {
 /// 1. Casts the static `CONSOLE` to a mutable pointer
 /// 2. Converts the pointer back to a mutable reference
 /// 3. Uses the `Write` trait to output the formatted arguments
-/// 4. Panics if any step fails
+/// 4. Drops the write if the global console pointer is unavailable
 ///
 /// # Examples
 ///
@@ -406,8 +406,13 @@ macro_rules! print {
 /// ```
 pub fn print(args: core::fmt::Arguments,)
 {
+	drop_fmt_result(try_print(args,),);
+}
+
+fn try_print(args: core::fmt::Arguments,) -> core::fmt::Result
+{
 	use core::fmt::Write;
-	unsafe {
+	if let Some(console,) = unsafe {
 		// SAFETY: We're obtaining a mutable reference to the static CONSOLE
 		// This is safe because:
 		// 1. The CONSOLE is a valid static with a stable address
@@ -417,10 +422,17 @@ pub fn print(args: core::fmt::Arguments,)
 		(&CONSOLE as *const TextBuf<(usize, usize,),>
 			as *mut TextBuf<(usize, usize,),>)
 			.as_mut()
-			.unwrap()
-			.write_fmt(args,)
+	} {
+		return console.write_fmt(args,);
 	}
-	.expect("unable to write to console",)
+	Ok((),)
+}
+
+fn drop_fmt_result(result: core::fmt::Result,)
+{
+	match result {
+		Ok((),) | Err(_,) => (),
+	}
 }
 
 // TODO: Implement integer to string conversion macro

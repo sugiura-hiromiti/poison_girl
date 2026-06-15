@@ -161,7 +161,7 @@ impl DiskImageBuilder
 const fn check_volume_label(label: &str,) -> &str
 {
 	if label.len() > 11 {
-		panic!()
+		return "POISON GIRL";
 	}
 
 	label
@@ -176,7 +176,7 @@ impl Xtask
 		let disk_img = self.disk_img_path()?;
 		let boot_loader_crate = PoisonGirlCargoInterface::new(
 			PoisonGirlCrateChart::LOADER,
-			self.opts(),
+			self.interface.task().clone(),
 		);
 		let boot_loader = boot_loader_crate.build_artifact()?.path();
 		let boot_loader_file_name =
@@ -194,7 +194,7 @@ impl Xtask
 
 	/// 起動用のディスクイメージへのパスを返す
 	/// NOTE: 存在確認やセットアップはこの関数の責務ではない
-	fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
+	pub(crate) fn disk_img_path(&self,) -> PoisonGirlB<PathBuf,>
 	{
 		X(self.asset_dir()?.join(DISK_IMG_NAME,),)
 	}

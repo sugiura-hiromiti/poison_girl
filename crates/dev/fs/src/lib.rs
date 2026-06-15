@@ -1,6 +1,7 @@
 #![feature(iterator_try_collect)]
 #![feature(try_find)]
 
+#[cfg(test)] use std::str::FromStr;
 use {
 	poison_girl_dev_error::{
 		InvalidCurrentCratePath, InvalidProjectRootFound, NotObedientPath,
@@ -11,7 +12,6 @@ use {
 		env::current_dir,
 		fs::DirEntry,
 		path::{Path, PathBuf},
-		str::FromStr,
 	},
 };
 
@@ -70,7 +70,7 @@ pub fn all_crates_in(path: &Path,) -> PoisonGirlB<Vec<PathBuf,>,>
 
 pub fn project_root_path() -> PoisonGirlB<PathBuf,>
 {
-	let mut p = PathBuf::from_str(CWD,).unwrap();
+	let mut p = PathBuf::from(CWD,);
 	let mut last_cargo_toml = None;
 
 	while p.pop() {
@@ -114,12 +114,6 @@ pub fn search_in(
 ) -> PoisonGirlB<Option<PathBuf,>,>
 {
 	let search_strategy = |entry: &Result<DirEntry, std::io::Error,>| {
-		// entry
-		// 	.as_ref()
-		// 	?
-		// 	.file_name()
-		// 	.to_str()
-		// 	.unwrap() == file_name.clone().into()
 		let found = entry.iter().filter_map(|entry| {
 			entry.file_name().to_str().map(|s| s.to_string(),)
 		},)
@@ -439,7 +433,7 @@ mod tests
 			assert!(result.is_none());
 
 			// Restore original directory
-			let _ = std::env::set_current_dir(original_dir,);
+			std::env::set_current_dir(original_dir,)?;
 		}
 		success!()
 	}
@@ -460,7 +454,7 @@ mod tests
 		std::fs::create_dir_all(&start,)?;
 
 		let result = search_upstream_at(&start, "Cargo.toml",)?;
-		let _ = std::fs::remove_dir_all(&root,);
+		std::fs::remove_dir_all(&root,)?;
 
 		assert_eq!(result, Some(manifest,));
 		success!()
@@ -485,7 +479,7 @@ mod tests
 		let result = search_in(&restricted, "any_file.txt",);
 
 		std::fs::set_permissions(&restricted, original_permissions,)?;
-		let _ = std::fs::remove_dir_all(&root,);
+		std::fs::remove_dir_all(&root,)?;
 
 		assert!(result.is_y());
 		success!()

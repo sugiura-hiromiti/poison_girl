@@ -1,6 +1,6 @@
 use {
 	crate::{
-		chibi_uefi::table::boot_services,
+		chibi_uefi::{drop_uefi_cleanup_result, table::boot_services},
 		raw::types::{
 			Status,
 			graphic::{
@@ -9,7 +9,7 @@ use {
 			},
 		},
 	},
-	poison_girl_no_std_error::Container,
+	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
 #[repr(C)]
@@ -40,23 +40,23 @@ pub struct GraphicsOutputProtocol
 
 impl GraphicsOutputProtocol
 {
-	pub fn query_mode(&self, index: u32,)
+	pub fn query_mode(&self, index: u32,) -> PoisonGirlB<(),>
 	{
 		let mut info_size = 0;
 		let mut info_heap_ptr = core::ptr::null();
-		let _ = unsafe {
+		unsafe {
 			(self.query_mode)(self, index, &mut info_size, &mut info_heap_ptr,)
 		}
-		.x_or_with(|_| {
-			let _info = unsafe { *info_heap_ptr };
-			let info_heap_ptr = unsafe {
-				info_heap_ptr.cast::<u8>().cast_mut().as_mut().unwrap()
-			};
+		.x_or()?;
 
-			boot_services()
-				.free_pool(info_heap_ptr,)
-				.expect("buffer should be deallocatable",);
-		},);
+		if let Some(info_heap_ptr,) =
+			unsafe { info_heap_ptr.cast::<u8>().cast_mut().as_mut() }
+			&& let X(bs,) = boot_services()
+		{
+			drop_uefi_cleanup_result(bs.free_pool(info_heap_ptr,),);
+		}
+
+		X((),)
 	}
 
 	pub fn mode(&self,) -> &GraphicsOutputProtocolMode

@@ -1,5 +1,7 @@
 use {
-	super::{Handle, image_handle, table::boot_services},
+	super::{
+		Handle, drop_uefi_cleanup_result, image_handle, table::boot_services,
+	},
 	crate::{
 		guid,
 		raw::{
@@ -19,7 +21,7 @@ use {
 		ffi::c_void,
 		ptr::{self, NonNull},
 	},
-	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, poison_girl_err},
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, Y, poison_girl_err},
 };
 
 pub trait Protocol
@@ -181,7 +183,7 @@ impl BootServices
 		handle: Handle,
 	) -> PoisonGirlB<ProtocolInterface<P,>,>
 	{
-		let necessity = OpenProtoNecessity::for_app(handle,);
+		let necessity = OpenProtoNecessity::for_app(handle,)?;
 		unsafe { self.open_protocol(necessity, OpenProtoAttr::EXCULSIVE,) }
 	}
 
@@ -189,9 +191,9 @@ impl BootServices
 		&self,
 	) -> PoisonGirlB<ProtocolInterface<P,>,>
 	{
-		let bs = boot_services();
+		let bs = boot_services()?;
 		let handle = unsafe { bs.handle_for_protocol::<P>() }?;
-		let necessity = OpenProtoNecessity::for_app(handle,);
+		let necessity = OpenProtoNecessity::for_app(handle,)?;
 		let attr = OpenProtoAttr::GET_PROTOCOL;
 
 		unsafe { bs.open_protocol(necessity, attr,) }
@@ -202,14 +204,17 @@ impl BootServices
 		handle: Handle,
 	) -> PoisonGirlB<NonNull<ProtocolInterface<P,>,>,>
 	{
-		let interface = ptr::null_mut();
+		let mut interface = ptr::null_mut();
 		unsafe {
-			(self.handle_protocol)(handle.as_ptr(), &P::GUID, interface,)
-				.x_or_with(|_| {
-					let interface =
-						(*interface).cast::<ProtocolInterface<P,>>();
-					NonNull::new(interface,).expect("interface is null",)
-				},)
+			(self.handle_protocol)(handle.as_ptr(), &P::GUID, &mut interface,)
+				.x_or()?;
+		}
+		let interface = interface.cast::<ProtocolInterface<P,>>();
+		match NonNull::new(interface,) {
+			Some(interface,) => X(interface,),
+			None => {
+				Y(poison_girl_err!(UefiError::Custom("interface is null",)),)
+			},
 		}
 	}
 }
@@ -265,9 +270,14 @@ pub struct ProtocolInterface<P: Protocol,>
 
 impl<P: Protocol,> ProtocolInterface<P,>
 {
-	pub fn interface(&self,) -> NonNull<P,>
+	pub fn interface(&self,) -> PoisonGirlB<NonNull<P,>,>
 	{
-		self.interface.unwrap()
+		match self.interface {
+			Some(interface,) => X(interface,),
+			None => Y(poison_girl_err!(UefiError::Custom(
+				"protocol interface is null",
+			)),),
+		}
 	}
 }
 
@@ -275,16 +285,18 @@ impl<P: Protocol,> Drop for ProtocolInterface<P,>
 {
 	fn drop(&mut self,)
 	{
-		let bt = boot_services();
-		let _rslt = unsafe {
-			(bt.close_protocol)(
-				self.handles.handle_ptr(),
-				&P::GUID,
-				self.handles.agent_ptr(),
-				self.handles.controller_ptr(),
-			)
+		if let X(bt,) = boot_services() {
+			let rslt = unsafe {
+				(bt.close_protocol)(
+					self.handles.handle_ptr(),
+					&P::GUID,
+					self.handles.agent_ptr(),
+					self.handles.controller_ptr(),
+				)
+			}
+			.x_or();
+			drop_uefi_cleanup_result(rslt,);
 		}
-		.x_or();
 	}
 }
 
@@ -297,10 +309,10 @@ pub struct OpenProtoNecessity
 
 impl OpenProtoNecessity
 {
-	pub fn for_app(handle: Handle,) -> Self
+	pub fn for_app(handle: Handle,) -> PoisonGirlB<Self,>
 	{
-		let agent = image_handle();
-		Self { handle, agent, controller: None, }
+		let agent = image_handle()?;
+		X(Self { handle, agent, controller: None, },)
 	}
 
 	pub fn handle_ptr(&self,) -> UnsafeHandle
