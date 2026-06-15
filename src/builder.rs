@@ -108,9 +108,17 @@ impl Xtask
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
 		let args = self.interface.task().opts();
+		// TODO: When cargo xt build or cargo xt run is invoked from the
+		// workspace root, these build_at_with calls do not actually change
+		// Cargo's working directory or pass a package/manifest flag;
+		// cargo_xxx_at_with only mutates the in-memory chart before spawning
+		// cargo. That means Cargo misses crates/kernel/.cargo/config.toml and
+		// crates/loader/.cargo/config.toml, so it repeats the same root
+		// workspace build instead of producing the target-specific kernel and
+		// loader artifacts that build_artifact() later expects.
 		self.ws().build_at_with(PoisonGirlCrateChart::KERNEL, args,)?;
 		self.ws().build_at_with(PoisonGirlCrateChart::LOADER, args,)?;
-		todo!()
+		X((),)
 	}
 
 	/// this is workspace run.

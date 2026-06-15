@@ -18,18 +18,19 @@ impl Guid
 	pub fn gen_from_str(s: impl AsRef<str,>,) -> PoisonGirlB<Self,>
 	{
 		let mut s = guid_hexes(s.as_ref(),)?.into_iter();
-		let mut time_low = next_hex_chunk::<4, _,>(&mut s,)?;
+		let mut time_low = next_byte_chunk::<4, _,>(&mut s,)?;
 		time_low.reverse();
-		let mut time_mid = next_hex_chunk::<2, _,>(&mut s,)?;
+		let mut time_mid = next_byte_chunk::<2, _,>(&mut s,)?;
 		time_mid.reverse();
-		let mut time_high_and_version = next_hex_chunk::<2, _,>(&mut s,)?;
+		let mut time_high_and_version = next_byte_chunk::<2, _,>(&mut s,)?;
 		time_high_and_version.reverse();
 
-		let clock_seq_high_and_reserved = next_hex(&mut s,)?;
-		let clock_seq_low = next_hex(&mut s,)?;
-		let mut node = next_hex_chunk::<6, _,>(&mut s,)?;
-		node.reverse();
+		let clock_seq_high_and_reserved = next_byte_chunk::<1, _,>(&mut s,)?[0];
+		let clock_seq_low = next_byte_chunk::<1, _,>(&mut s,)?[0];
+		let node = next_byte_chunk::<6, _,>(&mut s,)?;
 
+		// NOTE: input is correctly 32 nibbles = 16 bytes. if it contains extra
+		// nibbles/bytes, return as failure
 		if s.next().is_some() {
 			return Y(poison_girl_err!(GuidError::InvalidLength),);
 		}
@@ -84,7 +85,7 @@ fn guid_hexes(s: &str,) -> PoisonGirlB<Vec<u8,>,>
 	X(hexes,)
 }
 
-fn next_hex(hexes: &mut impl Iterator<Item = u8,>,) -> PoisonGirlB<u8,>
+fn next_nibble(hexes: &mut impl Iterator<Item = u8,>,) -> PoisonGirlB<u8,>
 {
 	match hexes.next() {
 		Some(hex,) => X(hex,),
@@ -92,15 +93,36 @@ fn next_hex(hexes: &mut impl Iterator<Item = u8,>,) -> PoisonGirlB<u8,>
 	}
 }
 
-fn next_hex_chunk<const N: usize, I: Iterator<Item = u8,>,>(
+fn next_nibble_chunk<const N: usize, I: Iterator<Item = u8,>,>(
 	hexes: &mut I,
 ) -> PoisonGirlB<[u8; N],>
 {
 	let mut chunk = [0; N];
 	for hex in &mut chunk {
-		*hex = next_hex(hexes,)?;
+		*hex = next_nibble(hexes,)?;
 	}
 	X(chunk,)
+}
+
+fn convert_nibble_chunk_to_byte_chunk<const N: usize,>(
+	nibbles: [u8; N * 2],
+) -> [u8; N]
+{
+	let mut byte_chunk = [0; N];
+	(0..N).for_each(|i| {
+		byte_chunk[i] = (nibbles[i * 2] << 4) | nibbles[i * 2 + 1];
+	},);
+	byte_chunk
+}
+
+fn next_byte_chunk<const N: usize, I: Iterator<Item = u8,>,>(
+	hexes: &mut I,
+) -> PoisonGirlB<[u8; N],>
+where [(); N * 2]:
+{
+	let nibble_chunk = next_nibble_chunk::<{ N * 2 }, _,>(hexes,)?;
+	let byte_chunk = convert_nibble_chunk_to_byte_chunk::<N,>(nibble_chunk,);
+	X(byte_chunk,)
 }
 
 pub const fn read_to_hex<const N: usize,>(s: &str, buf: &mut [Hex; N],)
@@ -191,31 +213,6 @@ impl TryFrom<char,> for Hex
 			},
 		};
 		Ok(code,)
-	}
-}
-
-#[cfg(test)]
-mod tests
-{
-	use {
-		super::*,
-		poison_girl_no_std_error::{X, Y},
-	};
-
-	#[test]
-	fn invalid_guid_character_returns_error()
-	{
-		let guid = Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723_",);
-
-		assert!(matches!(guid, Y(_)));
-	}
-
-	#[test]
-	fn valid_guid_with_hyphens_parses()
-	{
-		let guid = Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723b",);
-
-		assert!(matches!(guid, X(_)));
 	}
 }
 
@@ -338,5 +335,42 @@ where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
 			i += 1;
 		}
 		le_ordered_hexes.as_bytes()
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::{X, Y},
+	};
+
+	#[test]
+	fn invalid_guid_character_returns_error()
+	{
+		let guid = Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723_",);
+
+		assert!(matches!(guid, Y(_)));
+	}
+
+	#[test]
+	fn valid_guid_with_hyphens_parses()
+	{
+		let guid = Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723b",);
+
+		assert!(matches!(guid, X(_)));
+	}
+
+	#[test]
+	fn test_fix_by_against_gen_from_str() -> PoisonGirlTestB
+	{
+		let guid1 =
+			Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723b",)?;
+		let guid2 = Guid::fix_by("09576e91-6d3f-11d2-8e39-00a0c969723b",);
+
+		assert_eq!(guid1, guid2);
+		success!()
 	}
 }

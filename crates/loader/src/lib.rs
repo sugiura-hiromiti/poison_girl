@@ -70,12 +70,15 @@ pub fn init(
 
 	for handle in handles {
 		unsafe {
+			// NOTE: we intentionally ignore errors here.
+			// the real error should be arose at the required handler still
+			// cannnot be found
 			bs.connect_controller(
 				*handle,
 				None,
 				None,
 				raw::types::Boolean::TRUE,
-			)?
+			)
 		};
 	}
 

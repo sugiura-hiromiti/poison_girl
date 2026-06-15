@@ -947,6 +947,7 @@ dependencies = [
 name = "poison_girl_loader"
 version = "0.1.0"
 dependencies = [
+ "poison_girl_dev_test",
  "poison_girl_macro",
  "poison_girl_macro_def_status",
  "poison_girl_macro_def_test_elf_header_parse",

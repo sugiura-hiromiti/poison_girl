@@ -10,6 +10,10 @@ poison_girl_macro_def_test_elf_header_parse = { workspace = true }
 poison_girl_macro_def_test_program_headers_parse = { workspace = true }
 poison_girl_no_std = { workspace = true }
 poison_girl_no_std_error = { workspace = true }
+
+[dev-dependencies]
+poison_girl_dev_test = { workspace = true }
+
 [lints]
 workspace = true
 

@@ -231,7 +231,7 @@ impl TargetSpec for PoisonGirlCargoInterface
 			Host => "host-tuple".to_string(),
 			Efi => [arch, "unknown-uefi",].join("-",),
 			PoisonGirl => {
-				[arch, "sugiura_hiromiti-poison_girl.json",].join("-",)
+				[arch, "sugiura_hiromiti-poison_girl-elf.json",].join("-",)
 			},
 		}
 	}
