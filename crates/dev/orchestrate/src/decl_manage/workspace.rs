@@ -1,12 +1,14 @@
 use {
-	crate::decl_manage::crate_::{
-		Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
+	crate::{
+		Opts,
+		decl_manage::crate_::{
+			Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
+		},
 	},
 	poison_girl_dev_cargo::CliCommand,
 	poison_girl_dev_error::{
 		PointerOperationFailed, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
-	std::ffi::OsStr,
 };
 
 pub trait Workspace: WorkspaceAction + WorkspaceSurvey
@@ -58,17 +60,15 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where
 		Self: WorkspaceSurvey,
 	{
-		let opt: &[&OsStr] = &[];
-		self.cargo_xxx_at_with(cmd, at, &opt,)
+		self.cargo_xxx_at_with(cmd, at, &Opts::default(),)
 	}
 
 	// actions for specific package with specific options
 
-	fn build_at_with<'a,>(
+	fn build_at_with(
 		&self,
 		at: impl CrateCalled,
-		// opt: &[impl AsRef<OsStr,>],
-		opt: &impl AsRef<[&'a OsStr],>,
+		opt: &Opts,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
@@ -76,10 +76,10 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		self.cargo_xxx_at_with(CliCommand::Build, at, opt,)
 	}
 
-	fn test_at_with<'a,>(
+	fn test_at_with(
 		&self,
 		at: impl CrateCalled,
-		opt: &impl AsRef<[&'a OsStr],>,
+		opt: &Opts,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
@@ -87,10 +87,10 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		self.cargo_xxx_at_with(CliCommand::Test, at, opt,)
 	}
 
-	fn run_at_with<'a,>(
+	fn run_at_with(
 		&self,
 		at: impl CrateCalled,
-		opt: &impl AsRef<[&'a OsStr],>,
+		opt: &Opts,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
@@ -99,10 +99,10 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	}
 
 	/// TODO: support kernel/loader check
-	fn check_at_with<'a,>(
+	fn check_at_with(
 		&self,
 		at: impl CrateCalled,
-		opt: &impl AsRef<[&'a OsStr],>,
+		opt: &Opts,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
@@ -110,11 +110,11 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		self.cargo_xxx_at_with(CliCommand::Check { kind: None, }, at, opt,)
 	}
 
-	fn cargo_xxx_at_with<'a,>(
+	fn cargo_xxx_at_with(
 		&self,
 		cmd: CliCommand,
 		at: impl CrateCalled,
-		opt: &impl AsRef<[&'a OsStr],>,
+		opt: &Opts,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,

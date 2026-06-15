@@ -906,6 +906,7 @@ dependencies = [
  "poison_girl_dev_cli",
  "poison_girl_dev_error",
  "poison_girl_dev_fs",
+ "poison_girl_dev_test",
  "poison_girl_dev_util",
  "poison_girl_macro_def_features",
  "poison_girl_macro_def_from_path_buf",

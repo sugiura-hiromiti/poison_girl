@@ -2,10 +2,13 @@
 #![feature(exit_status_error)]
 
 use {
-	poison_girl_dev_cargo::{Arch, BuildMode, Opts},
-	poison_girl_dev_orchestrate::decl_manage::{
-		OrchestrationResolver, PoisonGirlCargoInterface,
-		crate_::PoisonGirlCrateChart,
+	poison_girl_dev_cargo::{Arch, BuildMode},
+	poison_girl_dev_orchestrate::{
+		Task,
+		decl_manage::{
+			OrchestrationResolver, PoisonGirlCargoInterface,
+			crate_::PoisonGirlCrateChart,
+		},
 	},
 	poison_girl_macro_error::rslt::Rslt,
 	proc_macro2::{Span, TokenStream},
@@ -174,7 +177,7 @@ fn readelf_l_out(arch: String, build_mode: String,) -> Rslt<Vec<String,>,>
 	let build_mode = BuildMode::from_str(&build_mode,)?;
 	let kernel_crate = PoisonGirlCargoInterface::new(
 		PoisonGirlCrateChart::Kernel,
-		Opts { arch, build_mode, ..Default::default() },
+		Task::from_arch_build_mode(arch, build_mode,),
 	);
 	let kernel_bin_path = kernel_crate.build_artifact()?.path();
 

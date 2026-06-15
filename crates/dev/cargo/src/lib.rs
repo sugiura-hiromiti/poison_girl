@@ -1,12 +1,12 @@
 #![feature(exit_status_error)]
 
 use {
-	clap::{Parser, Subcommand},
+	clap::Subcommand,
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{
 		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
-	std::{ffi::OsStr, path::PathBuf, process::Command},
+	std::{path::PathBuf, process::Command},
 	strum_macros::Display,
 };
 
@@ -15,32 +15,6 @@ pub trait TargetSpec
 	fn tuple(&self,) -> String;
 	fn arch(&self,) -> Arch;
 	fn runtime(&self,) -> Runtime;
-}
-
-#[derive(Default, Clone,)]
-pub struct Opts
-{
-	pub command:       CliCommand,
-	pub build_mode:    BuildMode,
-	pub feature_flags: Vec<String,>,
-	pub arch:          Arch,
-	pub lock_deps:     bool,
-}
-
-impl Opts
-{
-	pub fn new() -> Self
-	{
-		Cli::parse().to_opts()
-	}
-}
-
-impl<'a,> AsRef<[&'a OsStr],> for Opts
-{
-	fn as_ref(&self,) -> &[&'a OsStr]
-	{
-		todo!()
-	}
 }
 
 #[derive(clap::Parser, Default,)]
@@ -59,20 +33,6 @@ pub struct Cli
 	pub command:       Option<CliCommand,>,
 	#[arg(short, default_value_t = false)]
 	pub lock_deps:     bool,
-}
-
-impl Cli
-{
-	pub fn to_opts(self,) -> Opts
-	{
-		Opts {
-			build_mode:    self.build_mode.unwrap_or_default(),
-			feature_flags: self.feature_flags.unwrap_or_default(),
-			arch:          self.arch.unwrap_or_default(),
-			command:       self.command.unwrap_or_default(),
-			lock_deps:     self.lock_deps,
-		}
-	}
 }
 
 #[derive(
@@ -97,7 +57,12 @@ pub enum BuildMode
 }
 
 #[derive(
-	Subcommand, Default, strum_macros::EnumIs, strum_macros::AsRefStr, Clone,
+	Subcommand,
+	Default,
+	strum_macros::EnumIs,
+	strum_macros::AsRefStr,
+	Clone,
+	Copy,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum CliCommand
@@ -117,7 +82,7 @@ pub enum CliCommand
 	Fix,
 }
 
-#[derive(Subcommand, strum_macros::EnumIter, Clone,)]
+#[derive(Subcommand, strum_macros::EnumIter, Clone, Copy,)]
 pub enum CheckKind
 {
 	KernelAarch64,
@@ -299,20 +264,6 @@ fn checked_stdout(
 mod tests
 {
 	use {super::*, poison_girl_dev_error::Y};
-
-	/// defaultが効いてるかも確認できるテスト
-	#[test]
-	fn test_cli_to_opts_with_values()
-	{
-		let cli = Cli::default();
-
-		let opts = cli.to_opts();
-		assert!(opts.build_mode.is_debug());
-		assert!(opts.feature_flags.is_empty());
-		assert!(opts.arch.is_aarch_64());
-		assert!(opts.command.is_run());
-		assert!(!opts.lock_deps);
-	}
 
 	#[test]
 	fn checked_stdout_fails_on_non_zero_status()

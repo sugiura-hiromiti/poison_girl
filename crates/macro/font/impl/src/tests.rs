@@ -1,11 +1,28 @@
 use {
-	super::*,
+	crate::{convert_bitfield, font, font_data},
 	poison_girl_macro_error::{rslt::test_helper::TestRslt, success},
 	std::fs,
 };
 
+const SAMPLE_FONT_DATA: &str = r#"........
+...@@...
+..@..@..
+..@..@..
+..@..@..
+..@@@@..
+..@..@..
+..@..@..
+..@..@..
+..@..@..
+........
+........
+........
+........
+........
+........"#;
+
 #[test]
-fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),>
+fn test_fonts_loads_correct_number_of_characters() -> TestRslt
 {
 	// Create a test font file in the project directory
 	use std::env;
@@ -13,11 +30,7 @@ fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),>
 	let project_root = env::var("CARGO_MANIFEST_DIR",)?;
 	let test_file_path = format!("{}/test_font_temp.txt", project_root);
 
-	// Create sample font data
-	let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\\
-	                        n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\\
-	                        n........\n........\n........\n........\n........\\
-	                        n........\n";
+	let sample_font_data = SAMPLE_FONT_DATA;
 	let mut full_font_data = String::new();
 	for _ in 0..256 {
 		full_font_data.push_str(sample_font_data,);
@@ -33,12 +46,12 @@ fn test_fonts_loads_correct_number_of_characters() -> Rslt<(),>
 	assert_eq!(fonts.len(), 256);
 
 	// Cleanup
-	let _ = fs::remove_file(test_file_path,);
-	Rslt::new((),)
+	fs::remove_file(test_file_path,)?;
+	success!()
 }
 
 #[test]
-fn test_fonts_each_character_has_correct_length() -> Rslt<(),>
+fn test_fonts_each_character_has_correct_length() -> TestRslt
 {
 	// Create a test font file in the project directory
 	use std::env;
@@ -47,10 +60,7 @@ fn test_fonts_each_character_has_correct_length() -> Rslt<(),>
 	let test_file_path = format!("{}/test_font_temp2.txt", project_root);
 
 	// Create sample font data
-	let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\\
-	                        n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\\
-	                        n........\n........\n........\n........\n........\\
-	                        n........\n";
+	let sample_font_data = SAMPLE_FONT_DATA;
 	let mut full_font_data = String::new();
 	for _ in 0..256 {
 		full_font_data.push_str(sample_font_data,);
@@ -77,8 +87,8 @@ fn test_fonts_each_character_has_correct_length() -> Rslt<(),>
 	}
 
 	// Cleanup
-	let _ = fs::remove_file(test_file_path,);
-	Rslt::new((),)
+	fs::remove_file(test_file_path,)?;
+	success!()
 }
 
 #[test]
@@ -181,7 +191,7 @@ fn test_fonts_nonexistent_file()
 }
 
 #[test]
-fn test_fonts_with_hex_values_filtered() -> Rslt<(),>
+fn test_fonts_with_hex_values_filtered() -> TestRslt
 {
 	// Create a test font file in the project directory
 	use std::env;
@@ -233,12 +243,12 @@ fn test_fonts_with_hex_values_filtered() -> Rslt<(),>
 	}
 
 	// Cleanup
-	let _ = fs::remove_file(test_file_path,);
-	Rslt::new((),)
+	fs::remove_file(test_file_path,)?;
+	success!()
 }
 
 #[test]
-fn test_font_function_integration() -> Rslt<(),>
+fn test_font_function_integration() -> TestRslt
 {
 	use std::env;
 
@@ -246,10 +256,7 @@ fn test_font_function_integration() -> Rslt<(),>
 	let test_file_path = format!("{}/test_font_integration.txt", project_root);
 
 	// Create valid font data
-	let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\\
-	                        n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\\
-	                        n........\n........\n........\n........\n........\\
-	                        n........\n";
+	let sample_font_data = SAMPLE_FONT_DATA;
 	let mut full_font_data = String::new();
 	for _ in 0..256 {
 		full_font_data.push_str(sample_font_data,);
@@ -273,12 +280,12 @@ fn test_font_function_integration() -> Rslt<(),>
 	assert!(token_string.contains("["));
 
 	// Cleanup
-	let _ = fs::remove_file(test_file_path,);
-	Rslt::new((),)
+	fs::remove_file(test_file_path,)?;
+	success!()
 }
 
 #[test]
-fn test_font_data_with_mixed_line_endings() -> Rslt<(),>
+fn test_font_data_with_mixed_line_endings() -> TestRslt
 {
 	use std::env;
 
@@ -314,9 +321,9 @@ fn test_font_data_with_mixed_line_endings() -> Rslt<(),>
 	fonts.iter().for_each(|font| assert_eq!(font.len(), 128),);
 
 	// Cleanup regardless of result
-	let _ = fs::remove_file(test_file_path,);
+	fs::remove_file(test_file_path,)?;
 
-	Rslt::new((),)
+	success!()
 }
 
 #[test]
@@ -406,7 +413,7 @@ fn test_font_data_error_conditions()
 }
 
 #[test]
-fn test_font_data_with_insufficient_characters() -> Rslt<(),>
+fn test_font_data_with_insufficient_characters() -> TestRslt
 {
 	use std::env;
 
@@ -414,10 +421,21 @@ fn test_font_data_with_insufficient_characters() -> Rslt<(),>
 	let test_file_path = format!("{}/test_font_insufficient.txt", project_root);
 
 	// Create font data with only 100 characters instead of 256
-	let sample_font_data = "........\n...@@...\n..@..@..\n..@..@..\n..@..@..\\
-	                        n..@@@@..\n..@..@..\n..@..@..\n..@..@..\n..@..@..\\
-	                        n........\n........\n........\n........\n........\\
-	                        n........\n";
+	let sample_font_data = r#"........
+...@@...
+..@..@..
+..@..@..
+..@..@..
+..@@@@..
+..@..@..
+..@..@..
+..@..@..
+..@..@..
+........
+........
+........
+...."#;
+
 	let mut font_file_data = String::new();
 	for _ in 0..100 {
 		// Only 100 characters
@@ -434,15 +452,15 @@ fn test_font_data_with_insufficient_characters() -> Rslt<(),>
 	let result = font_data(lit_str,);
 
 	// Cleanup
-	let _ = fs::remove_file(test_file_path,);
+	fs::remove_file(test_file_path,)?;
 
 	assert!(result.has_err());
 
-	Rslt::new((),)
+	success!()
 }
 
 #[test]
-fn test_font_data_with_wrong_character_length() -> Rslt<(),>
+fn test_font_data_with_wrong_character_length() -> TestRslt
 {
 	use std::env;
 
@@ -467,9 +485,9 @@ fn test_font_data_with_wrong_character_length() -> Rslt<(),>
 	let result = font_data(lit_str,);
 
 	// Cleanup
-	let _ = fs::remove_file(test_file_path,);
+	fs::remove_file(test_file_path,)?;
 	assert!(result.has_err());
-	Rslt::new((),)
+	success!()
 }
 
 #[test]

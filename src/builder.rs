@@ -12,10 +12,10 @@
 
 use {
 	crate::Xtask,
-	poison_girl_dev_cargo::{Assets, CheckKind, CliCommand, Opts},
+	poison_girl_dev_cargo::{Assets, CheckKind, CliCommand},
 	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::{
-		AsCargoOpt,
+		Task,
 		decl_manage::{
 			PoisonGirlCargoInterface,
 			crate_::{CrateAction, PoisonGirlCrateChart},
@@ -77,18 +77,18 @@ impl Xtask
 	///   fails
 	pub fn new() -> PoisonGirlB<Self,>
 	{
-		let opts = Opts::new();
+		let task = Task::new()?;
 		let chart = PoisonGirlCrateChart::XTASK;
-		let assets = Assets::new(opts.arch,)?;
+		let assets = Assets::new(task.opts().arch,)?;
 		X(Self {
-			interface: PoisonGirlCargoInterface::new(chart, opts,),
+			interface: PoisonGirlCargoInterface::new(chart, task,),
 			assets,
 		},)
 	}
 
 	pub fn runner(&self,) -> PoisonGirlB<(),>
 	{
-		match &self.opts().command {
+		match &self.interface.task().cmd() {
 			CliCommand::Build => self.build(),
 			CliCommand::Test => self.test(),
 			CliCommand::Run => self.run(),
@@ -107,9 +107,10 @@ impl Xtask
 	/// not a package build
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
-		let args = self.opts().as_cargo_opt()?;
-		self.ws().build_at_with(PoisonGirlCrateChart::KERNEL, &args,)?;
-		self.ws().build_at_with(PoisonGirlCrateChart::LOADER, &args,)?;
+		let args = self.interface.task().opts();
+		self.ws().build_at_with(PoisonGirlCrateChart::KERNEL, args,)?;
+		self.ws().build_at_with(PoisonGirlCrateChart::LOADER, args,)?;
+		todo!()
 	}
 
 	/// this is workspace run.
@@ -139,6 +140,7 @@ impl Xtask
 
 	fn clippy(&self,) -> PoisonGirlB<(),>
 	{
+		todo!()
 	}
 
 	fn fixture(&self,) -> PoisonGirlB<(),>
@@ -153,7 +155,7 @@ impl Xtask
 
 	fn fix(&self,) -> PoisonGirlB<(),>
 	{
-		let args = self.opts().as_cargo_opt()?;
-		self.ws().cargo_xxx_with("fix", &args,)
+		let args = self.interface.task().opts();
+		self.ws().cargo_xxx_with(CliCommand::Fix, args,)
 	}
 }

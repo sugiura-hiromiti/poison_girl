@@ -1,11 +1,11 @@
 use {
 	crate::{
-		CompileOpt,
+		AsCargoOpt, CompileOpt, Opts, Task,
 		decl_manage::crate_::{
 			Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
 		},
 	},
-	poison_girl_dev_cargo::{Opts, TargetSpec},
+	poison_girl_dev_cargo::TargetSpec,
 	poison_girl_dev_error::{
 		PoisonGirlB, X, Y, YourHostPlatformIsOutOfSupport, poison_girl_err,
 	},
@@ -69,19 +69,19 @@ pub trait OrchestrationResolver
 pub struct PoisonGirlCargoInterface
 {
 	ws:   PoisonGirlCrate,
-	opts: Opts,
+	task: Task,
 }
 
 impl PoisonGirlCargoInterface
 {
-	pub fn new(chart: PoisonGirlCrateChart, opts: Opts,) -> Self
+	pub fn new(chart: PoisonGirlCrateChart, task: Task,) -> Self
 	{
-		Self { ws: PoisonGirlCrate::from(chart,), opts, }
+		Self { ws: PoisonGirlCrate::from(chart,), task, }
 	}
 
-	pub fn opts(&self,) -> Opts
+	pub fn task(&self,) -> &Task
 	{
-		self.opts.clone()
+		&self.task
 	}
 
 	pub fn ws(&self,) -> PoisonGirlCrate
@@ -173,7 +173,7 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 	/// xtask
 	fn resolve_target_triple_representation(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		let arch = self.opts.arch;
+		let arch = self.task.opts.arch;
 		let chart = self.ws.as_chart();
 
 		// TODO: extract kernel's vendor-os resolver logic. they should no be
@@ -198,7 +198,7 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 	/// now, we only support debug/ and release/
 	fn resolve_profile(&self,) -> PathBuf
 	{
-		PathBuf::from(self.opts.build_mode.as_ref(),)
+		PathBuf::from(self.task.opts.build_mode.as_ref(),)
 	}
 
 	/// artifact file name is crate name or [[bin.name]] in Cargo.toml"
@@ -215,7 +215,7 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 
 	fn as_opts(&self,) -> &impl CompileOpt
 	{
-		&self.opts
+		&self.task
 	}
 }
 
@@ -238,7 +238,7 @@ impl TargetSpec for PoisonGirlCargoInterface
 
 	fn arch(&self,) -> poison_girl_dev_cargo::Arch
 	{
-		self.opts.arch
+		self.task.opts.arch
 	}
 
 	fn runtime(&self,) -> poison_girl_dev_cargo::Runtime
@@ -251,6 +251,31 @@ impl TargetSpec for PoisonGirlCargoInterface
 		} else {
 			poison_girl_dev_cargo::Runtime::Host
 		}
+	}
+}
+
+impl AsCargoOpt for PoisonGirlCargoInterface
+{
+	type Out = Vec<String,>;
+
+	fn as_cargo_opt(&self,) -> Self::Out
+	{
+		let Task {
+			opts: Opts { build_mode, lock_deps, feature_flags, .. },
+			..
+		} = self.task();
+		let tuple = self.tuple();
+		let build_mode = build_mode.as_cargo_opt();
+		let feature_flags = feature_flags.as_cargo_opt();
+		let lock_deps =
+			if *lock_deps { Some("--locked".to_string(),) } else { None };
+
+		["--target".to_string(), tuple,]
+			.into_iter()
+			.chain(build_mode,)
+			.chain(feature_flags,)
+			.chain(lock_deps,)
+			.collect()
 	}
 }
 

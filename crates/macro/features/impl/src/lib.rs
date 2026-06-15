@@ -36,21 +36,11 @@ pub fn features(attr: syn::Expr, mut item: syn::ItemEnum,)
 				)),);
 			};
 
-			let features: Vec<_,> = t.into_iter().map(|(k, _,)| k.to_camel(),).collect();
+			let features: Vec<_,> =
+				t.into_iter().map(|(k, _,)| k.to_camel(),).collect();
 			X((path.to_owned(), features,),)
-
-			// t.into_iter().map(|(k, _,)| {
-			// let variant: String = k.to_camel();
-			// let variant = format_ident!("{variant}");
-			// let variant: syn::Variant = syn::parse_quote!(#variant);
-			// variant
-			// },);
 		},)
-		// .try_for_each(|variant| {
-		// 	variant?.for_each(|v| item.variants.push(v,),);
-		// 	PoisonGirlB::X((),)
-		// },);
-		.try_collect::<HashMap<_,_>>()?;
+		.try_collect::<HashMap<_, _,>>()?;
 
 	let mut feature_path_map: HashMap<String, Vec<PathBuf,>,> = HashMap::new();
 	path_feature_map.iter().for_each(|(path, feature,)| {
@@ -58,9 +48,6 @@ pub fn features(attr: syn::Expr, mut item: syn::ItemEnum,)
 			feature_path_map.entry(f,).or_default().push(path.clone(),);
 		},);
 	},);
-	// if true {
-	// 	return Rslt::new_err("fuck ---------------------------",);
-	// }
 
 	let (path_list, features_list,): (Vec<_,>, Vec<_,>,) = path_feature_map
 		.into_iter()

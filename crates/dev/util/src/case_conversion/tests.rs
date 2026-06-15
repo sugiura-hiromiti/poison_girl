@@ -746,7 +746,7 @@ fn test_is_xxx_format_with_case_edge_cases()
 }
 
 #[test]
-fn test_pathbuf_edge_cases()
+fn test_pathbuf_edge_cases() -> PoisonGirlTestB
 {
 	// Test PathBuf implementations with edge cases
 	let root_path =
@@ -758,9 +758,9 @@ fn test_pathbuf_edge_cases()
 	// Test with current directory
 	let current_dir =
 		<std::path::PathBuf as std::convert::From<&str,>>::from(".",);
-	let result = std::panic::catch_unwind(|| current_dir.dump_string(),);
+	current_dir.dump_string()?;
 	// This might succeed or fail depending on the system
-	let _ = result;
+	success!()
 }
 
 #[test]

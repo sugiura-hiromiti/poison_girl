@@ -1,11 +1,15 @@
 use {
-	crate::decl_manage::{
-		package::{Package, PackageAction, PackageInfo, PackageSurvey},
-		workspace::{
-			Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
+	crate::{
+		AsCargoOpt, Opts, Task,
+		decl_manage::{
+			PoisonGirlCargoInterface,
+			package::{Package, PackageAction, PackageInfo, PackageSurvey},
+			workspace::{
+				Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
+			},
 		},
 	},
-	poison_girl_dev_cargo::{CliCommand, Opts, host_tuple_by_rustc},
+	poison_girl_dev_cargo::{CliCommand, host_tuple_by_rustc},
 	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{
 		PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X,
@@ -17,7 +21,7 @@ use {
 	},
 	poison_girl_dev_util::toml_tools::TomlMerge,
 	poison_girl_macro_def_from_path_buf::FromPathBuf,
-	std::{ffi::OsStr, fmt::Debug, path::PathBuf, process::Command},
+	std::{fmt::Debug, path::PathBuf, process::Command},
 };
 
 pub trait Crate: Workspace + Package
@@ -95,46 +99,36 @@ pub trait CrateAction: CrateInfo
 
 	// actions for all packages with specific options
 
-	fn build_with<'a,>(
-		&self,
-		opt: &impl AsRef<[&'a OsStr],>,
-	) -> PoisonGirlB<(),>
+	fn build_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
 		self.cargo_xxx_with(CliCommand::Build, opt,)
 	}
 
-	fn test_with<'a,>(
-		&self, opt: &impl AsRef<[&'a OsStr],>,
-	) -> PoisonGirlB<(),>
+	fn test_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
 		self.cargo_xxx_with(CliCommand::Test, opt,)
 	}
 
-	fn run_with<'a,>(&self, opt: &impl AsRef<[&'a OsStr],>,)
-	-> PoisonGirlB<(),>
+	fn run_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
 		self.cargo_xxx_with(CliCommand::Run, opt,)
 	}
 
-	fn ckeck_with<'a,>(
-		&self,
-		opt: &impl AsRef<[&'a OsStr],>,
-	) -> PoisonGirlB<(),>
+	fn ckeck_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
 		self.cargo_xxx_with(CliCommand::Check { kind: None, }, opt,)
 	}
 
-	fn cargo_xxx_with<'a,>(
-		&self,
-		cmd: CliCommand,
-		opt: &impl AsRef<[&'a OsStr],>,
-	) -> PoisonGirlB<(),>
+	fn cargo_xxx_with(&self, cmd: CliCommand, opt: &Opts,) -> PoisonGirlB<(),>
 	{
 		let mut cargo = Command::new("cargo",);
 		let cargo = cargo.arg(cmd.as_ref(),);
 
-		let opt: Vec<&OsStr,> =
-			opt.as_ref().iter().copied().filter(|s| !s.is_empty(),).collect();
+		let interface = PoisonGirlCargoInterface::new(
+			PoisonGirlCrateChart::from(self.path(),),
+			Task { cmd, opts: opt.clone(), },
+		);
+		let opt = interface.as_cargo_opt();
 		if !opt.is_empty() {
 			cargo.args(opt,);
 		}
