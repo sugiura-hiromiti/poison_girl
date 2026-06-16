@@ -1,6 +1,6 @@
 use {
 	crate::{
-		Opts,
+		ContextualOpts, Opts,
 		decl_manage::crate_::{
 			Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
 		},
@@ -50,6 +50,12 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where Self: WorkspaceSurvey
 	{
 		self.cargo_xxx_at(CliCommand::Check { kind: None, }, at,)
+	}
+
+	fn fix_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
+	where Self: WorkspaceSurvey
+	{
+		self.cargo_xxx_at(CliCommand::Fix, at,)
 	}
 
 	fn cargo_xxx_at(
@@ -108,6 +114,22 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		Self: WorkspaceSurvey,
 	{
 		self.cargo_xxx_at_with(CliCommand::Check { kind: None, }, at, opt,)
+	}
+
+	fn fix_at_with(
+		&self,
+		at: impl CrateCalled,
+		opt: &Opts,
+	) -> PoisonGirlB<(),>
+	where
+		Self: WorkspaceSurvey,
+	{
+		let opt = opt.fix_context_by(ContextualOpts {
+			allow_dirty:  true,
+			allow_staged: true,
+			workspace:    true,
+		},);
+		self.cargo_xxx_at_with(CliCommand::Fix, at, &opt,)
 	}
 
 	fn cargo_xxx_at_with(
