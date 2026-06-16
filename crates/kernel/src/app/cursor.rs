@@ -3,6 +3,7 @@ use {
 		FRAME_BUFFER,
 		position::{Coord, Coordinal},
 	},
+	core::{clone::Clone, default::Default, iter::Iterator},
 	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
@@ -73,7 +74,7 @@ impl MouseCursorDraw for CursorBuf
 	fn draw_mouse_cursor(&mut self,) -> PoisonGirlB<(),>
 	{
 		let mut coord = self.pos.clone();
-		(0..self.height).for_each(|y| {
+		(0..self.height).try_for_each(|y| {
 			MOUSE_CURSOR[y].iter().take(self.width,).for_each(|c| {
 				match c {
 					'@' => todo!(), //put_pixel(&coord,
@@ -85,7 +86,8 @@ impl MouseCursorDraw for CursorBuf
 			},);
 			*coord.x_mut() = self.pos.x();
 			*coord.y_mut() += 1;
-		},);
+			PoisonGirlB::X((),)
+		},)?;
 
 		X((),)
 	}

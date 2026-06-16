@@ -90,6 +90,7 @@ struct ContextualOpts
 	allow_dirty:  bool,
 	allow_staged: bool,
 	workspace:    bool,
+	all_targets:  bool,
 }
 
 impl AsCargoOpt for ContextualOpts
@@ -98,7 +99,7 @@ impl AsCargoOpt for ContextualOpts
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		let Self { allow_dirty, allow_staged, workspace, } = self;
+		let Self { allow_dirty, allow_staged, workspace, all_targets, } = self;
 		let mut opt_list = vec![];
 
 		if *allow_dirty {
@@ -111,6 +112,10 @@ impl AsCargoOpt for ContextualOpts
 
 		if *workspace {
 			opt_list.push("--workspace",);
+		}
+
+		if *all_targets {
+			opt_list.push("--all-targets",);
 		}
 
 		opt_list.into_iter().map(|s| s.to_string(),).collect()

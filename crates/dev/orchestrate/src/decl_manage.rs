@@ -5,9 +5,10 @@ use {
 			Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
 		},
 	},
-	poison_girl_dev_cargo::TargetSpec,
+	poison_girl_dev_cargo::{CliCommand, TargetSpec},
 	poison_girl_dev_error::{
-		PoisonGirlB, X, Y, YourHostPlatformIsOutOfSupport, poison_girl_err,
+		InvalidMetadataSchema, PoisonGirlB, X, Y,
+		YourHostPlatformIsOutOfSupport, poison_girl_err,
 	},
 	poison_girl_dev_fs::{current_crate_path, project_root_path},
 	std::{
@@ -256,28 +257,55 @@ impl TargetSpec for PoisonGirlCargoInterface
 
 impl AsCargoOpt for PoisonGirlCargoInterface
 {
-	type Out = Vec<String,>;
+	type Out = PoisonGirlB<Vec<String,>,>;
 
+	/// TODO: this code have to be refactored for better data structure,
+	/// decralative architecture. in terms of reusability, extensibility, dev
+	/// ergo and scalability, this code have to be refactored
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
 		let Task {
 			opts: Opts { build_mode, lock_deps, feature_flags, context, .. },
-			..
+			cmd,
 		} = self.task();
-		let tuple = self.tuple();
+		let mut tuple = self.tuple();
 		let build_mode = build_mode.as_cargo_opt();
 		let feature_flags = feature_flags.as_cargo_opt();
 		let lock_deps =
 			if *lock_deps { Some("--locked".to_string(),) } else { None };
 		let context = context.as_cargo_opt();
 
-		["--target".to_string(), tuple,]
+		let PoisonGirlPackageMetadata { no_std, } =
+			self.ws().custom_metadata()?;
+		let mut additional_opts = vec![];
+
+		if no_std && (*cmd == CliCommand::Build || *cmd == CliCommand::Clippy) {
+			additional_opts.extend(vec![
+				"-Z",
+				"build-std=core,compiler_builtins,alloc",
+				"-Z",
+				"build-std-features=compiler-builtins-mem",
+			],);
+		}
+
+		if no_std && *cmd == CliCommand::Test {
+			tuple = "host-tuple".to_string();
+			additional_opts.push("--lib",);
+		}
+
+		if tuple.ends_with("json",) {
+			additional_opts.extend(vec!["-Z", "json-target-spec"],);
+		}
+
+		let opts = ["--target".to_string(), tuple,]
 			.into_iter()
 			.chain(build_mode,)
 			.chain(feature_flags,)
 			.chain(lock_deps,)
 			.chain(context,)
-			.collect()
+			.chain(additional_opts.iter().map(|s| s.to_string(),),)
+			.collect();
+		X(opts,)
 	}
 }
 
@@ -294,6 +322,30 @@ pub fn current_crate() -> PoisonGirlB<PoisonGirlCrate,>
 	let ccp = current_crate_path()?;
 
 	X(PoisonGirlCrate::from(ccp,),)
+}
+
+/// this defines scheme of custom package metadata written in Cargo.toml
+#[derive(Default,)]
+pub struct PoisonGirlPackageMetadata
+{
+	no_std: bool,
+}
+
+impl PoisonGirlPackageMetadata
+{
+	pub const METADATA_PATH: [&str; 3] =
+		["package", "metadata", "poison_girl",];
+
+	pub fn from_toml_table(value: &toml::Table,) -> PoisonGirlB<Self,>
+	{
+		let no_std = match value.get("no_std",) {
+			Some(toml::Value::Boolean(no_std,),) => *no_std,
+			Some(_,) => return Y(poison_girl_err!(InvalidMetadataSchema),),
+			None => Default::default(),
+		};
+
+		X(Self { no_std, },)
+	}
 }
 
 /// if environment variable points to a relative path, this function resolve

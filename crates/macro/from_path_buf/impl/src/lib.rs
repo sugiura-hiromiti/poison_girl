@@ -77,6 +77,12 @@ impl EnumParts
 						#(Self::#variants => #bin_names,)*
 					}
 				}
+
+				pub fn all_variants() -> Vec<Self> {
+					vec![
+						#(Self::#variants,)*
+					]
+				}
 			}
 
 			impl From<#name,> for PathBuf {

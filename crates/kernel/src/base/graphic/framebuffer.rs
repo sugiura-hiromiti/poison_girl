@@ -1,13 +1,17 @@
-mod draw;
 pub use draw::DisplayDraw;
-
 use {
 	super::{
 		color::{self, PixFmtNew, PixelFormat},
 		position::{Coord, Coordinal},
 	},
+	core::mem::size_of,
 	poison_girl_macro::cfg_if,
+	poison_girl_no_std_error::{
+		GraphicError, PoisonGirlB, X, Y, poison_girl_err,
+	},
 };
+
+mod draw;
 
 cfg_if! {
 	if #[cfg(feature = "rgb")] {
@@ -360,12 +364,25 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 	/// pixel_data[1] = green_value;
 	/// pixel_data[2] = blue_value;
 	/// ```
-	pub fn slice_mut(&self, pos: usize, len: usize,) -> &mut [u8]
+	pub fn slice_mut(&self, pos: usize, len: usize,)
+	-> PoisonGirlB<&mut [u8],>
 	{
 		let pos = pos * size_of::<u8,>();
-		assert!(self.size - pos > 0);
+		let Some(end,) = pos.checked_add(len,) else {
+			return Y(poison_girl_err!(
+				GraphicError::OverflowingFrameBufferAddress
+			),);
+		};
+		if self.size < end {
+			return Y(poison_girl_err!(
+				GraphicError::OverflowingFrameBufferAddress
+			),);
+		}
 
 		let data_at_pos = self.buf + pos;
-		unsafe { core::slice::from_raw_parts_mut(data_at_pos as *mut u8, len,) }
+		let mutable_slice = unsafe {
+			core::slice::from_raw_parts_mut(data_at_pos as *mut u8, len,)
+		};
+		X(mutable_slice,)
 	}
 }

@@ -1,7 +1,7 @@
 #![no_std]
 #![cfg_attr(not(test), no_main)]
 // Enable ARM-specific hints when needed
-#![feature(stdarch_arm_hints)]
+// #![feature(stdarch_arm_hints)]
 
 use {
 	core::arch::asm,
@@ -94,6 +94,7 @@ fn panic(info: &core::panic::PanicInfo,) -> !
 
 fn app() -> PoisonGirlB<(),>
 {
+	wfe();
 	// TODO: Implement graphics operations
 	// The following code represents planned graphics functionality:
 

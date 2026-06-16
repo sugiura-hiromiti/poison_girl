@@ -73,12 +73,13 @@ pub fn init(
 			// NOTE: we intentionally ignore errors here.
 			// the real error should be arose at the required handler still
 			// cannnot be found
-			bs.connect_controller(
+			// #[allow(unused_must_use)]
+			let _ = bs.connect_controller(
 				*handle,
 				None,
 				None,
 				raw::types::Boolean::TRUE,
-			)
+			);
 		};
 	}
 

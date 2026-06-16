@@ -1,10 +1,11 @@
-#![feature(string_from_utf8_lossy_owned)]
-#![feature(exit_status_error)]
+// #![feature(string_from_utf8_lossy_owned)]
+// #![feature(exit_status_error)]
 
 // TODO: workspace内の未使用クレーとを検出
 
 use {
 	poison_girl_dev_cargo::Assets,
+	poison_girl_dev_error::PoisonGirlB,
 	poison_girl_dev_orchestrate::{
 		Opts,
 		decl_manage::{PoisonGirlCargoInterface, crate_::PoisonGirlCrate},
@@ -39,13 +40,13 @@ impl Xtask
 		self.interface.ws()
 	}
 
-	fn firmware_code(&self,) -> &PathBuf
+	fn firmware_code(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		&self.assets.firmware.code
+		self.assets.firmware.code()
 	}
 
-	fn firmware_vars(&self,) -> &PathBuf
+	fn firmware_vars(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		&self.assets.firmware.vars
+		self.assets.firmware.vars()
 	}
 }

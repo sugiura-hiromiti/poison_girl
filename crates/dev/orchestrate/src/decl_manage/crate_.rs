@@ -2,7 +2,7 @@ use {
 	crate::{
 		AsCargoOpt, ContextualOpts, Opts, Task,
 		decl_manage::{
-			PoisonGirlCargoInterface,
+			PoisonGirlCargoInterface, PoisonGirlPackageMetadata,
 			package::{Package, PackageAction, PackageInfo, PackageSurvey},
 			workspace::{
 				Workspace, WorkspaceAction, WorkspaceInfo, WorkspaceSurvey,
@@ -87,9 +87,9 @@ pub trait CrateAction: CrateInfo
 		self.cargo_xxx(CliCommand::Run,)
 	}
 
-	fn check(&self,) -> PoisonGirlB<(),>
+	fn clippy(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx(CliCommand::Check { kind: None, },)
+		self.cargo_xxx(CliCommand::Clippy,)
 	}
 
 	fn fix(&self,) -> PoisonGirlB<(),>
@@ -119,9 +119,15 @@ pub trait CrateAction: CrateInfo
 		self.cargo_xxx_with(CliCommand::Run, opt,)
 	}
 
-	fn ckeck_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
+	fn clippy_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with(CliCommand::Check { kind: None, }, opt,)
+		let opt = opt.fix_context_by(ContextualOpts {
+			allow_dirty:  false,
+			allow_staged: false,
+			workspace:    false,
+			all_targets:  false,
+		},);
+		self.cargo_xxx_with(CliCommand::Clippy, &opt,)
 	}
 
 	fn fix_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
@@ -130,6 +136,7 @@ pub trait CrateAction: CrateInfo
 			allow_dirty:  true,
 			allow_staged: true,
 			workspace:    false,
+			all_targets:  false,
 		},);
 		self.cargo_xxx_with(CliCommand::Fix, &opt,)
 	}
@@ -143,7 +150,7 @@ pub trait CrateAction: CrateInfo
 			PoisonGirlCrateChart::from(self.path(),),
 			Task { cmd, opts: opt.clone(), },
 		);
-		let opt = interface.as_cargo_opt();
+		let opt = interface.as_cargo_opt()?;
 		if !opt.is_empty() {
 			cargo.args(opt,);
 		}
@@ -189,6 +196,25 @@ pub trait CrateInfo: CrateCalled
 		let cargo_toml = self.path().join(CARGO_MANIFEST,);
 		read_toml(cargo_toml,)
 			.map(|toml| toml.unwrap_or(toml::map::Map::new(),),)
+	}
+
+	fn custom_metadata(&self,) -> PoisonGirlB<PoisonGirlPackageMetadata,>
+	{
+		let manifest = self.toml()?;
+		let metadata_table = PoisonGirlPackageMetadata::METADATA_PATH
+			.into_iter()
+			.try_fold(manifest, |mut acc, segment| {
+				let toml::Value::Table(table,) = acc.remove(segment,)? else {
+					return None;
+				};
+
+				Some(table,)
+			},);
+
+		match metadata_table {
+			Some(table,) => PoisonGirlPackageMetadata::from_toml_table(&table,),
+			None => X(PoisonGirlPackageMetadata::default(),),
+		}
 	}
 
 	/// NOTE: we've changed return type from `PoisonGirlB<Option<toml::Table>>`

@@ -1,5 +1,5 @@
-#![feature(string_from_utf8_lossy_owned)]
-#![feature(exit_status_error)]
+// #![feature(string_from_utf8_lossy_owned)]
+// #![feature(exit_status_error)]
 
 //! # poison_girl xtask
 //!
@@ -26,11 +26,7 @@
 //! - `-a aarch64`: Build for the aarch64 target
 //! - `-l`: Pass `--locked` through to Cargo commands
 
-use {
-	colored::Colorize,
-	poison_girl::Xtask,
-	poison_girl_dev_error::{PoisonGirlB, X, Y},
-};
+use {poison_girl::Xtask, poison_girl_dev_error::PoisonGirlB};
 
 /// Entry point for the xtask utility.
 ///

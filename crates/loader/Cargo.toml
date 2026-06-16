@@ -2,6 +2,7 @@
 name = "poison_girl_loader"
 version = "0.1.0"
 edition = "2024"
+metadata = { poison_girl = { no_std = true } }
 
 [dependencies]
 poison_girl_macro = { workspace = true }

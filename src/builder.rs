@@ -12,13 +12,12 @@
 
 use {
 	crate::Xtask,
-	poison_girl_dev_cargo::{Assets, CheckKind, CliCommand},
+	poison_girl_dev_cargo::{Assets, CliCommand},
 	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::{
 		Task,
 		decl_manage::{
-			PoisonGirlCargoInterface,
-			crate_::{CrateAction, PoisonGirlCrateChart},
+			PoisonGirlCargoInterface, crate_::PoisonGirlCrateChart,
 			workspace::WorkspaceAction,
 		},
 	},
@@ -79,7 +78,7 @@ impl Xtask
 	{
 		let task = Task::new()?;
 		let chart = PoisonGirlCrateChart::XTASK;
-		let assets = Assets::new(task.opts().arch,)?;
+		let assets = Assets::new(task.opts().arch,);
 		X(Self {
 			interface: PoisonGirlCargoInterface::new(chart, task,),
 			assets,
@@ -92,12 +91,7 @@ impl Xtask
 			CliCommand::Build => self.build(),
 			CliCommand::Test => self.test(),
 			CliCommand::Run => self.run(),
-			CliCommand::Check { kind, } => match kind {
-				Some(CheckKind::KernelAarch64,) => self.kernel_check(),
-				Some(CheckKind::LoaderAarch64Uefi,) => self.loader_check(),
-				Some(CheckKind::Clippy,) => self.clippy(),
-				None => self.check(),
-			},
+			CliCommand::Clippy => self.clippy(),
 			CliCommand::Fixture => self.fixture(),
 			CliCommand::Fix => self.fix(),
 		}
@@ -121,26 +115,21 @@ impl Xtask
 		self.qemu_run()
 	}
 
-	fn check(&self,) -> PoisonGirlB<(),>
-	{
-		self.kernel_check()?;
-		self.loader_check()?;
-		self.clippy()
-	}
-
-	fn kernel_check(&self,) -> PoisonGirlB<(),>
-	{
-		todo!()
-	}
-
-	fn loader_check(&self,) -> PoisonGirlB<(),>
-	{
-		todo!()
-	}
-
 	fn clippy(&self,) -> PoisonGirlB<(),>
 	{
-		todo!()
+		// let task = self.interface.task();
+		let args = self.interface.task().opts();
+		PoisonGirlCrateChart::all_variants().into_iter().try_for_each(
+			|at| {
+				// let interface =
+				// 	PoisonGirlCargoInterface::new(at, task.clone(),);
+				// let args = interface.task().opts();
+				// interface.ws().clippy_with(args,)
+				self.ws().clippy_at_with(at, args,)
+			},
+		)?;
+		// self.ws().clippy_at_with(PoisonGirlCrateChart::XTASK, args,)
+		X((),)
 	}
 
 	/// this function generates fixture for kernel/loader test of low layer

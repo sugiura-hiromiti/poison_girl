@@ -1,8 +1,8 @@
-[build]
-target = "aarch64-sugiura_hiromiti-poison_girl-elf.json"
+# [build]
+# target = "aarch64-sugiura_hiromiti-poison_girl-elf.json"
 
-[unstable]
+# [unstable]
 # build-std = ["core", "alloc"]
-build-std = ["core"]
-build-std-features = ["compiler-builtins-mem"]
-json-target-spec = true
+# build-std = ["core"]
+# build-std-features = ["compiler-builtins-mem"]
+# json-target-spec = true

@@ -104,6 +104,7 @@ impl Dynamic
 		inner.info.extended_flags & Self::DF_EXTEND_PIE != 0
 	}
 
+	#[expect(dead_code)]
 	fn dynamic_string_table(&self, binary: &[u8],)
 	-> PoisonGirlB<StringTable,>
 	{

@@ -63,6 +63,8 @@ pub enum BuildMode
 	strum_macros::AsRefStr,
 	Clone,
 	Copy,
+	PartialEq,
+	Eq,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum CliCommand
@@ -71,23 +73,10 @@ pub enum CliCommand
 	Test,
 	#[default]
 	Run,
-	Check
-	{
-		/// 指定無しの場合はfull check
-		#[command(subcommand)]
-		kind: Option<CheckKind,>,
-	},
+	Clippy,
 	Fixture,
 	/// cargo fix
 	Fix,
-}
-
-#[derive(Subcommand, strum_macros::EnumIter, Clone, Copy,)]
-pub enum CheckKind
-{
-	KernelAarch64,
-	LoaderAarch64Uefi,
-	Clippy,
 }
 
 pub enum Runtime
@@ -120,10 +109,10 @@ pub struct Assets
 
 impl Assets
 {
-	pub fn new(arch: Arch,) -> PoisonGirlB<Self,>
+	pub fn new(arch: Arch,) -> Self
 	{
-		let firmware = Firmware::new(arch,)?;
-		X(Self { firmware, host: Runtime::Host, },)
+		let firmware = Firmware::new(arch,);
+		Self { firmware, host: Runtime::Host, }
 	}
 }
 
@@ -131,10 +120,11 @@ impl Assets
 #[derive(Debug,)]
 pub struct Firmware
 {
-	/// Path to the OVMF code file
-	pub code: PathBuf,
-	/// Path to the OVMF variables file
-	pub vars: PathBuf,
+	// /// Path to the OVMF code file
+	// pub code: PathBuf,
+	// /// Path to the OVMF variables file
+	// pub vars: PathBuf,
+	arch: Arch,
 }
 
 impl Firmware
@@ -150,13 +140,14 @@ impl Firmware
 	/// # Returns
 	///
 	/// A new Firmware instance or an error if initialization fails
-	pub fn new(arch: Arch,) -> PoisonGirlB<Self,>
+	pub fn new(arch: Arch,) -> Self
 	{
-		let path = PathBuf::from("/tmp/",);
-		let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
-		let code = ovmf_files.get_file(arch.into(), FileType::Code,);
-		let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
-		X(Self { code, vars, },)
+		// let path = PathBuf::from("/tmp/",);
+		// let ovmf_files = Prebuilt::fetch(Source::LATEST, path,)?;
+		// let code = ovmf_files.get_file(arch.into(), FileType::Code,);
+		// let vars = ovmf_files.get_file(arch.into(), FileType::Vars,);
+		// X(Self { code, vars, },)
+		Self { arch, }
 	}
 
 	/// Gets the path to the OVMF code file
@@ -164,9 +155,11 @@ impl Firmware
 	/// # Returns
 	///
 	/// A reference to the path to the OVMF code file
-	pub fn code(&self,) -> &PathBuf
+	pub fn code(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		&self.code
+		let path = Self::ovmf_path()?;
+		let file_path = path.get_file(self.arch.into(), FileType::Code,);
+		X(file_path,)
 	}
 
 	/// Gets the path to the OVMF variables file
@@ -174,9 +167,17 @@ impl Firmware
 	/// # Returns
 	///
 	/// A reference to the path to the OVMF variables file
-	pub fn vars(&self,) -> &PathBuf
+	pub fn vars(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		&self.vars
+		let path = Self::ovmf_path()?;
+		let file_path = path.get_file(self.arch.into(), FileType::Vars,);
+		X(file_path,)
+	}
+
+	fn ovmf_path() -> PoisonGirlB<ovmf_prebuilt::Prebuilt,>
+	{
+		let path = Prebuilt::fetch(Source::LATEST, PathBuf::from("/tmp/",),)?;
+		X(path,)
 	}
 }
 

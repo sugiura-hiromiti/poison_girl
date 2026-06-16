@@ -2,6 +2,7 @@
 name = "poison_girl_this_is_b_wrapper_no_std"
 version = "0.1.0"
 edition = "2024"
+metadata = { poison_girl = { no_std = true } }
 
 [dependencies]
 this_is_b = { version = "*", default-features = false, features = [] }
