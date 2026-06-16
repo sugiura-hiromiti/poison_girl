@@ -1,6 +1,6 @@
 use {
 	crate::{
-		AsCargoOpt, Opts, Task,
+		AsCargoOpt, ContextualOpts, Opts, Task,
 		decl_manage::{
 			PoisonGirlCargoInterface,
 			package::{Package, PackageAction, PackageInfo, PackageSurvey},
@@ -92,6 +92,11 @@ pub trait CrateAction: CrateInfo
 		self.cargo_xxx(CliCommand::Check { kind: None, },)
 	}
 
+	fn fix(&self,) -> PoisonGirlB<(),>
+	{
+		self.cargo_xxx(CliCommand::Fix,)
+	}
+
 	fn cargo_xxx(&self, cmd: CliCommand,) -> PoisonGirlB<(),>
 	{
 		self.cargo_xxx_with(cmd, &Opts::default(),)
@@ -117,6 +122,16 @@ pub trait CrateAction: CrateInfo
 	fn ckeck_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
 	{
 		self.cargo_xxx_with(CliCommand::Check { kind: None, }, opt,)
+	}
+
+	fn fix_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
+	{
+		let opt = opt.fix_context_by(ContextualOpts {
+			allow_dirty:  true,
+			allow_staged: true,
+			workspace:    false,
+		},);
+		self.cargo_xxx_with(CliCommand::Fix, &opt,)
 	}
 
 	fn cargo_xxx_with(&self, cmd: CliCommand, opt: &Opts,) -> PoisonGirlB<(),>

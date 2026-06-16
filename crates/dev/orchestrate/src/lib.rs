@@ -54,6 +54,67 @@ pub struct Opts
 	pub feature_flags: Vec<Feature,>,
 	pub arch:          Arch,
 	pub lock_deps:     bool,
+	context:           ContextualOpts,
+}
+
+impl Opts
+{
+	fn fix_context_by(&self, context: ContextualOpts,) -> Self
+	{
+		let mut rslt = self.clone();
+		rslt.context = context;
+		rslt
+	}
+
+	pub fn allow_dirty(&mut self, allow: bool,)
+	{
+		self.context.allow_dirty = allow;
+	}
+
+	pub fn allow_staged(&mut self, allow: bool,)
+	{
+		self.context.allow_staged = allow;
+	}
+
+	pub fn workspace_op(&mut self, allow: bool,)
+	{
+		self.context.workspace = allow;
+	}
+}
+
+/// this option should be determined within orchestration. not given by
+/// user
+#[derive(Default, Clone, Copy,)]
+struct ContextualOpts
+{
+	allow_dirty:  bool,
+	allow_staged: bool,
+	workspace:    bool,
+}
+
+impl AsCargoOpt for ContextualOpts
+{
+	type Out = Vec<String,>;
+
+	fn as_cargo_opt(&self,) -> Self::Out
+	{
+		let Self { allow_dirty, allow_staged, workspace, } = self;
+		let mut opt_list = vec![];
+
+		if *allow_dirty {
+			opt_list.push("--allow-dirty",);
+		}
+
+		if *allow_staged {
+			opt_list.push("--allow-staged",);
+		}
+
+		if *workspace {
+			opt_list.push("--workspace",);
+		}
+
+		opt_list.into_iter().map(|s| s.to_string(),).collect()
+	}
 }
 
 #[derive(Default, Clone,)]
@@ -70,7 +131,7 @@ impl Task
 		X(Self {
 			cmd:  cli.command.unwrap_or_default(),
 			opts: Opts {
-				build_mode:    cli.build_mode.unwrap_or_default(),
+				build_mode: cli.build_mode.unwrap_or_default(),
 				feature_flags: cli
 					.feature_flags
 					.map(|features| -> PoisonGirlB<_,> {
@@ -81,8 +142,9 @@ impl Task
 						X(rslt,)
 					},)
 					.unwrap_or(X(vec![],),)?,
-				arch:          cli.arch.unwrap_or_default(),
-				lock_deps:     cli.lock_deps,
+				arch: cli.arch.unwrap_or_default(),
+				lock_deps: cli.lock_deps,
+				..Default::default()
 			},
 		},)
 	}

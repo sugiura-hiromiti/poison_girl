@@ -261,7 +261,7 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
 		let Task {
-			opts: Opts { build_mode, lock_deps, feature_flags, .. },
+			opts: Opts { build_mode, lock_deps, feature_flags, context, .. },
 			..
 		} = self.task();
 		let tuple = self.tuple();
@@ -269,12 +269,14 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 		let feature_flags = feature_flags.as_cargo_opt();
 		let lock_deps =
 			if *lock_deps { Some("--locked".to_string(),) } else { None };
+		let context = context.as_cargo_opt();
 
 		["--target".to_string(), tuple,]
 			.into_iter()
 			.chain(build_mode,)
 			.chain(feature_flags,)
 			.chain(lock_deps,)
+			.chain(context,)
 			.collect()
 	}
 }
