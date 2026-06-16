@@ -161,6 +161,6 @@ impl Xtask
 	fn fix(&self,) -> PoisonGirlB<(),>
 	{
 		let args = self.interface.task().opts();
-		self.ws().fix_with(args,)
+		self.ws().fix_at_with(PoisonGirlCrateChart::XTASK, args,)
 	}
 }
