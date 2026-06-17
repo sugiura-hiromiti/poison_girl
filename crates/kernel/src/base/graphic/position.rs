@@ -1,5 +1,3 @@
-use core::{clone::Clone, derive};
-
 /// trait for types which can represent 2 dimentional area
 /// implement this trait ensures to be able to get value of x axis & y axis
 pub trait Coordinal
