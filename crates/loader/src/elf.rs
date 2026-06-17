@@ -206,6 +206,14 @@ where
 
 pub struct Interpreter(Option<Vec<u8,>,>,);
 
+impl AsRef<Option<Vec<u8,>,>,> for Interpreter
+{
+	fn as_ref(&self,) -> &Option<Vec<u8,>,>
+	{
+		&self.0
+	}
+}
+
 fn vm_to_offset(
 	program_headers: &[ProgramHeader], address: u64,
 ) -> Option<u64,>

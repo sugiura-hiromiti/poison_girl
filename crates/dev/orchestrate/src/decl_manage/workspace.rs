@@ -46,10 +46,10 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		self.cargo_xxx_at(CliCommand::Run, at,)
 	}
 
-	fn check_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
+	fn clippy_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
-		self.cargo_xxx_at(CliCommand::Check { kind: None, }, at,)
+		self.cargo_xxx_at(CliCommand::Clippy, at,)
 	}
 
 	fn fix_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
@@ -105,7 +105,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	}
 
 	/// TODO: support kernel/loader check
-	fn check_at_with(
+	fn clippy_at_with(
 		&self,
 		at: impl CrateCalled,
 		opt: &Opts,
@@ -113,7 +113,13 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where
 		Self: WorkspaceSurvey,
 	{
-		self.cargo_xxx_at_with(CliCommand::Check { kind: None, }, at, opt,)
+		let opt = opt.fix_context_by(ContextualOpts {
+			allow_dirty:  false,
+			allow_staged: false,
+			workspace:    false,
+			all_targets:  false,
+		},);
+		self.cargo_xxx_at_with(CliCommand::Clippy, at, &opt,)
 	}
 
 	fn fix_at_with(
@@ -128,6 +134,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 			allow_dirty:  true,
 			allow_staged: true,
 			workspace:    true,
+			all_targets:  false,
 		},);
 		self.cargo_xxx_at_with(CliCommand::Fix, at, &opt,)
 	}

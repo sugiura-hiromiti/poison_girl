@@ -4,6 +4,7 @@ use {
 		color::{ColorRpr, PixelFormat},
 		position::Coordinal,
 	},
+	core::convert::From,
 	poison_girl_no_std_error::{
 		GraphicError, PoisonGirlB, X, Y, poison_girl_err,
 	},
@@ -157,7 +158,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 	) -> Self::Output
 	{
 		let pos = self.pos(coord,);
-		let pxl = self.slice_mut(pos, 3,);
+		let pxl = self.slice_mut(pos, 3,)?;
 		let color = self.drawer.try_color_repr(color,)?;
 		pxl[0] = color[0];
 		pxl[1] = color[1];
@@ -230,7 +231,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		for _ in left_top.y()..=right_bottom.y() {
 			for _ in left_top.x()..=right_bottom.x() {
 				let pos = self.pos(&coord,);
-				let pxl = self.slice_mut(pos, 3,);
+				let pxl = self.slice_mut(pos, 3,)?;
 				pxl[0] = color[0];
 				pxl[1] = color[1];
 				pxl[2] = color[2];
@@ -307,7 +308,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		// Draw top horizontal line
 		for _ in 0..width {
 			let pos = self.pos(&coord,);
-			let pxl = self.slice_mut(pos, 3,);
+			let pxl = self.slice_mut(pos, 3,)?;
 			pxl[0] = color[0];
 			pxl[1] = color[1];
 			pxl[2] = color[2];
@@ -317,7 +318,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		// Draw right vertical line
 		for _ in 0..height {
 			let pos = self.pos(&coord,);
-			let pxl = self.slice_mut(pos, 3,);
+			let pxl = self.slice_mut(pos, 3,)?;
 			pxl[0] = color[0];
 			pxl[1] = color[1];
 			pxl[2] = color[2];
@@ -327,7 +328,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		// Draw bottom horizontal line
 		for _ in 0..width {
 			let pos = self.pos(&coord,);
-			let pxl = self.slice_mut(pos, 3,);
+			let pxl = self.slice_mut(pos, 3,)?;
 			pxl[0] = color[0];
 			pxl[1] = color[1];
 			pxl[2] = color[2];
@@ -337,7 +338,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		// Draw left vertical line
 		for _ in 0..height {
 			let pos = self.pos(&coord,);
-			let pxl = self.slice_mut(pos, 3,);
+			let pxl = self.slice_mut(pos, 3,)?;
 			pxl[0] = color[0];
 			pxl[1] = color[1];
 			pxl[2] = color[2];

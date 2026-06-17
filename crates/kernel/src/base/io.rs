@@ -2,8 +2,13 @@ use {
 	super::graphic::FRAME_BUFFER,
 	crate::base::graphic::position::Coordinal,
 	core::{
+		assert_ne,
+		clone::Clone,
+		cmp::{Ord, PartialOrd},
 		fmt::Write,
 		ops::{Add, Div, Mul, Sub},
+		option::Option::Some,
+		result::Result::{Err, Ok},
 	},
 	poison_girl_macro_def_font::font,
 	poison_girl_macro_def_impl_int::impl_int,

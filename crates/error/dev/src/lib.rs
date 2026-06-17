@@ -262,6 +262,18 @@ impl From<strum::ParseError,> for PoisonGirlError
 	}
 }
 
+impl From<InvalidMetadataSchema,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: InvalidMetadataSchema,) -> Self
+	{
+		Self {
+			loc: Location::caller(),
+			src: DevError::InvalidMetadataSchema(value,),
+		}
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -286,6 +298,7 @@ enum DevError
 	YourHostPlatformIsOutOfSupport(YourHostPlatformIsOutOfSupport,),
 	PointerOperationFailed(PointerOperationFailed,),
 	StrumError(strum::ParseError,),
+	InvalidMetadataSchema(InvalidMetadataSchema,),
 }
 
 #[derive(Debug,)]
@@ -343,6 +356,9 @@ pub struct YourHostPlatformIsOutOfSupport;
 
 #[derive(Debug,)]
 pub struct PointerOperationFailed;
+
+#[derive(Debug,)]
+pub struct InvalidMetadataSchema;
 
 #[macro_export]
 macro_rules! poison_girl_err {

@@ -184,6 +184,7 @@ pub enum GraphicError
 {
 	InvalidCoordinate,
 	InvalidColor,
+	OverflowingFrameBufferAddress,
 }
 
 #[macro_export]

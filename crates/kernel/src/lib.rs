@@ -1,11 +1,12 @@
 #![no_std]
 #![allow(incomplete_features)]
 #![feature(associated_type_defaults)]
-#![feature(impl_trait_in_assoc_type)]
-#![feature(slice_index_methods)]
-#![feature(new_range_api)]
+// #![feature(impl_trait_in_assoc_type)]
+// #![feature(slice_index_methods)]
 #![feature(generic_const_exprs)]
 #![feature(const_trait_impl)]
+
+#[cfg(test)] extern crate std;
 
 /// Application execution and management subsystem
 ///

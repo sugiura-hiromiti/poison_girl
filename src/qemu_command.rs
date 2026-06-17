@@ -45,11 +45,11 @@ impl Xtask
 
 		// configure persistent flash memory
 		let pflash_code = persistent_flash_memory_args(
-			self.firmware_code(),
+			&self.firmware_code()?,
 			PflashMode::ReadOnly,
 		);
 		let pflash_var = persistent_flash_memory_args(
-			self.firmware_vars(),
+			&self.firmware_vars()?,
 			PflashMode::ReadWrite,
 		);
 		args.extend(pflash_code,);

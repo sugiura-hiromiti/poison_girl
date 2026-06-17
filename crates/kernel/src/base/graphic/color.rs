@@ -1,5 +1,11 @@
-use poison_girl_no_std_error::{
-	GraphicError, PoisonGirlB, X, Y, poison_girl_err,
+use {
+	core::{
+		convert::From,
+		option::Option::{None, Some},
+	},
+	poison_girl_no_std_error::{
+		GraphicError, PoisonGirlB, X, Y, poison_girl_err,
+	},
 };
 
 pub trait PixelFormat: PixFmtNew
@@ -271,10 +277,7 @@ impl From<(u8, u8, u8,),> for Color
 #[cfg(test)]
 mod tests
 {
-	use {
-		super::*,
-		poison_girl_no_std_error::{X, Y},
-	};
+	use {super::*, core::prelude::rust_2024::test};
 
 	#[test]
 	fn invalid_short_color_hex_returns_error()

@@ -80,6 +80,7 @@ unreachable = "deny"
 
 [workspace.lints.rust]
 unused_must_use = "warn"
+warnings = "deny"
 
 # [profile.dev.package.poison_girl]
 # opt-level = 3
