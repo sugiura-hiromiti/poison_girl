@@ -386,3 +386,163 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 		X(mutable_slice,)
 	}
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {super::*, core::prelude::rust_2024::test};
+
+	const UNCHANGED: u8 = 0xaa;
+
+	fn framebuffer<P: PixelFormat,>(
+		drawer: P,
+		buf: &mut [u8],
+		width: usize,
+		height: usize,
+		stride: usize,
+	) -> FrameBuffer<P,>
+	{
+		FrameBuffer {
+			drawer,
+			buf: buf.as_mut_ptr() as usize,
+			size: buf.len(),
+			width,
+			height,
+			stride,
+		}
+	}
+
+	fn pixel_offset(stride: usize, x: usize, y: usize,) -> usize
+	{
+		(stride * y + x) * 4
+	}
+
+	fn write_expected_pixel(
+		buf: &mut [u8],
+		stride: usize,
+		x: usize,
+		y: usize,
+		color: [u8; 3],
+	)
+	{
+		let offset = pixel_offset(stride, x, y,);
+		buf[offset..offset + 3].copy_from_slice(&color,);
+	}
+
+	#[test]
+	fn slice_mut_returns_slice_inside_bounds()
+	{
+		let mut buf = [0; 16];
+		let fb = framebuffer(color::Rgb, &mut buf, 2, 2, 2,);
+
+		match fb.slice_mut(4, 3,) {
+			X(slice,) => {
+				assert_eq!(&slice[..], &[0, 0, 0,]);
+				slice.copy_from_slice(&[1, 2, 3,],);
+			},
+			Y(_,) => assert!(false),
+		}
+
+		assert_eq!(&buf[4..7], &[1, 2, 3,]);
+	}
+
+	#[test]
+	fn slice_mut_returns_error_outside_bounds()
+	{
+		let mut buf = [0; 8];
+		let fb = framebuffer(color::Rgb, &mut buf, 1, 2, 1,);
+
+		assert!(matches!(fb.slice_mut(7, 2,), Y(_)));
+		assert!(matches!(fb.slice_mut(usize::MAX, 1,), Y(_)));
+	}
+
+	#[test]
+	fn put_pixel_writes_three_color_bytes_at_expected_offset()
+	{
+		let mut buf = [UNCHANGED; 32];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 2, 4,);
+
+		assert!(matches!(
+			fb.put_pixel(&(1, 1,), &(0x10, 0x20, 0x30,),),
+			X((),)
+		));
+		write_expected_pixel(&mut expected, 4, 1, 1, [0x10, 0x20, 0x30,],);
+
+		assert_eq!(buf, expected);
+	}
+
+	#[test]
+	fn fill_rectangle_writes_inclusive_area()
+	{
+		let mut buf = [UNCHANGED; 48];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 4,);
+
+		assert!(matches!(
+			fb.fill_rectangle(&(1, 0,), &(2, 1,), &(0x21, 0x32, 0x43,),),
+			X((),)
+		));
+		for y in 0..=1 {
+			for x in 1..=2 {
+				write_expected_pixel(
+					&mut expected,
+					4,
+					x,
+					y,
+					[0x21, 0x32, 0x43,],
+				);
+			}
+		}
+
+		assert_eq!(buf, expected);
+	}
+
+	#[test]
+	fn fill_rectangle_rejects_invalid_coordinates()
+	{
+		let mut buf = [UNCHANGED; 48];
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 4,);
+
+		assert!(matches!(
+			fb.fill_rectangle(&(2, 0,), &(1, 1,), &(1, 2, 3,),),
+			Y(_,)
+		));
+		assert!(matches!(
+			fb.fill_rectangle(&(0, 0,), &(5, 1,), &(1, 2, 3,),),
+			Y(_,)
+		));
+		assert!(matches!(
+			fb.fill_rectangle(&(0, 0,), &(1, 4,), &(1, 2, 3,),),
+			Y(_,)
+		));
+	}
+
+	#[test]
+	fn outline_rectangle_writes_only_border_pixels()
+	{
+		let mut buf = [UNCHANGED; 100];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 5, 5, 5,);
+
+		assert!(matches!(
+			fb.outline_rectangle(&(1, 1,), &(4, 4,), &(0x55, 0x66, 0x77,),),
+			X((),)
+		));
+		for y in 1..=3 {
+			for x in 1..=3 {
+				if x == 1 || x == 3 || y == 1 || y == 3 {
+					write_expected_pixel(
+						&mut expected,
+						5,
+						x,
+						y,
+						[0x55, 0x66, 0x77,],
+					);
+				}
+			}
+		}
+
+		assert_eq!(buf, expected);
+	}
+}

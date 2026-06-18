@@ -286,9 +286,28 @@ mod tests
 	}
 
 	#[test]
+	fn invalid_color_hex_without_prefix_returns_error()
+	{
+		assert!(matches!(Color::try_from_hex("123456",), Y(_)));
+	}
+
+	#[test]
+	fn invalid_long_color_hex_returns_error()
+	{
+		assert!(matches!(Color::try_from_hex("#1234567",), Y(_)));
+	}
+
+	#[test]
 	fn invalid_color_hex_character_returns_error()
 	{
 		assert!(matches!(Color::try_from_hex("#12345z",), Y(_)));
+	}
+
+	#[test]
+	fn invalid_color_hex_component_slice_returns_error()
+	{
+		assert!(matches!(try_hex_component("#zz3456", 1, 3,), Y(_)));
+		assert!(matches!(try_hex_component("#123456", 5, 8,), Y(_)));
 	}
 
 	#[test]
@@ -298,5 +317,62 @@ mod tests
 			Color::try_from_hex("#0a1Bff",),
 			X(Color { red: 0x0a, green: 0x1b, blue: 0xff, })
 		));
+	}
+
+	#[test]
+	fn valid_color_hex_accepts_uppercase_and_lowercase()
+	{
+		assert!(matches!(
+			Color::try_from_hex("#AaBbCc",),
+			X(Color { red: 0xaa, green: 0xbb, blue: 0xcc, })
+		));
+		assert!(matches!(
+			Color::try_from_hex("#aabbcc",),
+			X(Color { red: 0xaa, green: 0xbb, blue: 0xcc, })
+		));
+	}
+
+	#[test]
+	fn color_can_be_built_from_tuple()
+	{
+		assert_eq!(
+			Color::from((0x12, 0x34, 0x56,),),
+			Color { red: 0x12, green: 0x34, blue: 0x56, }
+		);
+	}
+
+	#[test]
+	fn color_repr_mutation_updates_color_and_tuple()
+	{
+		let mut color = Color::from((0, 0, 0,),);
+		color.red_mut(0x12,);
+		color.green_mut(0x34,);
+		color.blue_mut(0x56,);
+		assert_eq!(color, Color { red: 0x12, green: 0x34, blue: 0x56, });
+
+		let mut tuple = (0, 0, 0,);
+		tuple.red_mut(0x9a,);
+		tuple.green_mut(0xbc,);
+		tuple.blue_mut(0xde,);
+		assert_eq!(tuple, (0x9a, 0xbc, 0xde,));
+	}
+
+	#[test]
+	fn rgb_and_bgr_represent_color_in_channel_order()
+	{
+		let color = Color::from((0x12, 0x34, 0x56,),);
+
+		assert_eq!(Rgb.color_repr(&color,), [0x12, 0x34, 0x56,]);
+		assert_eq!(Bgr.color_repr(&color,), [0x56, 0x34, 0x12,]);
+	}
+
+	#[test]
+	fn str_try_to_color_parses_hex_color()
+	{
+		assert!(matches!(
+			"#010203".try_to_color(),
+			X(Color { red: 0x01, green: 0x02, blue: 0x03, })
+		));
+		assert!(matches!("010203".try_to_color(), Y(_)));
 	}
 }
