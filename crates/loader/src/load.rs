@@ -26,7 +26,9 @@ use {
 	},
 	core::ptr::NonNull,
 	poison_girl_no_std::bridge::graphic::FrameBufConf,
-	poison_girl_no_std_error::{PoisonGirlB, X, Y},
+	poison_girl_no_std_error::{
+		ElfParseError, PoisonGirlB, X, Y, poison_girl_err,
+	},
 };
 
 /// Loads the kernel ELF file and prepares it for execution
@@ -69,7 +71,7 @@ pub fn kernel() -> PoisonGirlB<PhysicalAddress,>
 	};
 
 	// Calculate memory requirements for all loadable segments
-	let (head, tail,) = elf_address_range(&elf.program_headers,);
+	let (head, tail,) = elf_address_range(&elf.program_headers,)?;
 	let kernel_size = tail - head;
 
 	// Allocate memory for the kernel at the required address
@@ -146,17 +148,22 @@ fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,>
 ///
 /// # Returns
 ///
-/// A tuple `(head_address, tail_address)` representing:
+/// On success, a tuple `(head_address, tail_address)` representing:
 /// - `head_address`: The lowest virtual address of any loadable segment
 /// - `tail_address`: The highest virtual address + size of any loadable segment
+///
+/// Returns `ElfParseError::NoLoadSegments` when no loadable program headers
+/// are present.
 ///
 /// # Note
 ///
 /// Only program headers with type `ProgramHeaderType::Load` are considered,
 /// as these are the segments that need to be loaded into memory.
-fn elf_address_range(program_headers: &[ProgramHeader],) -> (usize, usize,)
+fn elf_address_range(
+	program_headers: &[ProgramHeader],
+) -> PoisonGirlB<(usize, usize,),>
 {
-	let mut pair = (usize::MAX, 0,);
+	let mut pair: Option<(usize, usize,),> = None;
 
 	// Examine each program header
 	for ph in program_headers {
@@ -168,11 +175,18 @@ fn elf_address_range(program_headers: &[ProgramHeader],) -> (usize, usize,)
 		let segment_tail = (ph.virtual_address + ph.memory_size) as usize;
 
 		// Track minimum and maximum addresses
-		pair.0 = pair.0.min(segment_head,);
-		pair.1 = pair.1.max(segment_tail,);
+		pair = Some(match pair {
+			Some((head, tail,),) => {
+				(head.min(segment_head,), tail.max(segment_tail,),)
+			},
+			None => (segment_head, segment_tail,),
+		},);
 	}
 
-	pair
+	match pair {
+		Some(pair,) => X(pair,),
+		None => Y(poison_girl_err!(ElfParseError::NoLoadSegments),),
+	}
 }
 
 /// Copies all loadable ELF segments to their target memory locations
@@ -323,14 +337,14 @@ mod tests
 	}
 
 	#[test]
-	fn address_range_without_load_segments_keeps_empty_sentinel()
+	fn address_range_without_load_segments_returns_error()
 	{
 		let headers = [
 			ph(ProgramHeaderType::Null, 0, 0x1000, 0, 0x100,),
 			ph(ProgramHeaderType::Interp, 0, 0x2000, 0, 0x100,),
 		];
 
-		assert_eq!(elf_address_range(&headers,), (usize::MAX, 0));
+		assert!(matches!(elf_address_range(&headers,), Y(_)));
 	}
 
 	#[test]
@@ -344,7 +358,10 @@ mod tests
 			ph(ProgramHeaderType::Dynamic, 0, 0x4000, 0x20, 0x1000,),
 		];
 
-		assert_eq!(elf_address_range(&headers,), (0x1000, 0x3400));
+		match elf_address_range(&headers,) {
+			X(pair,) => assert_eq!(pair, (0x1000, 0x3400)),
+			Y(_,) => panic!("expected a load segment range"),
+		}
 	}
 
 	#[test]

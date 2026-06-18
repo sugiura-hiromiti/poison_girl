@@ -4,7 +4,9 @@ use {
 		read_le_bytes_or,
 	},
 	alloc::vec::Vec,
-	poison_girl_no_std_error::{ElfParseStage, PoisonGirlB, X},
+	poison_girl_no_std_error::{
+		ElfParseError, ElfParseStage, PoisonGirlB, X, Y, poison_girl_err,
+	},
 };
 
 #[derive_const(Default)]
@@ -32,16 +34,33 @@ impl RelocationSection
 		ctx: &ElfContext,
 	) -> PoisonGirlB<Self,>
 	{
-		let bytes =
-			if size != 0 { &binary[offset..offset + size] } else { &[] }
-				.to_vec();
+		let Some(end,) = offset.checked_add(size,) else {
+			return Y(poison_girl_err!(ElfParseError::SizeOverflow {
+				stage:    ElfParseStage::Relocation,
+				name:     0,
+				expected: binary.len() as u64,
+				base:     offset as u64,
+				size:     size as u64,
+			}),);
+		};
+		if size != 0 && end > binary.len() {
+			return Y(poison_girl_err!(ElfParseError::SizeOverflow {
+				stage:    ElfParseStage::Relocation,
+				name:     0,
+				expected: binary.len() as u64,
+				base:     offset as u64,
+				size:     size as u64,
+			}),);
+		}
+
+		let bytes = if size != 0 { &binary[offset..end] } else { &[] }.to_vec();
 
 		X(Self {
 			bytes,
 			count: size / Self::size(is_addend, ctx,),
 			context: RelocationContext(is_addend, ctx.clone(),),
 			start: offset,
-			end: offset + size,
+			end,
 		},)
 	}
 
@@ -259,15 +278,18 @@ mod tests
 			elf_container_size::ElfContainerSize, elf_context::ElfContext,
 		},
 		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::Y,
 	};
+
+	fn ctx64() -> ElfContext
+	{
+		ElfContext { container: ElfContainerSize::Big, ..Default::default() }
+	}
 
 	#[test]
 	fn iterates_64_bit_relocations_with_and_without_addends() -> PoisonGirlTestB
 	{
-		let ctx = ElfContext {
-			container: ElfContainerSize::Big,
-			..Default::default()
-		};
+		let ctx = ctx64();
 
 		let mut rela_binary = alloc::vec![0xaa; 4];
 		rela_binary.extend_from_slice(&0x1010_u64.to_le_bytes(),);
@@ -313,6 +335,78 @@ mod tests
 		assert_eq!(relocation.symbol_index, 4);
 		assert_eq!(relocation.ty, 9);
 		assert!(rel_iter.next().is_none());
+		success!()
+	}
+
+	#[test]
+	fn zero_sized_section_returns_empty_table() -> PoisonGirlTestB
+	{
+		let ctx = ctx64();
+
+		let relocations = RelocationSection::parse(&[], 123, 0, false, &ctx,)?;
+
+		assert!(relocations.bytes.is_empty());
+		assert_eq!(relocations.count, 0);
+		assert_eq!(relocations.start, 123);
+		assert_eq!(relocations.end, 123);
+		assert!(relocations.iter().next().is_none());
+		success!()
+	}
+
+	#[test]
+	fn parse_rejects_ranges_outside_binary()
+	{
+		let ctx = ctx64();
+		let binary = alloc::vec![0; 4];
+
+		assert!(matches!(
+			RelocationSection::parse(
+				&binary,
+				2,
+				RelocationSection::SIZE_OF_RELOCATION_64,
+				false,
+				&ctx,
+			),
+			Y(_)
+		));
+		assert!(matches!(
+			RelocationSection::parse(&binary, usize::MAX, 1, false, &ctx,),
+			Y(_)
+		));
+	}
+
+	#[test]
+	fn partial_trailing_relocation_bytes_are_ignored_by_count()
+	-> PoisonGirlTestB
+	{
+		let ctx = ctx64();
+		let mut binary = Vec::new();
+		binary.extend_from_slice(&0x3030_u64.to_le_bytes(),);
+		binary.extend_from_slice(&((5_u64 << 32) | 11).to_le_bytes(),);
+		binary.extend_from_slice(&[0xcc; 3],);
+
+		let relocations = RelocationSection::parse(
+			&binary,
+			0,
+			RelocationSection::SIZE_OF_RELOCATION_64 + 3,
+			false,
+			&ctx,
+		)?;
+		let mut iter = relocations.iter();
+		let relocation = iter.next().expect("missing rel entry",)?;
+
+		assert_eq!(relocations.bytes, binary);
+		assert_eq!(relocations.count, 1);
+		assert_eq!(relocations.start, 0);
+		assert_eq!(
+			relocations.end,
+			RelocationSection::SIZE_OF_RELOCATION_64 + 3
+		);
+		assert_eq!(relocation.offset, 0x3030);
+		assert_eq!(relocation.addend, None);
+		assert_eq!(relocation.symbol_index, 5);
+		assert_eq!(relocation.ty, 11);
+		assert!(iter.next().is_none());
 		success!()
 	}
 }
