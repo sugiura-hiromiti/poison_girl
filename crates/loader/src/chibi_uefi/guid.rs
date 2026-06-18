@@ -344,33 +344,45 @@ mod tests
 	use {
 		super::*,
 		poison_girl_dev_test::{PoisonGirlTestB, success},
-		poison_girl_no_std_error::{X, Y},
+		poison_girl_no_std_error::Y,
 	};
 
 	#[test]
-	fn invalid_guid_character_returns_error()
+	fn valid_guid_variants_parse_equally() -> PoisonGirlTestB
 	{
-		let guid = Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723_",);
-
-		assert!(matches!(guid, Y(_)));
-	}
-
-	#[test]
-	fn valid_guid_with_hyphens_parses()
-	{
-		let guid = Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723b",);
-
-		assert!(matches!(guid, X(_)));
-	}
-
-	#[test]
-	fn test_fix_by_against_gen_from_str() -> PoisonGirlTestB
-	{
-		let guid1 =
+		let canonical =
 			Guid::gen_from_str("09576e91-6d3f-11d2-8e39-00a0c969723b",)?;
-		let guid2 = Guid::fix_by("09576e91-6d3f-11d2-8e39-00a0c969723b",);
+		for guid in [
+			"09576E91-6D3F-11D2-8E39-00A0C969723B",
+			"09576e916d3f11d28e3900a0c969723b",
+			"09576e9-16d3f11d2-8e3900a0-c969723b",
+		] {
+			assert_eq!(canonical, Guid::gen_from_str(guid,)?);
+		}
+		success!()
+	}
 
-		assert_eq!(guid1, guid2);
+	#[test]
+	fn invalid_guid_variants_return_error()
+	{
+		for guid in [
+			"09576e91-6d3f-11d2-8e39-00a0c969723_",
+			"09576e91-6d3f-11d2-8e39-00a0c969723",
+			"09576e91-6d3f-11d2-8e39-00a0c969723b0",
+		] {
+			assert!(matches!(Guid::gen_from_str(guid,), Y(_)));
+		}
+	}
+
+	#[test]
+	fn fix_by_matches_runtime_parsing_for_guid_variants() -> PoisonGirlTestB
+	{
+		for guid in [
+			"09576e91-6d3f-11d2-8e39-00a0c969723b",
+			"09576E91-6D3F-11D2-8E39-00A0C969723B",
+		] {
+			assert_eq!(Guid::gen_from_str(guid,)?, Guid::fix_by(guid,));
+		}
 		success!()
 	}
 }

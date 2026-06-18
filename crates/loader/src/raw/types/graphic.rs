@@ -121,3 +121,49 @@ pub struct GraphicsOutputProtocolModes
 	pub index:     u32,
 	pub info_size: usize,
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		core::mem::{align_of, size_of},
+		poison_girl_no_std::bridge::graphic::PixelFormatConf,
+	};
+
+	#[test]
+	fn graphics_mode_info_layout_matches_uefi_abi()
+	{
+		assert_eq!(size_of::<GraphicsOutputModeInfo,>(), 36);
+		assert_eq!(align_of::<GraphicsOutputModeInfo,>(), 4);
+	}
+
+	#[test]
+	fn graphics_protocol_mode_layout_matches_uefi_abi()
+	{
+		assert_eq!(size_of::<GraphicsOutputProtocolMode,>(), 32);
+		assert_eq!(align_of::<GraphicsOutputProtocolMode,>(), 8);
+	}
+
+	#[test]
+	fn mode_info_converts_pixel_formats()
+	{
+		let mut info = GraphicsOutputModeInfo {
+			horizontal_resolution: 800,
+			vertical_resolution: 600,
+			pixels_per_scal_line: 832,
+			..Default::default()
+		};
+
+		info.pixel_format = GraphicsPixelFormat::RGB_RESERVED_8_BIT_PER_COLOR;
+		assert_eq!(info.pixel_format(), PixelFormatConf::Rgb);
+		info.pixel_format = GraphicsPixelFormat::BGR_RESERVED_8_BIT_PER_COLOR;
+		assert_eq!(info.pixel_format(), PixelFormatConf::Bgr);
+		info.pixel_format = GraphicsPixelFormat::PIXEL_BIT_MASK;
+		assert_eq!(info.pixel_format(), PixelFormatConf::Bitmask);
+		info.pixel_format = GraphicsPixelFormat::PIXEL_BLT_ONLY;
+		assert_eq!(info.pixel_format(), PixelFormatConf::BltOnly);
+		assert_eq!(info.resolution(), (800, 600));
+		assert_eq!(info.stride(), 832);
+	}
+}

@@ -102,3 +102,35 @@ poison_girl_macro_def_status::status!(2.11);
 // #[repr(usize)]
 // #[derive(Eq, PartialEq, Clone, Debug,)]
 // pub enum Status {}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		core::mem::{align_of, size_of},
+		poison_girl_no_std_error::X,
+	};
+
+	#[test]
+	fn status_success_is_successful()
+	{
+		assert_eq!(Status::EFI_SUCCESS.0, 0);
+		assert!(Status::EFI_SUCCESS.is_success());
+		assert!(matches!(Status::EFI_SUCCESS.x_or(), X(_)));
+	}
+
+	#[test]
+	fn guid_layout_matches_uefi_abi()
+	{
+		assert_eq!(size_of::<Guid,>(), 16);
+		assert_eq!(align_of::<Guid,>(), 4);
+	}
+
+	#[test]
+	fn table_header_layout_matches_uefi_abi()
+	{
+		assert_eq!(size_of::<Header,>(), 24);
+		assert_eq!(align_of::<Header,>(), 8);
+	}
+}

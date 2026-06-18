@@ -11,7 +11,7 @@ use {
 	},
 	alloc::vec::Vec,
 	poison_girl_no_std_error::{
-		ElfParseError, ElfParseStage, PoisonGirlB, X, poison_girl_err,
+		ElfParseError, ElfParseStage, PoisonGirlB, X, Y, poison_girl_err,
 	},
 };
 
@@ -40,7 +40,11 @@ impl ElfHeader
 {
 	pub fn parse(binary: &[u8],) -> PoisonGirlB<Self,>
 	{
-		let ident = &binary[..ELF_IDENT_SIZE];
+		let Some(ident,) = binary.get(..ELF_IDENT_SIZE,) else {
+			return Y(poison_girl_err!(ElfParseError::InvalidIdentLen(
+				binary.len()
+			)),);
+		};
 		let ident = ElfHeaderIdent::new(ident,)?;
 		let remain = &binary[ELF_IDENT_SIZE..];
 		header_flag_fields(ident, remain,)
@@ -192,4 +196,86 @@ fn header_flag_fields(
 
 #[cfg(test)]
 mod tests
-{}
+{
+	use {
+		super::*,
+		crate::elf::{
+			abi_version::AbiVersion, elf_version::ElfVersion, endian::Endian,
+			file_class::FileClass, target_os_abi::TargetOsAbi, test_helpers,
+		},
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::Y,
+	};
+
+	#[test]
+	fn parses_64_bit_little_endian_header_from_bytes() -> PoisonGirlTestB
+	{
+		let binary = test_helpers::elf64_header(
+			ElfType::Executable,
+			0x100000,
+			0x40,
+			1,
+			0x200,
+			0,
+			0,
+		);
+
+		let header = ElfHeader::parse(&binary,)?;
+
+		assert_eq!(
+			header,
+			ElfHeader {
+				ident: ElfHeaderIdent {
+					file_class:    FileClass::Bit64,
+					endianness:    Endian::Little,
+					elf_version:   ElfVersion::ONE,
+					target_os_abi: TargetOsAbi::SysV,
+					abi_version:   AbiVersion(0,),
+				},
+				ty: ElfType::Executable,
+				machine: 0x3e,
+				version: 1,
+				entry: 0x100000,
+				program_header_offset: 0x40,
+				section_header_offset: 0x200,
+				flags: 0,
+				elf_header_size: 0x40,
+				program_header_entry_size: 0x38,
+				program_header_count: 1,
+				section_header_entry_size: 0x40,
+				section_header_count: 0,
+				section_header_index_of_section_name_string_table: 0,
+			},
+		);
+		success!()
+	}
+
+	#[test]
+	fn short_header_returns_error()
+	{
+		let binary = [0; ELF_IDENT_SIZE - 1];
+
+		assert!(matches!(ElfHeader::parse(&binary,), Y(_)));
+	}
+
+	#[test]
+	fn truncated_header_fields_return_error()
+	{
+		let mut binary = test_helpers::minimal_elf64();
+		binary.truncate(ELF_IDENT_SIZE + 2,);
+
+		assert!(matches!(ElfHeader::parse(&binary,), Y(_)));
+	}
+
+	#[test]
+	fn zero_program_and_section_tables_parse() -> PoisonGirlTestB
+	{
+		let header = ElfHeader::parse(&test_helpers::minimal_elf64(),)?;
+
+		assert_eq!(header.program_header_count, 0);
+		assert_eq!(header.section_header_count, 0);
+		assert!(header.program_headers(&[],)?.is_empty());
+		assert!(header.section_headers(&[],)?.is_empty());
+		success!()
+	}
+}

@@ -131,7 +131,31 @@ impl SectionHeader
 		count: usize,
 	) -> PoisonGirlB<Vec<Self,>,>
 	{
-		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
+		if count == 0 {
+			return X(Vec::new(),);
+		}
+
+		let table_size = match count.checked_mul(Self::SIZE_64,) {
+			Some(table_size,) => table_size,
+			None => {
+				return Y(poison_girl_err!(ElfParseError::EndOfBinary {
+					parser_pos: "section header table",
+					stage:      ElfParseStage::SectionHeader,
+				}),);
+			},
+		};
+		let Some(table_end,) = offset.checked_add(table_size,) else {
+			return Y(poison_girl_err!(ElfParseError::EndOfBinary {
+				parser_pos: "section header table",
+				stage:      ElfParseStage::SectionHeader,
+			}),);
+		};
+		if table_end > binary.len() {
+			return Y(poison_girl_err!(ElfParseError::EndOfBinary {
+				parser_pos: "section header table",
+				stage:      ElfParseStage::SectionHeader,
+			}),);
+		}
 
 		let mut section_headers = Vec::with_capacity(count,);
 		// section_headers.push(Self::empty_section(offset,),);
@@ -300,4 +324,64 @@ pub fn section_relocations(
 			X((index, section_header_relocation_section,),)
 		},)
 		.try_collect()
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		crate::elf::test_helpers,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::Y,
+	};
+
+	#[test]
+	fn parses_64_bit_section_header_from_bytes() -> PoisonGirlTestB
+	{
+		let binary = test_helpers::section_header(
+			1, SHT_STRTAB, 0, 0, 0x180, 0x20, 0, 0, 1, 0,
+		);
+		let mut offset = 0;
+
+		let section_headers = SectionHeader::parse(&binary, &mut offset, 1,)?;
+
+		assert_eq!(offset, SectionHeader::SIZE_64);
+		assert_eq!(section_headers.len(), 1);
+		assert_eq!(section_headers[0].name, 1);
+		assert_eq!(section_headers[0].ty, SHT_STRTAB);
+		assert_eq!(section_headers[0].offset, 0x180);
+		assert_eq!(section_headers[0].size, 0x20);
+		success!()
+	}
+
+	#[test]
+	fn zero_count_returns_empty_table() -> PoisonGirlTestB
+	{
+		let mut offset = 321;
+
+		let section_headers = SectionHeader::parse(&[], &mut offset, 0,)?;
+
+		assert!(section_headers.is_empty());
+		assert_eq!(offset, 321);
+		success!()
+	}
+
+	#[test]
+	fn count_beyond_available_bytes_returns_error()
+	{
+		let binary = [0; SectionHeader::SIZE_64 - 1];
+		let mut offset = 0;
+
+		assert!(matches!(SectionHeader::parse(&binary, &mut offset, 1,), Y(_)));
+	}
+
+	#[test]
+	fn offset_beyond_available_bytes_returns_error()
+	{
+		let binary = [0; SectionHeader::SIZE_64];
+		let mut offset = 1;
+
+		assert!(matches!(SectionHeader::parse(&binary, &mut offset, 1,), Y(_)));
+	}
 }

@@ -6,7 +6,10 @@
 use {
 	crate::{
 		chibi_uefi::{required_pages, table::boot_services},
-		elf::{Elf, program_header::ProgramHeaderType},
+		elf::{
+			Elf,
+			program_header::{ProgramHeader, ProgramHeaderType},
+		},
 		print, println,
 		raw::{
 			protocol::{
@@ -16,6 +19,7 @@ use {
 			types::{
 				PhysicalAddress,
 				file::{FileAttributes, OpenMode},
+				graphic::GraphicsOutputProtocolMode,
 				memory::AllocateType,
 			},
 		},
@@ -65,7 +69,7 @@ pub fn kernel() -> PoisonGirlB<PhysicalAddress,>
 	};
 
 	// Calculate memory requirements for all loadable segments
-	let (head, tail,) = elf_address_range(&elf,);
+	let (head, tail,) = elf_address_range(&elf.program_headers,);
 	let kernel_size = tail - head;
 
 	// Allocate memory for the kernel at the required address
@@ -150,12 +154,12 @@ fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,>
 ///
 /// Only program headers with type `ProgramHeaderType::Load` are considered,
 /// as these are the segments that need to be loaded into memory.
-fn elf_address_range(elf: &Elf,) -> (usize, usize,)
+fn elf_address_range(program_headers: &[ProgramHeader],) -> (usize, usize,)
 {
 	let mut pair = (usize::MAX, 0,);
 
 	// Examine each program header
-	for ph in &elf.program_headers {
+	for ph in program_headers {
 		if ph.ty != ProgramHeaderType::Load {
 			continue;
 		}
@@ -210,14 +214,23 @@ fn copy_load_segment(elf: &Elf, src: &[u8],)
 			)
 		};
 
-		let offset = ph.offset as usize;
-		let file_size = ph.file_size as usize;
-
-		// Copy segment contents from ELF file
-		dest[..file_size].copy_from_slice(&src[offset..offset + file_size],);
-		// Zero-fill remaining memory (e.g., .bss section)
-		dest[file_size..].fill(0,);
+		copy_load_segment_to_slice(ph, src, dest,);
 	}
+}
+
+fn copy_load_segment_to_slice(ph: &ProgramHeader, src: &[u8], dest: &mut [u8],)
+{
+	let mem_size = ph.memory_size as usize;
+	let file_size = ph.file_size as usize;
+	assert!(file_size <= mem_size);
+	assert!(dest.len() >= mem_size);
+
+	let offset = ph.offset as usize;
+
+	// Copy segment contents from ELF file
+	dest[..file_size].copy_from_slice(&src[offset..offset + file_size],);
+	// Zero-fill remaining memory (e.g., .bss section)
+	dest[file_size..mem_size].fill(0,);
 }
 
 /// Configures graphics output for the kernel
@@ -257,15 +270,135 @@ pub fn graphic_config() -> PoisonGirlB<FrameBufConf,>
 
 	// Query current graphics mode information
 	let info = gout.mode();
+
+	// Create frame buffer configuration
+	let fbc = frame_buffer_config_from_mode(info,);
+
+	X(fbc,)
+}
+
+fn frame_buffer_config_from_mode(
+	info: &GraphicsOutputProtocolMode,
+) -> FrameBufConf
+{
 	let (width, height,) = info.resolution();
-	let stride = info.stride();
 	let base = info.frame_buffer_base as *mut u8;
 	let size = info.frame_buffer_size;
 	let pixel_format = info.pixel_format();
+	let stride = info.stride() * pixel_format.bytes_per_pixel().unwrap_or(1,);
 
-	// Create frame buffer configuration
-	let fbc =
-		FrameBufConf::new(pixel_format, base, size, width, height, stride,);
+	FrameBufConf::new(pixel_format, base, size, width, height, stride,)
+}
 
-	X(fbc,)
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		crate::raw::types::graphic::{
+			GraphicsOutputModeInfo, GraphicsOutputProtocolMode,
+			GraphicsPixelFormat, PixelBitMask,
+		},
+		poison_girl_no_std::bridge::graphic::PixelFormatConf,
+	};
+
+	fn ph(
+		ty: ProgramHeaderType,
+		offset: u64,
+		virtual_address: u64,
+		file_size: u64,
+		memory_size: u64,
+	) -> ProgramHeader
+	{
+		ProgramHeader {
+			ty,
+			flags: 0,
+			offset,
+			virtual_address,
+			physical_address: virtual_address,
+			file_size,
+			memory_size,
+			align: 0,
+		}
+	}
+
+	#[test]
+	fn address_range_without_load_segments_keeps_empty_sentinel()
+	{
+		let headers = [
+			ph(ProgramHeaderType::Null, 0, 0x1000, 0, 0x100,),
+			ph(ProgramHeaderType::Interp, 0, 0x2000, 0, 0x100,),
+		];
+
+		assert_eq!(elf_address_range(&headers,), (usize::MAX, 0));
+	}
+
+	#[test]
+	fn address_range_uses_only_load_segments_for_min_head_and_max_tail()
+	{
+		let headers = [
+			ph(ProgramHeaderType::Interp, 0, 0x100, 0x20, 0x10000,),
+			ph(ProgramHeaderType::Load, 0, 0x3000, 0x20, 0x400,),
+			ph(ProgramHeaderType::Load, 0, 0x1000, 0x20, 0x500,),
+			ph(ProgramHeaderType::Load, 0, 0x1200, 0x20, 0x100,),
+			ph(ProgramHeaderType::Dynamic, 0, 0x4000, 0x20, 0x1000,),
+		];
+
+		assert_eq!(elf_address_range(&headers,), (0x1000, 0x3400));
+	}
+
+	#[test]
+	fn copy_load_segment_copies_file_bytes_and_zero_fills_tail()
+	{
+		let src = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9,];
+		let ph = ph(ProgramHeaderType::Load, 3, 0x1000, 4, 8,);
+		let mut dest = [0xaa; 10];
+
+		copy_load_segment_to_slice(&ph, &src, &mut dest,);
+
+		assert_eq!(&dest[..8], &[3, 4, 5, 6, 0, 0, 0, 0]);
+		assert_eq!(&dest[8..], &[0xaa, 0xaa]);
+	}
+
+	#[test]
+	fn copy_load_segment_without_bss_tail_copies_only_file_bytes()
+	{
+		let src = [10, 11, 12, 13, 14, 15,];
+		let ph = ph(ProgramHeaderType::Load, 1, 0x1000, 3, 3,);
+		let mut dest = [0xaa; 3];
+
+		copy_load_segment_to_slice(&ph, &src, &mut dest,);
+
+		assert_eq!(dest, [11, 12, 13]);
+	}
+
+	#[test]
+	fn frame_buffer_config_converts_raw_graphics_mode()
+	{
+		let mut info = GraphicsOutputModeInfo {
+			version:               0,
+			horizontal_resolution: 100,
+			vertical_resolution:   50,
+			pixel_format:
+				GraphicsPixelFormat::RGB_RESERVED_8_BIT_PER_COLOR,
+			pixel_info:            PixelBitMask::default(),
+			pixels_per_scal_line:  128,
+		};
+		let mode = GraphicsOutputProtocolMode {
+			max_mode:          3,
+			mode:              1,
+			info:              &mut info,
+			frame_buffer_base: 0x1000,
+			frame_buffer_size: 128 * 50 * 4,
+		};
+
+		let config = frame_buffer_config_from_mode(&mode,);
+
+		assert_eq!(config.pixel_format, PixelFormatConf::Rgb);
+		assert_eq!(config.base, 0x1000 as *mut u8);
+		assert_eq!(config.size, 128 * 50 * 4);
+		assert_eq!(config.width, 100);
+		assert_eq!(config.height, 50);
+		assert_eq!(config.stride, 128 * 4);
+	}
 }

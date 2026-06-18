@@ -322,3 +322,31 @@ pub fn required_pages(size: usize,) -> usize
 {
 	size / PAGE_SIZE + 1
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		core::{ptr, sync::atomic::Ordering},
+		poison_girl_no_std_error::Y,
+	};
+
+	#[test]
+	fn image_handle_unset_returns_error()
+	{
+		IMAGE_HANDLE.store(ptr::null_mut(), Ordering::Release,);
+
+		assert!(matches!(image_handle(), Y(_)));
+	}
+
+	#[test]
+	fn required_pages_rounds_up_with_existing_overallocation_semantics()
+	{
+		assert_eq!(required_pages(0,), 1);
+		assert_eq!(required_pages(1,), 1);
+		assert_eq!(required_pages(PAGE_SIZE - 1,), 1);
+		assert_eq!(required_pages(PAGE_SIZE,), 2);
+		assert_eq!(required_pages(PAGE_SIZE + 1,), 2);
+	}
+}

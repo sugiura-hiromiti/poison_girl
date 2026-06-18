@@ -950,8 +950,6 @@ dependencies = [
  "poison_girl_dev_test",
  "poison_girl_macro",
  "poison_girl_macro_def_status",
- "poison_girl_macro_def_test_elf_header_parse",
- "poison_girl_macro_def_test_program_headers_parse",
  "poison_girl_no_std",
  "poison_girl_no_std_error",
 ]
