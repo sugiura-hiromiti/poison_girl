@@ -61,3 +61,38 @@ impl<T: Copy,> AsMut<T,> for Node<T,>
 		&mut self.0
 	}
 }
+
+#[cfg(test)]
+mod tests
+{
+	use super::{Node, NodeValue};
+
+	#[test]
+	fn obtain_value_returns_inner_copy()
+	{
+		let node = Node(42_u32,);
+
+		assert_eq!(node.obtain_value(), 42);
+	}
+
+	#[test]
+	fn as_ref_exposes_inner_value()
+	{
+		let node = Node(7_u32,);
+		let value: &u32 = node.as_ref();
+
+		assert_eq!(*value, 7);
+	}
+
+	#[test]
+	fn as_mut_updates_inner_value()
+	{
+		let mut node = Node(1_u32,);
+		let value: &mut u32 = node.as_mut();
+
+		*value = 9;
+
+		assert_eq!(node.obtain_value(), 9);
+		assert_eq!(*node.as_ref(), 9);
+	}
+}

@@ -565,3 +565,137 @@ impl FrameBufConf
 		true
 	}
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {super::*, core::ptr::NonNull};
+
+	fn non_null_base() -> *mut u8
+	{
+		NonNull::<u8,>::dangling().as_ptr()
+	}
+
+	fn framebuf(
+		pixel_format: PixelFormatConf,
+		width: usize,
+		height: usize,
+		stride: usize,
+		size: usize,
+	) -> FrameBufConf
+	{
+		FrameBufConf {
+			pixel_format,
+			base: non_null_base(),
+			size,
+			width,
+			height,
+			stride,
+		}
+	}
+
+	#[test]
+	fn pixel_format_reports_bytes_per_pixel()
+	{
+		assert_eq!(PixelFormatConf::Rgb.bytes_per_pixel(), Some(4,));
+		assert_eq!(PixelFormatConf::Bgr.bytes_per_pixel(), Some(4,));
+		assert_eq!(PixelFormatConf::Bitmask.bytes_per_pixel(), None);
+		assert_eq!(PixelFormatConf::BltOnly.bytes_per_pixel(), None);
+	}
+
+	#[test]
+	fn pixel_format_reports_pixel_access_support()
+	{
+		assert!(PixelFormatConf::Rgb.supports_pixel_access());
+		assert!(PixelFormatConf::Bgr.supports_pixel_access());
+		assert!(PixelFormatConf::Bitmask.supports_pixel_access());
+		assert!(!PixelFormatConf::BltOnly.supports_pixel_access());
+	}
+
+	#[test]
+	fn new_preserves_constructor_arguments()
+	{
+		let mut backing = [0_u8; 64];
+		let base = backing.as_mut_ptr();
+
+		let framebuf = FrameBufConf::new(
+			PixelFormatConf::Rgb,
+			base,
+			backing.len(),
+			4,
+			4,
+			16,
+		);
+
+		assert_eq!(framebuf.pixel_format, PixelFormatConf::Rgb);
+		assert_eq!(framebuf.base, base);
+		assert_eq!(framebuf.size, 64);
+		assert_eq!(framebuf.width, 4);
+		assert_eq!(framebuf.height, 4);
+		assert_eq!(framebuf.stride, 16);
+	}
+
+	#[test]
+	fn pixel_offset_uses_stride_and_bytes_per_pixel()
+	{
+		let framebuf = framebuf(PixelFormatConf::Rgb, 4, 3, 20, 60,);
+
+		assert_eq!(framebuf.pixel_offset(0, 0,), Some(0,));
+		assert_eq!(framebuf.pixel_offset(1, 0,), Some(4,));
+		assert_eq!(framebuf.pixel_offset(0, 1,), Some(20,));
+		assert_eq!(framebuf.pixel_offset(3, 2,), Some(52,));
+	}
+
+	#[test]
+	fn pixel_offset_rejects_out_of_bounds_and_unsupported_formats()
+	{
+		let rgb = framebuf(PixelFormatConf::Rgb, 4, 3, 16, 48,);
+		let bitmask = framebuf(PixelFormatConf::Bitmask, 4, 3, 16, 48,);
+		let blt_only = framebuf(PixelFormatConf::BltOnly, 4, 3, 16, 48,);
+
+		assert_eq!(rgb.pixel_offset(4, 0,), None);
+		assert_eq!(rgb.pixel_offset(0, 3,), None);
+		assert_eq!(bitmask.pixel_offset(0, 0,), None);
+		assert_eq!(blt_only.pixel_offset(0, 0,), None);
+	}
+
+	#[test]
+	fn pixel_count_returns_width_times_height()
+	{
+		let framebuf = framebuf(PixelFormatConf::Bgr, 7, 5, 28, 140,);
+
+		assert_eq!(framebuf.pixel_count(), 35);
+	}
+
+	#[test]
+	fn is_valid_accepts_normal_and_padded_stride_configs()
+	{
+		let normal = framebuf(PixelFormatConf::Rgb, 4, 3, 16, 48,);
+		let padded = framebuf(PixelFormatConf::Rgb, 4, 3, 20, 60,);
+
+		assert!(normal.is_valid());
+		assert!(padded.is_valid());
+	}
+
+	#[test]
+	fn is_valid_rejects_invalid_configs()
+	{
+		assert!(!framebuf(PixelFormatConf::Rgb, 0, 3, 16, 48,).is_valid());
+		assert!(!framebuf(PixelFormatConf::Rgb, 4, 0, 16, 48,).is_valid());
+		assert!(!framebuf(PixelFormatConf::Rgb, 4, 3, 0, 48,).is_valid());
+		assert!(!framebuf(PixelFormatConf::Rgb, 4, 3, 16, 0,).is_valid());
+
+		let null_base = FrameBufConf {
+			pixel_format: PixelFormatConf::Rgb,
+			base:         core::ptr::null_mut(),
+			size:         48,
+			width:        4,
+			height:       3,
+			stride:       16,
+		};
+		assert!(!null_base.is_valid());
+
+		assert!(!framebuf(PixelFormatConf::Rgb, 4, 3, 15, 45,).is_valid());
+		assert!(!framebuf(PixelFormatConf::Rgb, 4, 3, 16, 47,).is_valid());
+	}
+}
