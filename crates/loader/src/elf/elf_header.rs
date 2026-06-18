@@ -192,6 +192,4 @@ fn header_flag_fields(
 
 #[cfg(test)]
 mod tests
-{
-	use super::*;
-}
+{}

@@ -13,6 +13,7 @@ use {
 		alloc::{GlobalAlloc, Layout},
 		ptr::NonNull,
 	},
+	poison_girl_macro::cfg_if,
 	poison_girl_no_std_error::{PoisonGirlB, X},
 };
 
@@ -22,7 +23,8 @@ P1 crates/loader/src/chibi_uefi/memory.rs:19: the UEFI allocator is still instal
    allocator for loader tests. cargo test -p poison_girl_loader --lib now builds, but aborts at runtime with
    memory allocation of 4 bytes failed because LoaderAllocator depends on UEFI boot services that are not
    initialized in host tests.
-*/
+ */
+#[cfg(target_os = "uefi")]
 #[global_allocator]
 static LOADER_ALLOCATOR: LoaderAllocator = LoaderAllocator;
 
@@ -30,7 +32,7 @@ pub struct LoaderAllocator;
 
 unsafe impl GlobalAlloc for LoaderAllocator
 {
-	unsafe fn alloc(&self, layout: core::alloc::Layout,) -> *mut u8
+	unsafe fn alloc(&self, layout: Layout,) -> *mut u8
 	{
 		if layout.align() > 8 {
 			return core::ptr::null_mut();
@@ -45,7 +47,7 @@ unsafe impl GlobalAlloc for LoaderAllocator
 		}
 	}
 
-	unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout,)
+	unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout,)
 	{
 		if layout.align() > 8 {
 			return;
@@ -58,19 +60,24 @@ unsafe impl GlobalAlloc for LoaderAllocator
 	}
 }
 
-/// TODO:
-/// P1 crates/loader/src/chibi_uefi/memory.rs:54: #[cfg_attr(not(test),
-/// alloc_error_handler)] still emits #[alloc_error_handler] when the loader
-/// library is compiled as a normal dependency of the loader bin test.
-/// cfg(test) is only true for the crate currently being built as a test
-/// target, so cargo test -p poison_girl_loader --all-targets --no-run still
-/// fails with the std allocation handler conflict. This  needs a gate tied to
-/// the real boot target or a feature, not only cfg(test).
-#[cfg_attr(not(test), alloc_error_handler)]
-fn alloc_error(layout: Layout,) -> !
-{
-	panic!("system run out of memory: {layout:#?}")
-}
+cfg_if!(
+	if #[cfg(all(not(test), target_os = "uefi"))] {
+		/// TODO:
+		/// P1 crates/loader/src/chibi_uefi/memory.rs:54: #[cfg_attr(not(test),
+		/// alloc_error_handler)] still emits #[alloc_error_handler] when the loader
+		/// library is compiled as a normal dependency of the loader bin test.
+		/// cfg(test) is only true for the crate currently being built as a test
+		/// target, so cargo test -p poison_girl_loader --all-targets --no-run still
+		/// fails with the std allocation handler conflict. This  needs a gate tied to
+		/// the real boot target or a feature, not only cfg(test).
+		/// #[cfg_attr(not(test), alloc_error_handler)]
+		#[alloc_error_handler]
+		fn alloc_error(layout: Layout,) -> !
+		{
+			panic!("system run out of memory: {layout:#?}")
+		}
+	}
+);
 
 impl BootServices
 {

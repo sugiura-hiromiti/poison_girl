@@ -1,6 +1,6 @@
 #![no_std]
 #![allow(incomplete_features)]
-#![feature(alloc_error_handler)]
+#![cfg_attr(all(not(test), target_os = "uefi"), feature(alloc_error_handler))]
 #![feature(const_trait_impl)]
 #![feature(generic_const_exprs)]
 #![feature(associated_type_defaults)]
