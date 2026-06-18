@@ -162,6 +162,7 @@ pub enum ElfParseError
 		tag:     u64,
 		address: u64,
 	},
+	NoLoadSegments,
 }
 
 #[derive(Debug,)]
