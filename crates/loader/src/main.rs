@@ -20,24 +20,28 @@ use {
 			types::{Status, UnsafeHandle},
 		},
 	},
-	poison_girl_no_std::{bridge::device_tree::DeviceTreeAddress, wfe},
+	poison_girl_macro::cfg_if,
+	poison_girl_no_std::bridge::device_tree::DeviceTreeAddress,
 	poison_girl_no_std_error::{PoisonGirlB, X, Y},
 };
 
-/// Custom panic handler for the UEFI environment
-///
-/// This panic handler prints debug information and enters a wait-for-event loop
-/// instead of terminating the program, which is appropriate for a UEFI
-/// application.
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(panic: &core::panic::PanicInfo,) -> !
-{
-	println!("{panic:#?}");
-	loop {
-		wfe()
+cfg_if!(
+	if #[cfg(not(test))] {
+		/// Custom panic handler for the UEFI environment
+		///
+		/// This panic handler prints debug information and enters a wait-for-event loop
+		/// instead of terminating the program, which is appropriate for a UEFI
+		/// application.
+		#[panic_handler]
+		fn panic(panic: &core::panic::PanicInfo,) -> !
+		{
+			println!("{panic:#?}");
+			loop {
+				poison_girl_no_std::wfe()
+			}
+		}
 	}
-}
+);
 
 /// UEFI application entry point
 ///
