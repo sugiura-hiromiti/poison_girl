@@ -936,6 +936,7 @@ dependencies = [
 name = "poison_girl_kernel"
 version = "0.1.0"
 dependencies = [
+ "poison_girl_dev_test",
  "poison_girl_macro",
  "poison_girl_macro_def_font",
  "poison_girl_macro_def_impl_int",

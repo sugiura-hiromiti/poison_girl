@@ -116,8 +116,13 @@ fn unwrap_primitive(ty: &syn::Type,) -> Rslt<syn::Ident,>
 fn digit_count_impl() -> proc_macro2::TokenStream
 {
 	quote::quote! {
+		/// 1 indexed
 		fn digit_count(&self) -> usize {
 			let mut n = self.clone();
+			if n == 0 {
+				return 1;
+			}
+
 			let mut digits = 0;
 
 			// Count digits by dividing by 10
@@ -134,30 +139,16 @@ fn digit_count_impl() -> proc_macro2::TokenStream
 fn nth_digit_impl() -> proc_macro2::TokenStream
 {
 	quote::quote! {
-		/// Extracts the nth digit from the right (1-indexed)
-		///
-		/// # Arguments
-		///
-		/// * `n` - The position of the digit to extract (1 = rightmost digit)
-		///
-		/// # Returns
-		///
-		/// The digit at position n as a u8
-		///
-		/// # Panics
-		///
-		/// Panics if `n` is 0, as digit positions are 1-indexed
 		fn nth_digit(&self, n: usize) -> u8 {
-			assert_ne!(n, 0);
 			let mut origin = self.clone();
 
-			// Shift right n-1 times to get the desired digit in the ones place
-			for _i in 1..n {
+			// Shift right n times to get the desired digit in the ones place
+			for _i in 0..n {
 				origin.shift_right();
 			}
 
 			// Extract the ones digit
-			(origin % 10) as u8
+			origin.shift_right()
 		}
 	}
 }
@@ -182,14 +173,6 @@ fn shift_right_impl(idnt: &syn::Ident,) -> proc_macro2::TokenStream
 	};
 
 	quote::quote! {
-		/// Removes and returns the rightmost decimal digit
-		///
-		/// This method modifies the number by removing its rightmost digit
-		/// (equivalent to integer division by 10) and returns that digit.
-		///
-		/// # Returns
-		///
-		/// The rightmost digit as a u8
 		fn shift_right(&mut self) -> u8 {
 			// Extract the rightmost digit
 			let first_digit = *self % 10;

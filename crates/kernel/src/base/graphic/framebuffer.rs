@@ -280,6 +280,10 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 	/// - `y` and `x` are the pixel coordinates
 	/// - `4` is the number of bytes per pixel (32-bit pixels)
 	///
+	/// # Warn
+	///
+	/// this function do not validate coordinate. it's responsibility of caller
+	///
 	/// # Examples
 	///
 	/// ```rust,ignore
@@ -390,7 +394,11 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 #[cfg(test)]
 mod tests
 {
-	use {super::*, core::prelude::rust_2024::test};
+	use {
+		super::*,
+		core::prelude::rust_2024::test,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+	};
 
 	const UNCHANGED: u8 = 0xaa;
 
@@ -429,60 +437,61 @@ mod tests
 		buf[offset..offset + 3].copy_from_slice(&color,);
 	}
 
+	fn assert_y<T,>(value: PoisonGirlB<T,>,) -> PoisonGirlTestB
+	{
+		match value {
+			X(_,) => PoisonGirlTestB::y("expected Y variant",),
+			Y(_,) => PoisonGirlTestB::x(),
+		}
+	}
+
 	#[test]
-	fn slice_mut_returns_slice_inside_bounds()
+	fn slice_mut_returns_slice_inside_bounds() -> PoisonGirlTestB
 	{
 		let mut buf = [0; 16];
 		let fb = framebuffer(color::Rgb, &mut buf, 2, 2, 2,);
 
-		match fb.slice_mut(4, 3,) {
-			X(slice,) => {
-				assert_eq!(&slice[..], &[0, 0, 0,]);
-				slice.copy_from_slice(&[1, 2, 3,],);
-			},
-			Y(_,) => assert!(false),
-		}
+		let slice = fb.slice_mut(4, 3,)?;
+		assert_eq!(&slice[..], &[0, 0, 0,]);
+		slice.copy_from_slice(&[1, 2, 3,],);
 
 		assert_eq!(&buf[4..7], &[1, 2, 3,]);
+		success!()
 	}
 
 	#[test]
-	fn slice_mut_returns_error_outside_bounds()
+	fn slice_mut_returns_error_outside_bounds() -> PoisonGirlTestB
 	{
 		let mut buf = [0; 8];
 		let fb = framebuffer(color::Rgb, &mut buf, 1, 2, 1,);
 
-		assert!(matches!(fb.slice_mut(7, 2,), Y(_)));
-		assert!(matches!(fb.slice_mut(usize::MAX, 1,), Y(_)));
+		assert_y(fb.slice_mut(7, 2,),)?;
+		assert_y(fb.slice_mut(usize::MAX, 1,),)?;
+		success!()
 	}
 
 	#[test]
-	fn put_pixel_writes_three_color_bytes_at_expected_offset()
+	fn put_pixel_writes_three_color_bytes_at_expected_offset() -> PoisonGirlTestB
 	{
 		let mut buf = [UNCHANGED; 32];
 		let mut expected = buf;
 		let fb = framebuffer(color::Rgb, &mut buf, 4, 2, 4,);
 
-		assert!(matches!(
-			fb.put_pixel(&(1, 1,), &(0x10, 0x20, 0x30,),),
-			X((),)
-		));
+		fb.put_pixel(&(1, 1,), &(0x10, 0x20, 0x30,),)?;
 		write_expected_pixel(&mut expected, 4, 1, 1, [0x10, 0x20, 0x30,],);
 
 		assert_eq!(buf, expected);
+		success!()
 	}
 
 	#[test]
-	fn fill_rectangle_writes_inclusive_area()
+	fn fill_rectangle_writes_inclusive_area() -> PoisonGirlTestB
 	{
 		let mut buf = [UNCHANGED; 48];
 		let mut expected = buf;
 		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 4,);
 
-		assert!(matches!(
-			fb.fill_rectangle(&(1, 0,), &(2, 1,), &(0x21, 0x32, 0x43,),),
-			X((),)
-		));
+		fb.fill_rectangle(&(1, 0,), &(2, 1,), &(0x21, 0x32, 0x43,),)?;
 		for y in 0..=1 {
 			for x in 1..=2 {
 				write_expected_pixel(
@@ -496,42 +505,34 @@ mod tests
 		}
 
 		assert_eq!(buf, expected);
+		success!()
 	}
 
 	#[test]
-	fn fill_rectangle_rejects_invalid_coordinates()
+	fn fill_rectangle_rejects_invalid_coordinates() -> PoisonGirlTestB
 	{
 		let mut buf = [UNCHANGED; 48];
 		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 4,);
 
-		assert!(matches!(
-			fb.fill_rectangle(&(2, 0,), &(1, 1,), &(1, 2, 3,),),
-			Y(_,)
-		));
-		assert!(matches!(
-			fb.fill_rectangle(&(0, 0,), &(5, 1,), &(1, 2, 3,),),
-			Y(_,)
-		));
-		assert!(matches!(
-			fb.fill_rectangle(&(0, 0,), &(1, 4,), &(1, 2, 3,),),
-			Y(_,)
-		));
+		assert_y(fb.fill_rectangle(&(2, 0,), &(1, 1,), &(1, 2, 3,),),)?;
+		assert_y(fb.fill_rectangle(&(0, 0,), &(5, 1,), &(1, 2, 3,),),)?;
+		assert_y(fb.fill_rectangle(&(0, 0,), &(4, 1,), &(1, 2, 3,),),)?;
+		assert_y(fb.fill_rectangle(&(0, 0,), &(1, 3,), &(1, 2, 3,),),)?;
+		assert_y(fb.fill_rectangle(&(0, 0,), &(1, 4,), &(1, 2, 3,),),)?;
+		success!()
 	}
 
 	#[test]
-	fn outline_rectangle_writes_only_border_pixels()
+	fn outline_rectangle_writes_only_border_pixels() -> PoisonGirlTestB
 	{
 		let mut buf = [UNCHANGED; 100];
 		let mut expected = buf;
 		let fb = framebuffer(color::Rgb, &mut buf, 5, 5, 5,);
 
-		assert!(matches!(
-			fb.outline_rectangle(&(1, 1,), &(4, 4,), &(0x55, 0x66, 0x77,),),
-			X((),)
-		));
-		for y in 1..=3 {
-			for x in 1..=3 {
-				if x == 1 || x == 3 || y == 1 || y == 3 {
+		fb.outline_rectangle(&(1, 1,), &(4, 4,), &(0x55, 0x66, 0x77,),)?;
+		for y in 1..=4 {
+			for x in 1..=4 {
+				if x == 1 || x == 4 || y == 1 || y == 4 {
 					write_expected_pixel(
 						&mut expected,
 						5,
@@ -544,5 +545,6 @@ mod tests
 		}
 
 		assert_eq!(buf, expected);
+		success!()
 	}
 }

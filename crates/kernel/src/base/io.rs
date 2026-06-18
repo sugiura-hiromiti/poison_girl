@@ -2,7 +2,6 @@ use {
 	super::graphic::FRAME_BUFFER,
 	crate::base::graphic::position::Coordinal,
 	core::{
-		assert_ne,
 		clone::Clone,
 		cmp::{Ord, PartialOrd},
 		fmt::Write,
@@ -519,44 +518,25 @@ pub trait Integer:
 	/// ```
 	fn digit_count(&self,) -> usize;
 
-	/// Returns the nth digit of this integer (0-indexed from left)
+	/// Extracts the nth digit from the right (0-indexed)
 	///
 	/// # Arguments
 	///
-	/// * `n` - Index of the digit to retrieve (0 = leftmost/most significant)
+	/// * `n` - The position of the digit to extract (0 = rightmost digit)
 	///
 	/// # Returns
 	///
-	/// The digit at position n as a byte value (b'0' to b'9')
-	///
-	/// # Examples
-	///
-	/// ```rust,ignore
-	/// let num = 12345u32;
-	/// assert_eq!(num.nth_digit(0), b'1');
-	/// assert_eq!(num.nth_digit(2), b'3');
-	/// assert_eq!(num.nth_digit(4), b'5');
-	/// ```
+	/// The digit at position n as a u8
 	fn nth_digit(&self, n: usize,) -> u8;
 
-	/// Removes and returns the rightmost (least significant) digit
+	/// Removes and returns the rightmost decimal digit
 	///
-	/// This method modifies the integer by removing its rightmost digit
-	/// and returns that digit as a byte value.
+	/// This method modifies the number by removing its rightmost digit
+	/// (equivalent to integer division by 10) and returns that digit.
 	///
 	/// # Returns
 	///
-	/// The rightmost digit as a byte value (b'0' to b'9')
-	///
-	/// # Examples
-	///
-	/// ```rust,ignore
-	/// let mut num = 12345u32;
-	/// assert_eq!(num.shift_right(), b'5');
-	/// assert_eq!(num, 1234); // Number is modified
-	/// assert_eq!(num.shift_right(), b'4');
-	/// assert_eq!(num, 123);
-	/// ```
+	/// The rightmost digit as a u8
 	fn shift_right(&mut self,) -> u8;
 }
 
@@ -582,20 +562,31 @@ mod tests
 	#[test]
 	fn unsigned_digit_count_handles_zero_single_and_multi_digit_values()
 	{
-		assert_eq!(0u32.digit_count(), 0);
+		assert_eq!(0u32.digit_count(), 1);
 		assert_eq!(7u32.digit_count(), 1);
 		assert_eq!(10u32.digit_count(), 2);
 		assert_eq!(12345usize.digit_count(), 5);
 	}
 
 	#[test]
-	fn unsigned_nth_digit_is_one_indexed_from_the_right()
+	fn unsigned_nth_digit_is_zero_indexed_from_the_right()
 	{
 		assert_eq!(0u32.nth_digit(1,), 0);
-		assert_eq!(7u32.nth_digit(1,), 7);
-		assert_eq!(12345u32.nth_digit(1,), 5);
-		assert_eq!(12345u32.nth_digit(3,), 3);
-		assert_eq!(12345u32.nth_digit(5,), 1);
+		assert_eq!(0u32.nth_digit(0,), 0);
+		assert_eq!(7u32.nth_digit(0,), 7);
+		assert_eq!(12345u32.nth_digit(1,), 4);
+		assert_eq!(12345u32.nth_digit(3,), 2);
+		assert_eq!(12345u32.nth_digit(5,), 0);
+	}
+
+	#[test]
+	fn test_signed_nth_digit()
+	{
+		let signed = -123i32;
+		assert_eq!(signed.nth_digit(0), 3);
+		assert_eq!(signed.nth_digit(1), 2);
+		assert_eq!(signed.nth_digit(2), 1);
+		assert_eq!(signed.nth_digit(3), 0);
 	}
 
 	#[test]

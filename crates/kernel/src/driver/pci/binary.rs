@@ -241,7 +241,10 @@ impl BinaryParserTarget for usize
 mod tests
 {
 	use {
-		super::*, core::prelude::rust_2024::test, poison_girl_no_std_error::X,
+		super::*,
+		core::prelude::rust_2024::test,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::X,
 	};
 
 	struct U16BeTest;
@@ -339,25 +342,27 @@ mod tests
 	}
 
 	#[test]
-	fn parse_reads_target_and_advances()
+	fn parse_reads_target_and_advances() -> PoisonGirlTestB
 	{
 		let bytes = [0x01, 0x02, 0x03, 0x04,];
 		let mut parser = SliceParser::<false,> { bytes: &bytes, pos: 0, };
 
-		assert!(matches!(parser.parse(), X(0x0102,)));
+		assert_eq!(parser.parse()?, 0x0102);
 		assert_eq!(parser.cur_pos(), 2);
-		assert!(matches!(parser.parse(), X(0x0304,)));
+		assert_eq!(parser.parse()?, 0x0304);
 		assert_eq!(parser.cur_pos(), 4);
+		success!()
 	}
 
 	#[test]
-	fn peek_parses_without_advancing()
+	fn peek_parses_without_advancing() -> PoisonGirlTestB
 	{
 		let bytes = [0x01, 0x02, 0x03, 0x04,];
 		let parser = SliceParser::<false,> { bytes: &bytes, pos: 2, };
 
-		assert!(matches!(parser.peek(0,), X(0x0102,)));
-		assert!(matches!(parser.peek(2,), X(0x0304,)));
+		assert_eq!(parser.peek(0,)?, 0x0102);
+		assert_eq!(parser.peek(2,)?, 0x0304);
 		assert_eq!(parser.cur_pos(), 2);
+		success!()
 	}
 }
