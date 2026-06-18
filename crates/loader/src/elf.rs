@@ -65,6 +65,7 @@ pub mod string_table;
 pub mod symbol_table;
 /// define TargetOsAbi data
 pub mod target_os_abi;
+#[cfg(test)] pub(crate) mod test_helpers;
 /// defines version sections definition data
 pub mod version_sections;
 

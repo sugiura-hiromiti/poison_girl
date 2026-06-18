@@ -75,7 +75,13 @@ impl IntoIterator for &RelocationSection
 
 	fn into_iter(self,) -> Self::IntoIter
 	{
-		todo!()
+		RelocationIterator {
+			bytes:   self.bytes.clone(),
+			offset:  0,
+			index:   0,
+			count:   self.count,
+			context: RelocationContext(self.context.0, self.context.1.clone(),),
+		}
 	}
 }
 
@@ -241,5 +247,72 @@ impl From<Reloc,> for Relocation
 			symbol_index: relocation_symbol_index(value.info,) as usize,
 			ty:           relocation_type(value.info,),
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		crate::elf::{
+			elf_container_size::ElfContainerSize, elf_context::ElfContext,
+		},
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+	};
+
+	#[test]
+	fn iterates_64_bit_relocations_with_and_without_addends() -> PoisonGirlTestB
+	{
+		let ctx = ElfContext {
+			container: ElfContainerSize::Big,
+			..Default::default()
+		};
+
+		let mut rela_binary = alloc::vec![0xaa; 4];
+		rela_binary.extend_from_slice(&0x1010_u64.to_le_bytes(),);
+		rela_binary.extend_from_slice(&((3_u64 << 32) | 7).to_le_bytes(),);
+		rela_binary.extend_from_slice(&(-5_i64).to_le_bytes(),);
+		let rela = RelocationSection::parse(
+			&rela_binary,
+			4,
+			RelocationSection::SIZE_OF_RELOCATION_ADDEND_64,
+			true,
+			&ctx,
+		)?;
+		let mut rela_iter = rela.iter();
+		let relocation = rela_iter.next().expect("missing rela entry",)?;
+
+		assert_eq!(rela.count, 1);
+		assert_eq!(rela.start, 4);
+		assert_eq!(rela.end, 28);
+		assert_eq!(relocation.offset, 0x1010);
+		assert_eq!(relocation.addend, Some(-5));
+		assert_eq!(relocation.symbol_index, 3);
+		assert_eq!(relocation.ty, 7);
+		assert!(rela_iter.next().is_none());
+
+		let mut rel_binary = alloc::vec![0xbb; 2];
+		rel_binary.extend_from_slice(&0x2020_u64.to_le_bytes(),);
+		rel_binary.extend_from_slice(&((4_u64 << 32) | 9).to_le_bytes(),);
+		let rel = RelocationSection::parse(
+			&rel_binary,
+			2,
+			RelocationSection::SIZE_OF_RELOCATION_64,
+			false,
+			&ctx,
+		)?;
+		let mut rel_iter = rel.iter();
+		let relocation = rel_iter.next().expect("missing rel entry",)?;
+
+		assert_eq!(rel.count, 1);
+		assert_eq!(rel.start, 2);
+		assert_eq!(rel.end, 18);
+		assert_eq!(relocation.offset, 0x2020);
+		assert_eq!(relocation.addend, None);
+		assert_eq!(relocation.symbol_index, 4);
+		assert_eq!(relocation.ty, 9);
+		assert!(rel_iter.next().is_none());
+		success!()
 	}
 }

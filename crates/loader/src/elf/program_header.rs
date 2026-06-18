@@ -3,9 +3,8 @@ use {
 		Interpreter, read_le_bytes_or, string_context::StringContext,
 	},
 	alloc::{format, vec::Vec},
-	poison_girl_macro::cfg_if,
 	poison_girl_no_std_error::{
-		ElfParseError, ElfParseStage, PoisonGirlB, PoisonGirlError, X,
+		ElfParseError, ElfParseStage, PoisonGirlB, PoisonGirlError, X, Y,
 		poison_girl_err,
 	},
 };
@@ -23,49 +22,6 @@ pub struct ProgramHeader
 	pub align:            u64,
 }
 
-macro_rules! tphp_arch {
-	($arg:ident) => {
-		cfg_if! {
-			if #[cfg(target_arch = "aarch64")] {
-				tphp_arch_mode!(
-					$arg,
-					aarch64
-				);
-			} else if #[cfg(target_arch = "x86_64")] {
-				tphp_arch_mode!(
-					$arch,
-					x86_64
-				);
-			} else {
-				tphp_arch_mode!(
-					$arch,
-					riscv
-				);
-			}
-		}
-	};
-}
-
-macro_rules! tphp_arch_mode {
-	($arg:ident, $arch:tt) => {
-		cfg_if! {
-			if #[cfg(debug_assertions)] {
-				poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
-					$arg,
-					$arch,
-					debug
-				);
-			} else {
-				poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
-					$arg,
-					$arch,
-					release
-				);
-			}
-		}
-	};
-}
-
 impl ProgramHeader
 {
 	/// size of program header in 64bit architecture
@@ -77,10 +33,33 @@ impl ProgramHeader
 		count: usize,
 	) -> PoisonGirlB<Vec<Self,>,>
 	{
-		assert!(count <= binary.len() / Self::SIZE_64, "binary is too small");
+		if count == 0 {
+			return X(Vec::new(),);
+		}
+
+		let table_size = match count.checked_mul(Self::SIZE_64,) {
+			Some(table_size,) => table_size,
+			None => {
+				return Y(poison_girl_err!(ElfParseError::EndOfBinary {
+					parser_pos: "program header table",
+					stage:      ElfParseStage::ProgramHeader,
+				}),);
+			},
+		};
+		let Some(table_end,) = offset.checked_add(table_size,) else {
+			return Y(poison_girl_err!(ElfParseError::EndOfBinary {
+				parser_pos: "program header table",
+				stage:      ElfParseStage::ProgramHeader,
+			}),);
+		};
+		if table_end > binary.len() {
+			return Y(poison_girl_err!(ElfParseError::EndOfBinary {
+				parser_pos: "program header table",
+				stage:      ElfParseStage::ProgramHeader,
+			}),);
+		}
 
 		let mut program_headers = Vec::with_capacity(count,);
-
 		for _ in 0..count {
 			let ty: u32 = read_le_bytes_or(
 				offset,
@@ -146,28 +125,6 @@ impl ProgramHeader
 
 			program_headers.push(program_header,);
 		}
-
-		// rustdoc does not build the kernel ELF fixture that this macro reads.
-		#[cfg(not(doc))]
-		tphp_arch!(program_headers);
-		// cfg_if! {
-		// 	if #[cfg(target_arch = "aarch64")] {
-		// 		poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
-		// 			program_headers,
-		// 			aarch64
-		// 		);
-		// 	} else if #[cfg(target_arch = "x86_64")] {
-		// 		poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
-		// 			program_headers,
-		// 			x86_64
-		// 		);
-		// 	} else {
-		// 		poison_girl_macro_def_test_program_headers_parse::test_program_headers_parse!(
-		// 			program_headers,
-		// 			riscv
-		// 		);
-		// 	}
-		// }
 
 		X(program_headers,)
 	}
@@ -296,4 +253,89 @@ pub fn interpreter<'a,>(
 	}
 
 	X(Interpreter(interpreter,),)
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		crate::elf::test_helpers,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::Y,
+	};
+
+	#[test]
+	fn parses_64_bit_program_header_from_bytes() -> PoisonGirlTestB
+	{
+		let binary = test_helpers::program_header(
+			ProgramHeaderType::Load,
+			0b101,
+			0x1000,
+			0x2000,
+			0x2000,
+			0x300,
+			0x400,
+			0x1000,
+		);
+
+		let mut offset = 0;
+		let program_headers = ProgramHeader::parse(&binary, &mut offset, 1,)?;
+
+		assert_eq!(offset, ProgramHeader::SIZE_64);
+		assert_eq!(
+			program_headers.as_slice(),
+			&[ProgramHeader {
+				ty:               ProgramHeaderType::Load,
+				flags:            0b101,
+				offset:           0x1000,
+				virtual_address:  0x2000,
+				physical_address: 0x2000,
+				file_size:        0x300,
+				memory_size:      0x400,
+				align:            0x1000,
+			},][..],
+		);
+		success!()
+	}
+
+	#[test]
+	fn zero_count_returns_empty_table() -> PoisonGirlTestB
+	{
+		let mut offset = 123;
+
+		let program_headers = ProgramHeader::parse(&[], &mut offset, 0,)?;
+
+		assert!(program_headers.is_empty());
+		assert_eq!(offset, 123);
+		success!()
+	}
+
+	#[test]
+	fn invalid_program_header_type_returns_error()
+	{
+		let binary =
+			test_helpers::program_header_raw(0xffff_fff0, 0, 0, 0, 0, 0, 0, 0,);
+		let mut offset = 0;
+
+		assert!(matches!(ProgramHeader::parse(&binary, &mut offset, 1,), Y(_)));
+	}
+
+	#[test]
+	fn count_beyond_available_bytes_returns_error()
+	{
+		let binary = [0; ProgramHeader::SIZE_64 - 1];
+		let mut offset = 0;
+
+		assert!(matches!(ProgramHeader::parse(&binary, &mut offset, 1,), Y(_)));
+	}
+
+	#[test]
+	fn offset_beyond_available_bytes_returns_error()
+	{
+		let binary = [0; ProgramHeader::SIZE_64];
+		let mut offset = 1;
+
+		assert!(matches!(ProgramHeader::parse(&binary, &mut offset, 1,), Y(_)));
+	}
 }

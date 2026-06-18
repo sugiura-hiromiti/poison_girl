@@ -196,3 +196,71 @@ impl MemoryMapOwned
 		Self { buf, info, len, }
 	}
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		core::mem::{align_of, size_of},
+	};
+
+	#[test]
+	fn memory_descriptor_layout_matches_uefi_abi()
+	{
+		assert_eq!(size_of::<MemoryDescriptor,>(), 40);
+		assert_eq!(align_of::<MemoryDescriptor,>(), 8);
+	}
+
+	#[test]
+	fn memory_map_entry_count_divides_map_by_descriptor_size()
+	{
+		let info = MemoryMapInfo {
+			map_size:  120,
+			desc_size: 40,
+			map_key:   7,
+			desc_ver:  1,
+		};
+
+		assert_eq!(info.entry_count(), 3);
+	}
+
+	#[test]
+	#[should_panic]
+	fn memory_map_sanity_panics_on_zero_descriptor_size()
+	{
+		MemoryMapInfo {
+			map_size:  40,
+			desc_size: 0,
+			map_key:   0,
+			desc_ver:  0,
+		}
+		.assert_sanity_check();
+	}
+
+	#[test]
+	#[should_panic]
+	fn memory_map_sanity_panics_on_small_descriptor_size()
+	{
+		MemoryMapInfo {
+			map_size:  40,
+			desc_size: size_of::<MemoryDescriptor,>() - 1,
+			map_key:   0,
+			desc_ver:  0,
+		}
+		.assert_sanity_check();
+	}
+
+	#[test]
+	#[should_panic]
+	fn memory_map_sanity_panics_on_zero_map_size()
+	{
+		MemoryMapInfo {
+			map_size:  0,
+			desc_size: size_of::<MemoryDescriptor,>(),
+			map_key:   0,
+			desc_ver:  0,
+		}
+		.assert_sanity_check();
+	}
+}

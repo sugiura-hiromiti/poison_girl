@@ -75,3 +75,26 @@ pub struct FileSystemVolumeLabel
 {
 	volume_label: [Char16; 0],
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		core::mem::{align_of, size_of},
+	};
+
+	#[test]
+	fn file_info_header_layout_matches_uefi_abi()
+	{
+		assert_eq!(size_of::<FileInfo,>(), 80);
+		assert_eq!(align_of::<FileInfo,>(), 8);
+	}
+
+	#[test]
+	fn file_system_info_header_layout_matches_uefi_abi()
+	{
+		assert_eq!(size_of::<FileSystemInfo,>(), 40);
+		assert_eq!(align_of::<FileSystemInfo,>(), 8);
+	}
+}
