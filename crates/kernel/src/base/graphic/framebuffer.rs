@@ -245,6 +245,8 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 		stride: usize,
 	)
 	{
+		// TODO: add validation and return Y when inconsistent
+
 		unsafe {
 			let this = this as *mut Self;
 			(*this).buf = buf;
@@ -267,16 +269,10 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 	///
 	/// # Returns
 	///
-	/// The byte offset from the framebuffer base address
-	///
-	/// # Formula
-	///
-	/// ```text
-	/// offset = (stride * y + x) * 4
-	/// ```
+	/// The **byte** offset from the framebuffer base address
 	///
 	/// Where:
-	/// - `stride` is the number of pixels per scanline (including padding)
+	/// - `stride` is the number of bytes per scanline (including padding)
 	/// - `y` and `x` are the pixel coordinates
 	/// - `4` is the number of bytes per pixel (32-bit pixels)
 	///
@@ -289,12 +285,11 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 	/// ```rust,ignore
 	/// let coord = Coord::new(100, 50);
 	/// let offset = framebuffer.pos(&coord);
-	/// // offset = (stride * 50 + 100) * 4
+	/// // offset = stride * 50 + 100 * 4
 	/// ```
 	fn pos(&self, coord: &impl Coordinal,) -> usize
 	{
-		// Each pixel is 4 bytes (32 bits), so multiply by 4
-		(self.stride * coord.y() + coord.x()) * 4
+		self.stride * coord.y() + coord.x() * 4
 	}
 
 	/// Returns the coordinate of the bottom-right corner of the display
@@ -422,7 +417,7 @@ mod tests
 
 	fn pixel_offset(stride: usize, x: usize, y: usize,) -> usize
 	{
-		(stride * y + x) * 4
+		stride * y + x * 4
 	}
 
 	fn write_expected_pixel(
@@ -449,7 +444,7 @@ mod tests
 	fn slice_mut_returns_slice_inside_bounds() -> PoisonGirlTestB
 	{
 		let mut buf = [0; 16];
-		let fb = framebuffer(color::Rgb, &mut buf, 2, 2, 2,);
+		let fb = framebuffer(color::Rgb, &mut buf, 2, 2, 8,);
 
 		let slice = fb.slice_mut(4, 3,)?;
 		assert_eq!(&slice[..], &[0, 0, 0,]);
@@ -463,7 +458,7 @@ mod tests
 	fn slice_mut_returns_error_outside_bounds() -> PoisonGirlTestB
 	{
 		let mut buf = [0; 8];
-		let fb = framebuffer(color::Rgb, &mut buf, 1, 2, 1,);
+		let fb = framebuffer(color::Rgb, &mut buf, 1, 2, 4,);
 
 		assert_y(fb.slice_mut(7, 2,),)?;
 		assert_y(fb.slice_mut(usize::MAX, 1,),)?;
@@ -475,10 +470,24 @@ mod tests
 	{
 		let mut buf = [UNCHANGED; 32];
 		let mut expected = buf;
-		let fb = framebuffer(color::Rgb, &mut buf, 4, 2, 4,);
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 2, 16,);
 
 		fb.put_pixel(&(1, 1,), &(0x10, 0x20, 0x30,),)?;
-		write_expected_pixel(&mut expected, 4, 1, 1, [0x10, 0x20, 0x30,],);
+		write_expected_pixel(&mut expected, 16, 1, 1, [0x10, 0x20, 0x30,],);
+
+		assert_eq!(buf, expected);
+		success!()
+	}
+
+	#[test]
+	fn put_pixel_uses_byte_stride_when_row_has_padding() -> PoisonGirlTestB
+	{
+		let mut buf = [UNCHANGED; 40];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 2, 20,);
+
+		fb.put_pixel(&(1, 1,), &(0x10, 0x20, 0x30,),)?;
+		write_expected_pixel(&mut expected, 20, 1, 1, [0x10, 0x20, 0x30,],);
 
 		assert_eq!(buf, expected);
 		success!()
@@ -489,14 +498,38 @@ mod tests
 	{
 		let mut buf = [UNCHANGED; 48];
 		let mut expected = buf;
-		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 4,);
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 16,);
 
 		fb.fill_rectangle(&(1, 0,), &(2, 1,), &(0x21, 0x32, 0x43,),)?;
 		for y in 0..=1 {
 			for x in 1..=2 {
 				write_expected_pixel(
 					&mut expected,
-					4,
+					16,
+					x,
+					y,
+					[0x21, 0x32, 0x43,],
+				);
+			}
+		}
+
+		assert_eq!(buf, expected);
+		success!()
+	}
+
+	#[test]
+	fn fill_rectangle_uses_byte_stride_when_row_has_padding() -> PoisonGirlTestB
+	{
+		let mut buf = [UNCHANGED; 60];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 20,);
+
+		fb.fill_rectangle(&(1, 0,), &(3, 2,), &(0x21, 0x32, 0x43,),)?;
+		for y in 0..=2 {
+			for x in 1..=3 {
+				write_expected_pixel(
+					&mut expected,
+					20,
 					x,
 					y,
 					[0x21, 0x32, 0x43,],
@@ -512,7 +545,7 @@ mod tests
 	fn fill_rectangle_rejects_invalid_coordinates() -> PoisonGirlTestB
 	{
 		let mut buf = [UNCHANGED; 48];
-		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 4,);
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 16,);
 
 		assert_y(fb.fill_rectangle(&(2, 0,), &(1, 1,), &(1, 2, 3,),),)?;
 		assert_y(fb.fill_rectangle(&(0, 0,), &(5, 1,), &(1, 2, 3,),),)?;
@@ -527,7 +560,7 @@ mod tests
 	{
 		let mut buf = [UNCHANGED; 100];
 		let mut expected = buf;
-		let fb = framebuffer(color::Rgb, &mut buf, 5, 5, 5,);
+		let fb = framebuffer(color::Rgb, &mut buf, 5, 5, 20,);
 
 		fb.outline_rectangle(&(1, 1,), &(4, 4,), &(0x55, 0x66, 0x77,),)?;
 		for y in 1..=4 {
@@ -535,7 +568,7 @@ mod tests
 				if x == 1 || x == 4 || y == 1 || y == 4 {
 					write_expected_pixel(
 						&mut expected,
-						5,
+						20,
 						x,
 						y,
 						[0x55, 0x66, 0x77,],

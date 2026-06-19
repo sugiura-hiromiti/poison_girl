@@ -1,7 +1,6 @@
 #![feature(iterator_try_collect)]
 #![feature(try_find)]
 
-#[cfg(test)] use std::str::FromStr;
 use {
 	poison_girl_dev_error::{
 		InvalidCurrentCratePath, InvalidProjectRootFound, NotObedientPath,
