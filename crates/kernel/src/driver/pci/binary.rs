@@ -236,3 +236,133 @@ impl BinaryParserTarget for usize
 		todo!("Implement usize parsing with proper endianness conversion")
 	}
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		core::prelude::rust_2024::test,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::X,
+	};
+
+	struct U16BeTest;
+
+	impl BinaryParserTarget for U16BeTest
+	{
+		type Output = u16;
+
+		const DATA_SIZE: usize = 2;
+
+		fn try_interpret(bytes: &[u8],) -> PoisonGirlB<Self::Output,>
+		{
+			X(u16::from_be_bytes([bytes[0], bytes[1],],),)
+		}
+	}
+
+	struct SliceParser<'a, const IS_LITTLE_ENDIAN: bool,>
+	{
+		bytes: &'a [u8],
+		pos:   usize,
+	}
+
+	impl<'a, const IS_LITTLE_ENDIAN: bool,>
+		BinaryParser<IS_LITTLE_ENDIAN, U16BeTest,>
+		for SliceParser<'a, IS_LITTLE_ENDIAN,>
+	{
+		fn raw(&self,) -> *const u8
+		{
+			self.bytes.as_ptr()
+		}
+
+		fn cur_pos(&self,) -> usize
+		{
+			self.pos
+		}
+
+		fn set_pos(&mut self, to: usize,)
+		{
+			self.pos = to;
+		}
+	}
+
+	#[test]
+	fn endian_flags_reflect_const_generic()
+	{
+		assert!(<SliceParser<'static, true,> as BinaryParser<
+			true,
+			U16BeTest,
+		>>::is_little_endian());
+		assert!(!<SliceParser<'static, true,> as BinaryParser<
+			true,
+			U16BeTest,
+		>>::is_big_endian());
+		assert!(!<SliceParser<'static, false,> as BinaryParser<
+			false,
+			U16BeTest,
+		>>::is_little_endian());
+		assert!(<SliceParser<'static, false,> as BinaryParser<
+			false,
+			U16BeTest,
+		>>::is_big_endian());
+	}
+
+	#[test]
+	fn advance_updates_current_position()
+	{
+		let bytes = [0; 8];
+		let mut parser = SliceParser::<true,> { bytes: &bytes, pos: 1, };
+
+		parser.advance(3,);
+
+		assert_eq!(parser.cur_pos(), 4);
+	}
+
+	#[test]
+	fn bytes_of_reads_offset_without_moving()
+	{
+		let bytes = [0x10, 0x20, 0x30, 0x40,];
+		let parser = SliceParser::<true,> { bytes: &bytes, pos: 1, };
+
+		assert_eq!(parser.bytes_of(1, 2,), &[0x20, 0x30,]);
+		assert_eq!(parser.cur_pos(), 1);
+	}
+
+	#[test]
+	fn read_range_reads_target_size_and_advances()
+	{
+		let bytes = [0x10, 0x20, 0x30, 0x40,];
+		let mut parser = SliceParser::<true,> { bytes: &bytes, pos: 1, };
+
+		let range = parser.read_range();
+
+		assert_eq!(range, &[0x20, 0x30,]);
+		assert_eq!(parser.cur_pos(), 3);
+	}
+
+	#[test]
+	fn parse_reads_target_and_advances() -> PoisonGirlTestB
+	{
+		let bytes = [0x01, 0x02, 0x03, 0x04,];
+		let mut parser = SliceParser::<false,> { bytes: &bytes, pos: 0, };
+
+		assert_eq!(parser.parse()?, 0x0102);
+		assert_eq!(parser.cur_pos(), 2);
+		assert_eq!(parser.parse()?, 0x0304);
+		assert_eq!(parser.cur_pos(), 4);
+		success!()
+	}
+
+	#[test]
+	fn peek_parses_without_advancing() -> PoisonGirlTestB
+	{
+		let bytes = [0x01, 0x02, 0x03, 0x04,];
+		let parser = SliceParser::<false,> { bytes: &bytes, pos: 2, };
+
+		assert_eq!(parser.peek(0,)?, 0x0102);
+		assert_eq!(parser.peek(2,)?, 0x0304);
+		assert_eq!(parser.cur_pos(), 2);
+		success!()
+	}
+}

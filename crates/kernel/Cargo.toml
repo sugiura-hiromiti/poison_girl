@@ -11,6 +11,9 @@ poison_girl_macro_def_impl_int = { workspace = true }
 poison_girl_no_std = { workspace = true }
 poison_girl_no_std_error = { workspace = true }
 
+[dev-dependencies]
+poison_girl_dev_test = { workspace = true }
+
 [features]
 rgb = []
 bgr = []

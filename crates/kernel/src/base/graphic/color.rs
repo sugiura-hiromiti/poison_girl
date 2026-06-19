@@ -277,26 +277,117 @@ impl From<(u8, u8, u8,),> for Color
 #[cfg(test)]
 mod tests
 {
-	use {super::*, core::prelude::rust_2024::test};
+	use {
+		super::*,
+		core::prelude::rust_2024::test,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+	};
 
-	#[test]
-	fn invalid_short_color_hex_returns_error()
+	fn assert_y<T,>(value: PoisonGirlB<T,>,) -> PoisonGirlTestB
 	{
-		assert!(matches!(Color::try_from_hex("#12345",), Y(_)));
+		match value {
+			X(_,) => PoisonGirlTestB::y("expected Y variant",),
+			Y(_,) => PoisonGirlTestB::x(),
+		}
 	}
 
 	#[test]
-	fn invalid_color_hex_character_returns_error()
+	fn invalid_short_color_hex_returns_error() -> PoisonGirlTestB
 	{
-		assert!(matches!(Color::try_from_hex("#12345z",), Y(_)));
+		assert_y(Color::try_from_hex("#12345",),)?;
+		success!()
 	}
 
 	#[test]
-	fn valid_color_hex_parses_components()
+	fn invalid_color_hex_without_prefix_returns_error() -> PoisonGirlTestB
 	{
-		assert!(matches!(
-			Color::try_from_hex("#0a1Bff",),
-			X(Color { red: 0x0a, green: 0x1b, blue: 0xff, })
-		));
+		assert_y(Color::try_from_hex("123456",),)?;
+		success!()
+	}
+
+	#[test]
+	fn invalid_long_color_hex_returns_error() -> PoisonGirlTestB
+	{
+		assert_y(Color::try_from_hex("#1234567",),)?;
+		success!()
+	}
+
+	#[test]
+	fn invalid_color_hex_character_returns_error() -> PoisonGirlTestB
+	{
+		assert_y(Color::try_from_hex("#12345z",),)?;
+		success!()
+	}
+
+	#[test]
+	fn invalid_color_hex_component_slice_returns_error() -> PoisonGirlTestB
+	{
+		assert_y(try_hex_component("#zz3456", 1, 3,),)?;
+		assert_y(try_hex_component("#123456", 5, 8,),)?;
+		success!()
+	}
+
+	#[test]
+	fn valid_color_hex_parses_components() -> PoisonGirlTestB
+	{
+		let color = Color::try_from_hex("#0a1Bff",)?;
+
+		assert_eq!(color, Color { red: 0x0a, green: 0x1b, blue: 0xff, });
+		success!()
+	}
+
+	#[test]
+	fn valid_color_hex_accepts_uppercase_and_lowercase() -> PoisonGirlTestB
+	{
+		let uppercase = Color::try_from_hex("#AaBbCc",)?;
+		let lowercase = Color::try_from_hex("#aabbcc",)?;
+
+		assert_eq!(uppercase, Color { red: 0xaa, green: 0xbb, blue: 0xcc, });
+		assert_eq!(lowercase, Color { red: 0xaa, green: 0xbb, blue: 0xcc, });
+		success!()
+	}
+
+	#[test]
+	fn color_can_be_built_from_tuple()
+	{
+		assert_eq!(
+			Color::from((0x12, 0x34, 0x56,),),
+			Color { red: 0x12, green: 0x34, blue: 0x56, }
+		);
+	}
+
+	#[test]
+	fn color_repr_mutation_updates_color_and_tuple()
+	{
+		let mut color = Color::from((0, 0, 0,),);
+		color.red_mut(0x12,);
+		color.green_mut(0x34,);
+		color.blue_mut(0x56,);
+		assert_eq!(color, Color { red: 0x12, green: 0x34, blue: 0x56, });
+
+		let mut tuple = (0, 0, 0,);
+		tuple.red_mut(0x9a,);
+		tuple.green_mut(0xbc,);
+		tuple.blue_mut(0xde,);
+		assert_eq!(tuple, (0x9a, 0xbc, 0xde,));
+	}
+
+	#[test]
+	fn rgb_and_bgr_represent_color_in_channel_order()
+	{
+		let color = Color::from((0x12, 0x34, 0x56,),);
+
+		assert_eq!(Rgb.color_repr(&color,), [0x12, 0x34, 0x56,]);
+		assert_eq!(Bgr.color_repr(&color,), [0x56, 0x34, 0x12,]);
+	}
+
+	#[test]
+	fn str_try_to_color_parses_hex_color() -> PoisonGirlTestB
+	{
+		let color = "#010203".try_to_color()?;
+
+		assert_eq!(color, Color { red: 0x01, green: 0x02, blue: 0x03, });
+		assert_y("010203".try_to_color(),)?;
+		success!()
 	}
 }

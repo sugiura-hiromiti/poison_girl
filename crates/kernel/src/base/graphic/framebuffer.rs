@@ -245,6 +245,8 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 		stride: usize,
 	)
 	{
+		// TODO: add validation and return Y when inconsistent
+
 		unsafe {
 			let this = this as *mut Self;
 			(*this).buf = buf;
@@ -267,30 +269,27 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 	///
 	/// # Returns
 	///
-	/// The byte offset from the framebuffer base address
-	///
-	/// # Formula
-	///
-	/// ```text
-	/// offset = (stride * y + x) * 4
-	/// ```
+	/// The **byte** offset from the framebuffer base address
 	///
 	/// Where:
-	/// - `stride` is the number of pixels per scanline (including padding)
+	/// - `stride` is the number of bytes per scanline (including padding)
 	/// - `y` and `x` are the pixel coordinates
 	/// - `4` is the number of bytes per pixel (32-bit pixels)
+	///
+	/// # Warn
+	///
+	/// this function do not validate coordinate. it's responsibility of caller
 	///
 	/// # Examples
 	///
 	/// ```rust,ignore
 	/// let coord = Coord::new(100, 50);
 	/// let offset = framebuffer.pos(&coord);
-	/// // offset = (stride * 50 + 100) * 4
+	/// // offset = stride * 50 + 100 * 4
 	/// ```
 	fn pos(&self, coord: &impl Coordinal,) -> usize
 	{
-		// Each pixel is 4 bytes (32 bits), so multiply by 4
-		(self.stride * coord.y() + coord.x()) * 4
+		self.stride * coord.y() + coord.x() * 4
 	}
 
 	/// Returns the coordinate of the bottom-right corner of the display
@@ -384,5 +383,201 @@ impl<P: PixelFormat,> FrameBuffer<P,>
 			core::slice::from_raw_parts_mut(data_at_pos as *mut u8, len,)
 		};
 		X(mutable_slice,)
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		core::prelude::rust_2024::test,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+	};
+
+	const UNCHANGED: u8 = 0xaa;
+
+	fn framebuffer<P: PixelFormat,>(
+		drawer: P,
+		buf: &mut [u8],
+		width: usize,
+		height: usize,
+		stride: usize,
+	) -> FrameBuffer<P,>
+	{
+		FrameBuffer {
+			drawer,
+			buf: buf.as_mut_ptr() as usize,
+			size: buf.len(),
+			width,
+			height,
+			stride,
+		}
+	}
+
+	fn pixel_offset(stride: usize, x: usize, y: usize,) -> usize
+	{
+		stride * y + x * 4
+	}
+
+	fn write_expected_pixel(
+		buf: &mut [u8],
+		stride: usize,
+		x: usize,
+		y: usize,
+		color: [u8; 3],
+	)
+	{
+		let offset = pixel_offset(stride, x, y,);
+		buf[offset..offset + 3].copy_from_slice(&color,);
+	}
+
+	fn assert_y<T,>(value: PoisonGirlB<T,>,) -> PoisonGirlTestB
+	{
+		match value {
+			X(_,) => PoisonGirlTestB::y("expected Y variant",),
+			Y(_,) => PoisonGirlTestB::x(),
+		}
+	}
+
+	#[test]
+	fn slice_mut_returns_slice_inside_bounds() -> PoisonGirlTestB
+	{
+		let mut buf = [0; 16];
+		let fb = framebuffer(color::Rgb, &mut buf, 2, 2, 8,);
+
+		let slice = fb.slice_mut(4, 3,)?;
+		assert_eq!(&slice[..], &[0, 0, 0,]);
+		slice.copy_from_slice(&[1, 2, 3,],);
+
+		assert_eq!(&buf[4..7], &[1, 2, 3,]);
+		success!()
+	}
+
+	#[test]
+	fn slice_mut_returns_error_outside_bounds() -> PoisonGirlTestB
+	{
+		let mut buf = [0; 8];
+		let fb = framebuffer(color::Rgb, &mut buf, 1, 2, 4,);
+
+		assert_y(fb.slice_mut(7, 2,),)?;
+		assert_y(fb.slice_mut(usize::MAX, 1,),)?;
+		success!()
+	}
+
+	#[test]
+	fn put_pixel_writes_three_color_bytes_at_expected_offset() -> PoisonGirlTestB
+	{
+		let mut buf = [UNCHANGED; 32];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 2, 16,);
+
+		fb.put_pixel(&(1, 1,), &(0x10, 0x20, 0x30,),)?;
+		write_expected_pixel(&mut expected, 16, 1, 1, [0x10, 0x20, 0x30,],);
+
+		assert_eq!(buf, expected);
+		success!()
+	}
+
+	#[test]
+	fn put_pixel_uses_byte_stride_when_row_has_padding() -> PoisonGirlTestB
+	{
+		let mut buf = [UNCHANGED; 40];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 2, 20,);
+
+		fb.put_pixel(&(1, 1,), &(0x10, 0x20, 0x30,),)?;
+		write_expected_pixel(&mut expected, 20, 1, 1, [0x10, 0x20, 0x30,],);
+
+		assert_eq!(buf, expected);
+		success!()
+	}
+
+	#[test]
+	fn fill_rectangle_writes_inclusive_area() -> PoisonGirlTestB
+	{
+		let mut buf = [UNCHANGED; 48];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 16,);
+
+		fb.fill_rectangle(&(1, 0,), &(2, 1,), &(0x21, 0x32, 0x43,),)?;
+		for y in 0..=1 {
+			for x in 1..=2 {
+				write_expected_pixel(
+					&mut expected,
+					16,
+					x,
+					y,
+					[0x21, 0x32, 0x43,],
+				);
+			}
+		}
+
+		assert_eq!(buf, expected);
+		success!()
+	}
+
+	#[test]
+	fn fill_rectangle_uses_byte_stride_when_row_has_padding() -> PoisonGirlTestB
+	{
+		let mut buf = [UNCHANGED; 60];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 20,);
+
+		fb.fill_rectangle(&(1, 0,), &(3, 2,), &(0x21, 0x32, 0x43,),)?;
+		for y in 0..=2 {
+			for x in 1..=3 {
+				write_expected_pixel(
+					&mut expected,
+					20,
+					x,
+					y,
+					[0x21, 0x32, 0x43,],
+				);
+			}
+		}
+
+		assert_eq!(buf, expected);
+		success!()
+	}
+
+	#[test]
+	fn fill_rectangle_rejects_invalid_coordinates() -> PoisonGirlTestB
+	{
+		let mut buf = [UNCHANGED; 48];
+		let fb = framebuffer(color::Rgb, &mut buf, 4, 3, 16,);
+
+		assert_y(fb.fill_rectangle(&(2, 0,), &(1, 1,), &(1, 2, 3,),),)?;
+		assert_y(fb.fill_rectangle(&(0, 0,), &(5, 1,), &(1, 2, 3,),),)?;
+		assert_y(fb.fill_rectangle(&(0, 0,), &(4, 1,), &(1, 2, 3,),),)?;
+		assert_y(fb.fill_rectangle(&(0, 0,), &(1, 3,), &(1, 2, 3,),),)?;
+		assert_y(fb.fill_rectangle(&(0, 0,), &(1, 4,), &(1, 2, 3,),),)?;
+		success!()
+	}
+
+	#[test]
+	fn outline_rectangle_writes_only_border_pixels() -> PoisonGirlTestB
+	{
+		let mut buf = [UNCHANGED; 100];
+		let mut expected = buf;
+		let fb = framebuffer(color::Rgb, &mut buf, 5, 5, 20,);
+
+		fb.outline_rectangle(&(1, 1,), &(4, 4,), &(0x55, 0x66, 0x77,),)?;
+		for y in 1..=4 {
+			for x in 1..=4 {
+				if x == 1 || x == 4 || y == 1 || y == 4 {
+					write_expected_pixel(
+						&mut expected,
+						20,
+						x,
+						y,
+						[0x55, 0x66, 0x77,],
+					);
+				}
+			}
+		}
+
+		assert_eq!(buf, expected);
+		success!()
 	}
 }

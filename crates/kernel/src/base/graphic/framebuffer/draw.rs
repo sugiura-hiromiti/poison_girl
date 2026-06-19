@@ -60,8 +60,8 @@ pub trait DisplayDraw
 	/// # Coordinate Requirements
 	///
 	/// The coordinates must satisfy the following conditions:
-	/// - `left_top.x < right_bottom.x && left_top.y < right_bottom.y`
-	/// - `right_bottom.x <= framebuffer.width && right_bottom.y <=
+	/// - `left_top.x <= right_bottom.x && left_top.y <= right_bottom.y`
+	/// - `right_bottom.x < framebuffer.width && right_bottom.y <
 	///   framebuffer.height`
 	///
 	/// # Examples
@@ -116,6 +116,34 @@ pub trait DisplayDraw
 	) -> Self::Output;
 }
 
+impl<P: PixelFormat,> FrameBuffer<P,>
+{
+	fn validate_coordinate_bounds(
+		&self,
+		left_top: &impl Coordinal,
+		right_bottom: &impl Coordinal,
+	) -> PoisonGirlB<(),>
+	{
+		if left_top.x() > right_bottom.x() || left_top.y() > right_bottom.y() {
+			return Y(poison_girl_err!(GraphicError::InvalidCoordinate),);
+		}
+
+		self.validate_coordinate_bound(right_bottom,)
+	}
+
+	fn validate_coordinate_bound(
+		&self,
+		coord: &impl Coordinal,
+	) -> PoisonGirlB<(),>
+	{
+		if coord.x() >= self.width || coord.y() >= self.height {
+			return Y(poison_girl_err!(GraphicError::InvalidCoordinate),);
+		}
+
+		X((),)
+	}
+}
+
 impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 {
 	/// Draws a single pixel at the specified coordinate
@@ -157,6 +185,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		color: &impl ColorRpr,
 	) -> Self::Output
 	{
+		self.validate_coordinate_bound(coord,)?;
 		let pos = self.pos(coord,);
 		let pxl = self.slice_mut(pos, 3,)?;
 		let color = self.drawer.try_color_repr(color,)?;
@@ -213,14 +242,7 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		color: &impl ColorRpr,
 	) -> Self::Output
 	{
-		// Validate coordinate bounds
-		if left_top.x() > right_bottom.x()
-			|| left_top.y() > right_bottom.y()
-			|| right_bottom.x() > self.width
-			|| right_bottom.y() > self.height
-		{
-			return Y(poison_girl_err!(GraphicError::InvalidCoordinate),);
-		}
+		self.validate_coordinate_bounds(left_top, right_bottom,)?;
 
 		// Convert color once for performance optimization
 		// This reduces pixel format determination to just once per rectangle
@@ -252,8 +274,8 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 	///
 	/// # Arguments
 	///
-	/// * `left_top` - The top-left corner of the rectangle
-	/// * `right_bottom` - The bottom-right corner of the rectangle
+	/// * `left_top` - The top-left corner of the rectangle (inclusive)
+	/// * `right_bottom` - The bottom-right corner of the rectangle (inclusive)
 	/// * `color` - The color for the rectangle outline
 	///
 	/// # Returns
@@ -289,60 +311,40 @@ impl<P: PixelFormat,> DisplayDraw for FrameBuffer<P,>
 		color: &impl ColorRpr,
 	) -> Self::Output
 	{
-		// Validate coordinate bounds
-		if left_top.x() > right_bottom.x()
-			|| left_top.y() > right_bottom.y()
-			|| right_bottom.x() > self.width
-			|| right_bottom.y() > self.height
-		{
-			return Y(poison_girl_err!(GraphicError::InvalidCoordinate),);
-		}
+		self.validate_coordinate_bounds(left_top, right_bottom,)?;
 
-		let width = right_bottom.x() - left_top.x() - 1;
-		let height = right_bottom.y() - left_top.y() - 1;
-
-		// Convert color once for performance
 		let color = self.drawer.try_color_repr(color,)?;
-		let mut coord = (left_top.x(), left_top.y(),);
 
-		// Draw top horizontal line
-		for _ in 0..width {
+		for x in left_top.x()..=right_bottom.x() {
+			let coord = (x, left_top.y(),);
 			let pos = self.pos(&coord,);
 			let pxl = self.slice_mut(pos, 3,)?;
 			pxl[0] = color[0];
 			pxl[1] = color[1];
 			pxl[2] = color[2];
-			coord.0 += 1;
+
+			let coord = (x, right_bottom.y(),);
+			let pos = self.pos(&coord,);
+			let pxl = self.slice_mut(pos, 3,)?;
+			pxl[0] = color[0];
+			pxl[1] = color[1];
+			pxl[2] = color[2];
 		}
 
-		// Draw right vertical line
-		for _ in 0..height {
+		for y in left_top.y()..=right_bottom.y() {
+			let coord = (left_top.x(), y,);
 			let pos = self.pos(&coord,);
 			let pxl = self.slice_mut(pos, 3,)?;
 			pxl[0] = color[0];
 			pxl[1] = color[1];
 			pxl[2] = color[2];
-			coord.1 += 1;
-		}
 
-		// Draw bottom horizontal line
-		for _ in 0..width {
+			let coord = (right_bottom.x(), y,);
 			let pos = self.pos(&coord,);
 			let pxl = self.slice_mut(pos, 3,)?;
 			pxl[0] = color[0];
 			pxl[1] = color[1];
 			pxl[2] = color[2];
-			coord.0 -= 1;
-		}
-
-		// Draw left vertical line
-		for _ in 0..height {
-			let pos = self.pos(&coord,);
-			let pxl = self.slice_mut(pos, 3,)?;
-			pxl[0] = color[0];
-			pxl[1] = color[1];
-			pxl[2] = color[2];
-			coord.1 -= 1;
 		}
 
 		X((),)
