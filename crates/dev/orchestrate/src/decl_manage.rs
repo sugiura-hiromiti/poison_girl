@@ -1,11 +1,24 @@
 use {
 	crate::{
-		AsCargoOpt, CompileOpt, Opts, Task,
+		AsCargoOpt, CliCommandDiscriminants, CompileOpt, Policy,
 		decl_manage::crate_::{
 			Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
 		},
+		policy::{
+			build_artifact_policy::{
+				BuildArtifact, BuildArtifactPolicyResolver,
+			},
+			build_std_features_policy::{
+				BuildStdFeaturesPolicies, BuildStdFeaturesPolicy,
+				BuildStdFeaturesPolicyResolver,
+			},
+			build_std_policy::{
+				BuildStdPolicies, BuildStdPolicy, BuildStdPoliyResolver,
+			},
+			target_policy::{TargetPolicy, TargetPolicyResolver},
+		},
 	},
-	poison_girl_dev_cargo::{CliCommand, TargetSpec},
+	poison_girl_dev_cargo::Runtime,
 	poison_girl_dev_error::{
 		InvalidMetadataSchema, PoisonGirlB, X, Y,
 		YourHostPlatformIsOutOfSupport, poison_girl_err,
@@ -21,68 +34,22 @@ pub mod crate_;
 pub mod package;
 pub mod workspace;
 
-pub struct BuildArtifact
-{
-	target_dir:                  PathBuf,
-	/// maybe should be Option
-	target_tuple_representation: PathBuf,
-	profile:                     PathBuf,
-	artifact_name:               PathBuf,
-}
-
-impl BuildArtifact
-{
-	pub fn path(&self,) -> PathBuf
-	{
-		let Self {
-			target_dir,
-			target_tuple_representation,
-			profile,
-			artifact_name,
-		} = self;
-
-		let workspace_root = PoisonGirlCrateChart::XTASK.to_path_buf();
-
-		workspace_root
-			.join(target_dir,)
-			.join(target_tuple_representation,)
-			.join(profile,)
-			.join(artifact_name,)
-	}
-}
-
-/// orchestration functionality which is finally resolved.
-/// this is required over any traits in this crate because finally resolved
-/// orchestration graph is not statically determined e.g. by env var, and this
-/// trait also connect to existing cargo orchestration as needed
-pub trait OrchestrationResolver
-{
-	fn build_artifact(&self,) -> PoisonGirlB<BuildArtifact,>;
-	fn resolve_target_dir(&self,) -> PoisonGirlB<PathBuf,>;
-	fn resolve_target_triple_representation(&self,) -> PoisonGirlB<PathBuf,>;
-	fn resolve_profile(&self,) -> PathBuf;
-	fn resolve_artifact_name(&self,) -> PoisonGirlB<PathBuf,>;
-
-	fn as_crate(&self,) -> &impl Crate;
-	fn as_opts(&self,) -> &impl CompileOpt;
-}
-
 pub struct PoisonGirlCargoInterface
 {
-	ws:   PoisonGirlCrate,
-	task: Task,
+	ws:     PoisonGirlCrate,
+	policy: Policy,
 }
 
 impl PoisonGirlCargoInterface
 {
-	pub fn new(chart: PoisonGirlCrateChart, task: Task,) -> Self
+	pub fn new(chart: PoisonGirlCrateChart, policy: Policy,) -> Self
 	{
-		Self { ws: PoisonGirlCrate::from(chart,), task, }
+		Self { ws: PoisonGirlCrate::from(chart,), policy, }
 	}
 
-	pub fn task(&self,) -> &Task
+	pub fn policy(&self,) -> &Policy
 	{
-		&self.task
+		&self.policy
 	}
 
 	pub fn ws(&self,) -> PoisonGirlCrate
@@ -91,13 +58,9 @@ impl PoisonGirlCargoInterface
 	}
 }
 
-impl OrchestrationResolver for PoisonGirlCargoInterface
+impl BuildArtifactPolicyResolver for PoisonGirlCargoInterface
 {
-	/// TODO: I want to refactor centerizing orchestration info to upper level
-	/// xtask struct. to do that, this function should return the list of
-	/// information which is used on building build artifact path instead of one
-	/// PathBuf
-	fn build_artifact(&self,) -> PoisonGirlB<BuildArtifact,>
+	fn build_artifact_policy(&self,) -> PoisonGirlB<BuildArtifact,>
 	{
 		let target_dir = self.resolve_target_dir()?;
 		let target_tuple_representation =
@@ -105,12 +68,12 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 		let profile = self.resolve_profile();
 		let artifact_name = self.resolve_artifact_name()?;
 
-		X(BuildArtifact {
+		X(BuildArtifact::new(
 			target_dir,
 			target_tuple_representation,
 			profile,
 			artifact_name,
-		},)
+		),)
 	}
 
 	/// current(20260609) cargo's target directory determination follows these
@@ -174,7 +137,7 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 	/// xtask
 	fn resolve_target_triple_representation(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		let arch = self.task.opts.arch;
+		let arch = self.policy.arch();
 		let chart = self.ws.as_chart();
 
 		// TODO: extract kernel's vendor-os resolver logic. they should no be
@@ -199,7 +162,7 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 	/// now, we only support debug/ and release/
 	fn resolve_profile(&self,) -> PathBuf
 	{
-		PathBuf::from(self.task.opts.build_mode.as_ref(),)
+		PathBuf::from(self.policy.build_mode().as_ref(),)
 	}
 
 	/// artifact file name is crate name or [[bin.name]] in Cargo.toml"
@@ -216,42 +179,82 @@ impl OrchestrationResolver for PoisonGirlCargoInterface
 
 	fn as_opts(&self,) -> &impl CompileOpt
 	{
-		&self.task
+		&self.policy
 	}
 }
 
-impl TargetSpec for PoisonGirlCargoInterface
+impl BuildStdPoliyResolver for PoisonGirlCargoInterface
 {
-	fn tuple(&self,) -> String
+	fn build_std_policies(&self,) -> BuildStdPolicies
 	{
-		let arch = self.arch();
-		let arch = arch.as_ref();
-
-		use poison_girl_dev_cargo::Runtime::*;
-		match self.runtime() {
-			Host => "host-tuple".to_string(),
-			Efi => [arch, "unknown-uefi",].join("-",),
-			PoisonGirl => {
-				[arch, "sugiura_hiromiti-poison_girl-elf.json",].join("-",)
-			},
-		}
-	}
-
-	fn arch(&self,) -> poison_girl_dev_cargo::Arch
-	{
-		self.task.opts.arch
-	}
-
-	fn runtime(&self,) -> poison_girl_dev_cargo::Runtime
-	{
+		let command = self.policy.command_discriminant();
 		let chart = self.ws.as_chart();
-		if chart == &PoisonGirlCrateChart::KERNEL {
-			poison_girl_dev_cargo::Runtime::PoisonGirl
-		} else if chart == &PoisonGirlCrateChart::LOADER {
-			poison_girl_dev_cargo::Runtime::Efi
+
+		// TODO: avoid hardcoding crate chart. Instead, consider alternative
+		// solutions below.
+		// 1. add methods to cratechart which returns it is no_std feature/it
+		//    requires unstable options
+		// 2. move responsibility of building `build_std_policy` to policy
+		//    definition
+		let policies = if command == CliCommandDiscriminants::Build
+			|| command == CliCommandDiscriminants::Clippy
+		{
+			if *chart == PoisonGirlCrateChart::KERNEL {
+				vec![BuildStdPolicy::Core]
+			} else if *chart == PoisonGirlCrateChart::LOADER {
+				vec![
+					BuildStdPolicy::Core,
+					BuildStdPolicy::Alloc,
+					BuildStdPolicy::CompilerBuiltins,
+				]
+			} else {
+				vec![]
+			}
 		} else {
-			poison_girl_dev_cargo::Runtime::Host
+			vec![]
+		};
+		BuildStdPolicies::from(policies,)
+	}
+}
+
+impl BuildStdFeaturesPolicyResolver for PoisonGirlCargoInterface
+{
+	fn build_std_features_policies(&self,) -> BuildStdFeaturesPolicies
+	{
+		let command = self.policy.command_discriminant();
+		let chart = self.ws.as_chart();
+		let policies = if command == CliCommandDiscriminants::Build
+			|| command == CliCommandDiscriminants::Clippy
+		{
+			if *chart == PoisonGirlCrateChart::KERNEL {
+				vec![BuildStdFeaturesPolicy::CompilerBuiltinsMem]
+			} else {
+				vec![]
+			}
+		} else {
+			vec![]
+		};
+		BuildStdFeaturesPolicies::from(policies,)
+	}
+}
+
+impl TargetPolicyResolver for PoisonGirlCargoInterface
+{
+	fn target_policy(&self,) -> TargetPolicy
+	{
+		let arch = self.policy.arch();
+
+		if self.policy.command_discriminant() == CliCommandDiscriminants::Test {
+			return TargetPolicy::new(arch, Runtime::Host,);
 		}
+
+		let runtime = match *self.ws.as_chart() {
+			PoisonGirlCrateChart::KERNEL => Runtime::PoisonGirl,
+			PoisonGirlCrateChart::LOADER => Runtime::Efi,
+			_ => Runtime::Host,
+		};
+
+		TargetPolicy::new(arch, runtime,)
 	}
 }
 
@@ -264,47 +267,28 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 	/// ergo and scalability, this code have to be refactored
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		let Task {
-			opts: Opts { build_mode, lock_deps, feature_flags, context, .. },
-			cmd,
-		} = self.task();
-		let mut tuple = self.tuple();
-		let build_mode = build_mode.as_cargo_opt();
-		let feature_flags = feature_flags.as_cargo_opt();
-		let lock_deps =
-			if *lock_deps { Some("--locked".to_string(),) } else { None };
-		let context = context.as_cargo_opt();
-
+		let straight_cmd = self.policy.as_cargo_opt();
+		let command = self.policy.command_discriminant();
+		let target = self.target_policy();
+		let build_std = self.build_std_policies();
+		let build_std_features = self.build_std_features_policies();
 		let PoisonGirlPackageMetadata { no_std, } =
-			self.ws().custom_metadata()?;
-		let mut additional_opts = vec![];
+			self.ws.custom_metadata()?;
+		let additional_opts =
+			if no_std && command == CliCommandDiscriminants::Test {
+				vec!["--lib".to_string()]
+			} else {
+				vec![]
+			};
 
-		if no_std && (*cmd == CliCommand::Build || *cmd == CliCommand::Clippy) {
-			additional_opts.extend(vec![
-				"-Z",
-				"build-std=core,compiler_builtins,alloc",
-				"-Z",
-				"build-std-features=compiler-builtins-mem",
-			],);
-		}
-
-		if no_std && *cmd == CliCommand::Test {
-			tuple = "host-tuple".to_string();
-			additional_opts.push("--lib",);
-		}
-
-		if tuple.ends_with("json",) {
-			additional_opts.extend(vec!["-Z", "json-target-spec"],);
-		}
-
-		let opts = ["--target".to_string(), tuple,]
+		let opts = straight_cmd
 			.into_iter()
-			.chain(build_mode,)
-			.chain(feature_flags,)
-			.chain(lock_deps,)
-			.chain(context,)
-			.chain(additional_opts.iter().map(|s| s.to_string(),),)
+			.chain(target.as_cargo_opt(),)
+			.chain(build_std.as_cargo_opt(),)
+			.chain(build_std_features.as_cargo_opt(),)
+			.chain(additional_opts,)
 			.collect();
+
 		X(opts,)
 	}
 }

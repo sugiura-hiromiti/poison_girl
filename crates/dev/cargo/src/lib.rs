@@ -1,7 +1,6 @@
 #![feature(exit_status_error)]
 
 use {
-	clap::Subcommand,
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{
 		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
@@ -10,29 +9,12 @@ use {
 	strum_macros::Display,
 };
 
+#[deprecated]
 pub trait TargetSpec
 {
 	fn tuple(&self,) -> String;
 	fn arch(&self,) -> Arch;
 	fn runtime(&self,) -> Runtime;
-}
-
-#[derive(clap::Parser, Default,)]
-#[command(version, about)]
-pub struct Cli
-{
-	#[arg(value_enum, short)]
-	pub build_mode:    Option<BuildMode,>,
-	#[arg(short)]
-	/// this is not Option<Vec<Feature,>,> in order to prevent cyclic
-	/// referencing
-	pub feature_flags: Option<Vec<String,>,>,
-	#[arg(short)]
-	pub arch:          Option<Arch,>,
-	#[command(subcommand)]
-	pub command:       Option<CliCommand,>,
-	#[arg(short, default_value_t = false)]
-	pub lock_deps:     bool,
 }
 
 #[derive(
@@ -54,29 +36,6 @@ pub enum BuildMode
 	Release,
 	#[default]
 	Debug,
-}
-
-#[derive(
-	Subcommand,
-	Default,
-	strum_macros::EnumIs,
-	strum_macros::AsRefStr,
-	Clone,
-	Copy,
-	PartialEq,
-	Eq,
-)]
-#[strum(serialize_all = "snake_case")]
-pub enum CliCommand
-{
-	Build,
-	Test,
-	#[default]
-	Run,
-	Clippy,
-	Fixture,
-	/// cargo fix
-	Fix,
 }
 
 pub enum Runtime

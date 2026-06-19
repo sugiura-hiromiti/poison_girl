@@ -5,9 +5,12 @@ use {
 		format::{FatTypeSelection, FatVolumeFormatter, FormatOptions},
 	},
 	poison_girl_dev_error::{PoisonGirlB, X},
-	poison_girl_dev_orchestrate::decl_manage::{
-		OrchestrationResolver, PoisonGirlCargoInterface,
-		crate_::{CrateInfo, PoisonGirlCrateChart},
+	poison_girl_dev_orchestrate::{
+		BuildArtifactPolicyResolver,
+		decl_manage::{
+			PoisonGirlCargoInterface,
+			crate_::{CrateInfo, PoisonGirlCrateChart},
+		},
 	},
 	std::{fs::File, io::Read, path::PathBuf},
 };
@@ -176,11 +179,11 @@ impl Xtask
 		let disk_img = self.disk_img_path()?;
 		let boot_loader_crate = PoisonGirlCargoInterface::new(
 			PoisonGirlCrateChart::LOADER,
-			self.interface.task().clone(),
+			self.interface.policy().clone(),
 		);
-		let boot_loader = boot_loader_crate.build_artifact()?.path();
+		let boot_loader = boot_loader_crate.build_artifact_policy()?.path();
 		let boot_loader_file_name =
-			self.opts().arch.boot_file_name().to_string();
+			self.opts().arch().boot_file_name().to_string();
 
 		// TODO: copy kernel binary to disk image
 		let disk_img_bldr = DiskImageBuilder::new(

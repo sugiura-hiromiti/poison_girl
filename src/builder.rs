@@ -12,10 +12,10 @@
 
 use {
 	crate::Xtask,
-	poison_girl_dev_cargo::{Assets, CliCommand},
+	poison_girl_dev_cargo::Assets,
 	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::{
-		Task,
+		CliCommandDiscriminants, Policy,
 		decl_manage::{
 			PoisonGirlCargoInterface, crate_::PoisonGirlCrateChart,
 			workspace::WorkspaceAction,
@@ -76,24 +76,24 @@ impl Xtask
 	///   fails
 	pub fn new() -> PoisonGirlB<Self,>
 	{
-		let task = Task::new()?;
+		let policy = Policy::new();
 		let chart = PoisonGirlCrateChart::XTASK;
-		let assets = Assets::new(task.opts().arch,);
+		let assets = Assets::new(policy.arch(),);
 		X(Self {
-			interface: PoisonGirlCargoInterface::new(chart, task,),
+			interface: PoisonGirlCargoInterface::new(chart, policy,),
 			assets,
 		},)
 	}
 
 	pub fn runner(&self,) -> PoisonGirlB<(),>
 	{
-		match &self.interface.task().cmd() {
-			CliCommand::Build => self.build(),
-			CliCommand::Test => self.test(),
-			CliCommand::Run => self.run(),
-			CliCommand::Clippy => self.clippy(),
-			CliCommand::Fixture => self.fixture(),
-			CliCommand::Fix => self.fix(),
+		match self.interface.policy().command_discriminant() {
+			CliCommandDiscriminants::Build => self.build(),
+			CliCommandDiscriminants::Test => self.test(),
+			CliCommandDiscriminants::Run => self.run(),
+			CliCommandDiscriminants::Clippy => self.clippy(),
+			CliCommandDiscriminants::Fixture => self.fixture(),
+			CliCommandDiscriminants::Fix => self.fix(),
 		}
 	}
 
@@ -101,7 +101,7 @@ impl Xtask
 	/// not a package build
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
-		let args = self.interface.task().opts();
+		let args = self.interface.policy();
 		self.ws().build_at_with(PoisonGirlCrateChart::KERNEL, args,)?;
 		self.ws().build_at_with(PoisonGirlCrateChart::LOADER, args,)?;
 		X((),)
@@ -117,17 +117,10 @@ impl Xtask
 
 	fn clippy(&self,) -> PoisonGirlB<(),>
 	{
-		// let task = self.interface.task();
-		let args = self.interface.task().opts();
-		PoisonGirlCrateChart::all_variants().into_iter().try_for_each(
-			|at| {
-				// let interface =
-				// 	PoisonGirlCargoInterface::new(at, task.clone(),);
-				// let args = interface.task().opts();
-				// interface.ws().clippy_with(args,)
-				self.ws().clippy_at_with(at, args,)
-			},
-		)?;
+		let args = self.interface.policy();
+		PoisonGirlCrateChart::all_variants()
+			.into_iter()
+			.try_for_each(|at| self.ws().clippy_at_with(at, args,),)?;
 		// self.ws().clippy_at_with(PoisonGirlCrateChart::XTASK, args,)
 		X((),)
 	}
@@ -149,7 +142,7 @@ impl Xtask
 	/// this runs cargo fix for all crates in this repository
 	fn fix(&self,) -> PoisonGirlB<(),>
 	{
-		let args = self.interface.task().opts();
+		let args = self.interface.policy();
 		self.ws().fix_at_with(PoisonGirlCrateChart::XTASK, args,)
 	}
 }

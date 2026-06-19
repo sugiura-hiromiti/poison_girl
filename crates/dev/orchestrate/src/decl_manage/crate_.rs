@@ -1,6 +1,6 @@
 use {
 	crate::{
-		AsCargoOpt, ContextualOpts, Opts, Task,
+		AsCargoOpt, CliCommand, CliCommandDiscriminants, FixArgs, Policy,
 		decl_manage::{
 			PoisonGirlCargoInterface, PoisonGirlPackageMetadata,
 			package::{Package, PackageAction, PackageInfo, PackageSurvey},
@@ -9,7 +9,7 @@ use {
 			},
 		},
 	},
-	poison_girl_dev_cargo::{CliCommand, host_tuple_by_rustc},
+	poison_girl_dev_cargo::host_tuple_by_rustc,
 	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{
 		PathIsNotValidUtf8, PathNotFound, PoisonGirlB, ReShape, X,
@@ -74,81 +74,83 @@ pub trait CrateAction: CrateInfo
 
 	fn build(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx(CliCommand::Build,)
+		self.cargo_xxx(CliCommandDiscriminants::Build,)
 	}
 
 	fn test(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx(CliCommand::Test,)
+		self.cargo_xxx(CliCommandDiscriminants::Test,)
 	}
 
 	fn run(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx(CliCommand::Run,)
+		self.cargo_xxx(CliCommandDiscriminants::Run,)
 	}
 
 	fn clippy(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx(CliCommand::Clippy,)
+		self.cargo_xxx(CliCommandDiscriminants::Clippy,)
 	}
 
 	fn fix(&self,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx(CliCommand::Fix,)
+		self.cargo_xxx(CliCommandDiscriminants::Fix,)
 	}
 
-	fn cargo_xxx(&self, cmd: CliCommand,) -> PoisonGirlB<(),>
+	fn cargo_xxx(&self, cmd: CliCommandDiscriminants,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with(cmd, &Opts::default(),)
+		self.cargo_xxx_with(cmd, &Policy::default(),)
 	}
 
 	// actions for all packages with specific options
 
-	fn build_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
+	fn build_with(&self, opt: &Policy,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with(CliCommand::Build, opt,)
+		self.cargo_xxx_with(CliCommandDiscriminants::Build, opt,)
 	}
 
-	fn test_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
+	fn test_with(&self, opt: &Policy,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with(CliCommand::Test, opt,)
+		self.cargo_xxx_with(CliCommandDiscriminants::Test, opt,)
 	}
 
-	fn run_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
+	fn run_with(&self, opt: &Policy,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with(CliCommand::Run, opt,)
+		self.cargo_xxx_with(CliCommandDiscriminants::Run, opt,)
 	}
 
-	fn clippy_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
+	fn clippy_with(&self, opt: &Policy,) -> PoisonGirlB<(),>
 	{
-		let opt = opt.fix_context_by(ContextualOpts {
-			allow_dirty:  false,
-			allow_staged: false,
-			workspace:    false,
-			all_targets:  false,
-		},);
-		self.cargo_xxx_with(CliCommand::Clippy, &opt,)
+		self.cargo_xxx_with(CliCommandDiscriminants::Clippy, opt,)
 	}
 
-	fn fix_with(&self, opt: &Opts,) -> PoisonGirlB<(),>
+	fn fix_with(&self, opt: &Policy,) -> PoisonGirlB<(),>
 	{
-		let opt = opt.fix_context_by(ContextualOpts {
-			allow_dirty:  true,
-			allow_staged: true,
-			workspace:    false,
-			all_targets:  false,
-		},);
-		self.cargo_xxx_with(CliCommand::Fix, &opt,)
+		let opt = opt
+			.clone()
+			.with_command(CliCommand::Fix(FixArgs::allow_dirty_and_staged(),),);
+		self.cargo_xxx_with(CliCommandDiscriminants::Fix, &opt,)
 	}
 
-	fn cargo_xxx_with(&self, cmd: CliCommand, opt: &Opts,) -> PoisonGirlB<(),>
+	fn cargo_xxx_with(
+		&self,
+		cmd: CliCommandDiscriminants,
+		opt: &Policy,
+	) -> PoisonGirlB<(),>
 	{
+		let command = if opt.command_discriminant() == cmd {
+			opt.command().clone()
+		} else {
+			cmd.default_command()
+		};
+		let policy = opt.clone().with_command(command,);
+
 		let mut cargo = Command::new("cargo",);
-		let cargo = cargo.arg(cmd.as_ref(),);
+		let cargo = cargo.arg(policy.command().as_ref(),);
 
 		let interface = PoisonGirlCargoInterface::new(
 			PoisonGirlCrateChart::from(self.path(),),
-			Task { cmd, opts: opt.clone(), },
+			policy,
 		);
 		let opt = interface.as_cargo_opt()?;
 		if !opt.is_empty() {

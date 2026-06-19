@@ -1,11 +1,10 @@
 use {
 	crate::{
-		ContextualOpts, Opts,
+		CliCommand, CliCommandDiscriminants, FixArgs, Policy,
 		decl_manage::crate_::{
 			Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
 		},
 	},
-	poison_girl_dev_cargo::CliCommand,
 	poison_girl_dev_error::{
 		PointerOperationFailed, PoisonGirlB, ReShape, X, poison_girl_err,
 	},
@@ -31,42 +30,42 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	fn build_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
-		self.cargo_xxx_at(CliCommand::Build, at,)
+		self.cargo_xxx_at(CliCommandDiscriminants::Build, at,)
 	}
 
 	fn test_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
-		self.cargo_xxx_at(CliCommand::Test, at,)
+		self.cargo_xxx_at(CliCommandDiscriminants::Test, at,)
 	}
 
 	fn run_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
-		self.cargo_xxx_at(CliCommand::Run, at,)
+		self.cargo_xxx_at(CliCommandDiscriminants::Run, at,)
 	}
 
 	fn clippy_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
-		self.cargo_xxx_at(CliCommand::Clippy, at,)
+		self.cargo_xxx_at(CliCommandDiscriminants::Clippy, at,)
 	}
 
 	fn fix_at(&self, at: impl CrateCalled,) -> PoisonGirlB<(),>
 	where Self: WorkspaceSurvey
 	{
-		self.cargo_xxx_at(CliCommand::Fix, at,)
+		self.cargo_xxx_at(CliCommandDiscriminants::Fix, at,)
 	}
 
 	fn cargo_xxx_at(
 		&self,
-		cmd: CliCommand,
+		cmd: CliCommandDiscriminants,
 		at: impl CrateCalled,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
-		self.cargo_xxx_at_with(cmd, at, &Opts::default(),)
+		self.cargo_xxx_at_with(cmd, at, &Policy::default(),)
 	}
 
 	// actions for specific package with specific options
@@ -74,76 +73,67 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	fn build_at_with(
 		&self,
 		at: impl CrateCalled,
-		opt: &Opts,
+		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
-		self.cargo_xxx_at_with(CliCommand::Build, at, opt,)
+		self.cargo_xxx_at_with(CliCommandDiscriminants::Build, at, opt,)
 	}
 
 	fn test_at_with(
 		&self,
 		at: impl CrateCalled,
-		opt: &Opts,
+		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
-		self.cargo_xxx_at_with(CliCommand::Test, at, opt,)
+		self.cargo_xxx_at_with(CliCommandDiscriminants::Test, at, opt,)
 	}
 
 	fn run_at_with(
 		&self,
 		at: impl CrateCalled,
-		opt: &Opts,
+		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
-		self.cargo_xxx_at_with(CliCommand::Run, at, opt,)
+		self.cargo_xxx_at_with(CliCommandDiscriminants::Run, at, opt,)
 	}
 
 	/// TODO: support kernel/loader check
 	fn clippy_at_with(
 		&self,
 		at: impl CrateCalled,
-		opt: &Opts,
+		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
-		let opt = opt.fix_context_by(ContextualOpts {
-			allow_dirty:  false,
-			allow_staged: false,
-			workspace:    false,
-			all_targets:  false,
-		},);
-		self.cargo_xxx_at_with(CliCommand::Clippy, at, &opt,)
+		self.cargo_xxx_at_with(CliCommandDiscriminants::Clippy, at, opt,)
 	}
 
 	fn fix_at_with(
 		&self,
 		at: impl CrateCalled,
-		opt: &Opts,
+		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
 	{
-		let opt = opt.fix_context_by(ContextualOpts {
-			allow_dirty:  true,
-			allow_staged: true,
-			workspace:    true,
-			all_targets:  false,
-		},);
-		self.cargo_xxx_at_with(CliCommand::Fix, at, &opt,)
+		let opt = opt
+			.clone()
+			.with_command(CliCommand::Fix(FixArgs::allow_dirty_and_staged(),),);
+		self.cargo_xxx_at_with(CliCommandDiscriminants::Fix, at, &opt,)
 	}
 
 	fn cargo_xxx_at_with(
 		&self,
-		cmd: CliCommand,
+		cmd: CliCommandDiscriminants,
 		at: impl CrateCalled,
-		opt: &Opts,
+		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	where
 		Self: WorkspaceSurvey,
