@@ -4,11 +4,8 @@
 use {
 	poison_girl_dev_cargo::{Arch, BuildMode},
 	poison_girl_dev_orchestrate::{
-		Task,
-		decl_manage::{
-			OrchestrationResolver, PoisonGirlCargoInterface,
-			crate_::PoisonGirlCrateChart,
-		},
+		BuildArtifactPolicyResolver, Policy,
+		decl_manage::{PoisonGirlCargoInterface, crate_::PoisonGirlCrateChart},
 	},
 	poison_girl_macro_error::rslt::Rslt,
 	proc_macro2::{Span, TokenStream},
@@ -177,9 +174,9 @@ fn readelf_l_out(arch: String, build_mode: String,) -> Rslt<Vec<String,>,>
 	let build_mode = BuildMode::from_str(&build_mode,)?;
 	let kernel_crate = PoisonGirlCargoInterface::new(
 		PoisonGirlCrateChart::Kernel,
-		Task::from_arch_build_mode(arch, build_mode,),
+		Policy::from_arch_build_mode(arch, build_mode,),
 	);
-	let kernel_bin_path = kernel_crate.build_artifact()?.path();
+	let kernel_bin_path = kernel_crate.build_artifact_policy()?.path();
 
 	let program_headers_info = checked_stdout(
 		Command::new("readelf",).arg("-l",).arg(kernel_bin_path,),

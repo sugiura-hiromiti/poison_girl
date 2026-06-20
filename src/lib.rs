@@ -7,7 +7,7 @@ use {
 	poison_girl_dev_cargo::Assets,
 	poison_girl_dev_error::PoisonGirlB,
 	poison_girl_dev_orchestrate::{
-		Opts,
+		Policy,
 		decl_manage::{PoisonGirlCargoInterface, crate_::PoisonGirlCrate},
 	},
 	std::path::PathBuf,
@@ -30,9 +30,9 @@ pub struct Xtask
 
 impl Xtask
 {
-	fn opts(&self,) -> &Opts
+	fn opts(&self,) -> &Policy
 	{
-		self.interface.task().opts()
+		self.interface.policy()
 	}
 
 	fn ws(&self,) -> PoisonGirlCrate
