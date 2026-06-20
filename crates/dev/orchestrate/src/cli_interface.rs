@@ -75,14 +75,16 @@ impl Policy
 
 impl AsCargoOpt for Policy
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
 		let args = self.global.as_cargo_opt();
+		let mut args = CargoInvocationArgs::from_cargo_args(args,);
 		let cmd_args = self.command.as_cargo_opt();
 
-		args.into_iter().chain(cmd_args,).collect()
+		args.extend(cmd_args,);
+		args
 	}
 }
 
@@ -191,6 +193,62 @@ impl AsCargoOpt for GlobalArg
 	}
 }
 
+#[derive(Debug, Default, Eq, PartialEq,)]
+pub struct CargoInvocationArgs
+{
+	cargo_args: Vec<String,>,
+	tool_args:  Vec<String,>,
+}
+
+impl CargoInvocationArgs
+{
+	pub fn from_cargo_args(cargo_args: Vec<String,>,) -> Self
+	{
+		Self { cargo_args, tool_args: vec![], }
+	}
+
+	pub fn from_tool_args(tool_args: Vec<String,>,) -> Self
+	{
+		Self { cargo_args: vec![], tool_args, }
+	}
+
+	pub fn extend(&mut self, Self { cargo_args, tool_args, }: Self,)
+	{
+		self.cargo_args.extend(cargo_args,);
+		self.tool_args.extend(tool_args,);
+	}
+
+	pub fn into_cargo_args(self,) -> Vec<String,>
+	{
+		let Self { mut cargo_args, tool_args, } = self;
+
+		if !tool_args.is_empty() {
+			cargo_args.push("--".to_owned(),);
+			cargo_args.extend(tool_args,);
+		}
+
+		cargo_args
+	}
+}
+
+impl AsCargoOpt for Vec<CargoInvocationArgs,>
+{
+	type Out = Vec<String,>;
+
+	fn as_cargo_opt(&self,) -> Self::Out
+	{
+		let mut args = CargoInvocationArgs::default();
+		for arg_set in self {
+			args.extend(CargoInvocationArgs {
+				cargo_args: arg_set.cargo_args.clone(),
+				tool_args:  arg_set.tool_args.clone(),
+			},);
+		}
+
+		args.into_cargo_args()
+	}
+}
+
 #[derive(
 	Subcommand,
 	strum_macros::EnumIs,
@@ -214,7 +272,7 @@ pub enum CliCommand
 
 impl AsCargoOpt for CliCommand
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
@@ -257,11 +315,11 @@ pub struct BuildArgs {}
 
 impl AsCargoOpt for BuildArgs
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		vec![]
+		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
 	}
 }
 
@@ -270,11 +328,11 @@ pub struct TestArgs {}
 
 impl AsCargoOpt for TestArgs
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		vec![]
+		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
 	}
 }
 
@@ -283,11 +341,11 @@ pub struct RunArgs {}
 
 impl AsCargoOpt for RunArgs
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		vec![]
+		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
 	}
 }
 
@@ -300,14 +358,16 @@ pub struct ClippyArgs
 
 impl AsCargoOpt for ClippyArgs
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		if self.deny_warnings { vec!["-D", "warnings"] } else { vec![] }
-			.into_iter()
-			.map(|s| s.to_string(),)
-			.collect()
+		let tool_args =
+			if self.deny_warnings { vec!["-D", "warnings"] } else { vec![] }
+				.into_iter()
+				.map(|s| s.to_string(),)
+				.collect();
+		CargoInvocationArgs::from_tool_args(tool_args,)
 	}
 }
 
@@ -316,11 +376,11 @@ pub struct FixtureArgs {}
 
 impl AsCargoOpt for FixtureArgs
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		vec![]
+		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
 	}
 }
 
@@ -343,7 +403,7 @@ impl FixArgs
 
 impl AsCargoOpt for FixArgs
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
@@ -352,11 +412,13 @@ impl AsCargoOpt for FixArgs
 		let allow_staged =
 			if self.allow_staged { vec!["--allow-staged"] } else { vec![] };
 
-		allow_dirty
+		let cargo_args = allow_dirty
 			.into_iter()
 			.chain(allow_staged,)
 			.map(|s| s.to_string(),)
-			.collect()
+			.collect();
+
+		CargoInvocationArgs { cargo_args, tool_args: vec![], }
 	}
 }
 
@@ -411,7 +473,35 @@ mod tests
 
 		let opt = policy.as_cargo_opt();
 
-		assert_eq!(opt, vec!["--release".to_string(), "--locked".to_string()]);
+		assert_eq!(
+			opt.into_cargo_args(),
+			vec!["--release".to_string(), "--locked".to_string()]
+		);
+		success!()
+	}
+
+	#[test]
+	fn policy_as_cargo_opt_places_tool_args_after_separator() -> PoisonGirlTestB
+	{
+		let policy = Policy {
+			global:  GlobalArg {
+				build_mode: BuildMode::Release,
+				..Default::default()
+			},
+			command: CliCommand::Clippy(ClippyArgs { deny_warnings: true, },),
+		};
+
+		let opt = policy.as_cargo_opt();
+
+		assert_eq!(
+			opt.into_cargo_args(),
+			vec![
+				"--release".to_string(),
+				"--".to_string(),
+				"-D".to_string(),
+				"warnings".to_string()
+			]
+		);
 		success!()
 	}
 }

@@ -1,6 +1,6 @@
 use poison_girl_dev_cargo::{Arch, Runtime};
 
-use crate::AsCargoOpt;
+use crate::{AsCargoOpt, cli_interface::CargoInvocationArgs};
 
 pub trait TargetPolicyResolver
 {
@@ -57,18 +57,21 @@ impl TargetPolicy
 
 impl AsCargoOpt for TargetPolicy
 {
-	type Out = Vec<String,>;
+	type Out = CargoInvocationArgs;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		let Some(tuple,) = self.target_spec() else { return vec![] };
+		let Some(tuple,) = self.target_spec() else {
+			return CargoInvocationArgs::default();
+		};
 
-		let mut rslt = vec!["--target".to_owned(), tuple];
+		let mut cargo_args = vec!["--target".to_owned(), tuple];
 		if self.has_json_spec() {
-			rslt.extend(["-Z".to_owned(), "json-target-spec".to_owned(),],);
+			cargo_args
+				.extend(["-Z".to_owned(), "json-target-spec".to_owned(),],);
 		}
 
-		rslt
+		CargoInvocationArgs::from_cargo_args(cargo_args,)
 	}
 }
 
@@ -82,7 +85,10 @@ mod tests
 	{
 		let policy = TargetPolicy::new(Arch::Aarch64, Runtime::Host,);
 
-		assert_eq!(policy.as_cargo_opt(), Vec::<String,>::new());
+		assert_eq!(
+			policy.as_cargo_opt().into_cargo_args(),
+			Vec::<String,>::new()
+		);
 	}
 
 	#[test]
@@ -95,7 +101,7 @@ mod tests
 		);
 
 		assert_eq!(
-			policy.as_cargo_opt(),
+			policy.as_cargo_opt().into_cargo_args(),
 			vec![
 				"--target".to_string(),
 				target,

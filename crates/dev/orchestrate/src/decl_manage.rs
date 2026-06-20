@@ -226,7 +226,9 @@ impl BuildStdFeaturesPolicyResolver for PoisonGirlCargoInterface
 		let policies = if command == CliCommandDiscriminants::Build
 			|| command == CliCommandDiscriminants::Clippy
 		{
-			if *chart == PoisonGirlCrateChart::KERNEL {
+			if *chart == PoisonGirlCrateChart::KERNEL
+				|| *chart == PoisonGirlCrateChart::LOADER
+			{
 				vec![BuildStdFeaturesPolicy::CompilerBuiltinsMem]
 			} else {
 				vec![]
@@ -269,9 +271,11 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 	{
 		let straight_cmd = self.policy.as_cargo_opt();
 		let command = self.policy.command_discriminant();
-		let target = self.target_policy();
-		let build_std = self.build_std_policies();
-		let build_std_features = self.build_std_features_policies();
+		let target = self.target_policy().as_cargo_opt();
+		let build_std = self.build_std_policies().as_cargo_opt();
+		let build_std_features =
+			self.build_std_features_policies().as_cargo_opt();
+
 		let PoisonGirlPackageMetadata { no_std, } =
 			self.ws.custom_metadata()?;
 		let additional_opts =
@@ -281,13 +285,11 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 				vec![]
 			};
 
-		let opts = straight_cmd
-			.into_iter()
-			.chain(target.as_cargo_opt(),)
-			.chain(build_std.as_cargo_opt(),)
-			.chain(build_std_features.as_cargo_opt(),)
-			.chain(additional_opts,)
-			.collect();
+		let resolved_args =
+			vec![straight_cmd, target, build_std, build_std_features]
+				.as_cargo_opt();
+
+		let opts = additional_opts.into_iter().chain(resolved_args,).collect();
 
 		X(opts,)
 	}
