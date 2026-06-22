@@ -121,7 +121,6 @@ impl Xtask
 		PoisonGirlCrateChart::all_variants()
 			.into_iter()
 			.try_for_each(|at| self.ws().clippy_at_with(at, args,),)?;
-		// self.ws().clippy_at_with(PoisonGirlCrateChart::XTASK, args,)
 		X((),)
 	}
 
@@ -136,7 +135,11 @@ impl Xtask
 	/// ones, we have to orchestrate them for running by one command
 	fn test(&self,) -> PoisonGirlB<(),>
 	{
-		todo!()
+		let args = self.interface.policy();
+		PoisonGirlCrateChart::all_variants()
+			.into_iter()
+			.try_for_each(|at| self.ws().test_at_with(at, args,),)?;
+		X((),)
 	}
 
 	/// this runs cargo fix for all crates in this repository

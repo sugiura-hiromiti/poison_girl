@@ -278,18 +278,25 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 
 		let PoisonGirlPackageMetadata { no_std, } =
 			self.ws.custom_metadata()?;
-		let additional_opts =
-			if no_std && command == CliCommandDiscriminants::Test {
-				vec!["--lib".to_string()]
-			} else {
-				vec![]
-			};
+		let mut additional_opts: Vec<_,> =
+			vec!["-p", self.ws().as_chart().package_name()]
+				.into_iter()
+				.map(|s| s.to_owned(),)
+				.collect();
+
+		if no_std && command == CliCommandDiscriminants::Test {
+			additional_opts.push("--lib".to_string(),);
+		}
 
 		let resolved_args =
 			vec![straight_cmd, target, build_std, build_std_features]
 				.as_cargo_opt();
 
-		let opts = additional_opts.into_iter().chain(resolved_args,).collect();
+		let opts = additional_opts
+			.into_iter()
+			.map(|s| s.to_owned(),)
+			.chain(resolved_args,)
+			.collect();
 
 		X(opts,)
 	}
