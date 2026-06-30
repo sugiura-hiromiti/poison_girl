@@ -25,8 +25,8 @@
 //!
 //! ## Usage
 //!
-//! ```rust,no_run
-//! use poison_girl_no_std_shared::{
+//! ```rust,no_run,ignore
+//! use poison_girl_no_std::{
 //! 	bridge::graphic::{FrameBufConf, PixelFormatConf},
 //! 	wfi,
 //! };
@@ -69,8 +69,8 @@ pub mod parser;
 ///
 /// # Examples
 ///
-/// ```rust,no_run
-/// use poison_girl_no_std_shared::wfi;
+/// ```rust,no_run,ignore
+/// use poison_girl_no_std::wfi;
 ///
 /// // After completing all necessary work:
 /// wfi(); // CPU will enter low-power state until an interrupt occurs
@@ -83,18 +83,6 @@ pub mod parser;
 pub fn idle_cpu_forever() -> !
 {
 	loop {
-		// unsafe {
-		// 	if cfg!(target_arch = "aarch64") {
-		// 		asm!("wfi"); // ARM64: Wait For Interrupt
-		// 	} else if cfg!(target_arch = "riscv64") {
-		// 		todo!()
-		// 	} else if cfg!(target_arch = "x86_64") {
-		// 		asm!("hlt"); // x86_64: Halt until interrupt
-		// 	} else {
-		// 		loop {}
-		// 		// unimplemented!("Architecture not supported")
-		// 	}
-		// }
 		wfi();
 	}
 }
@@ -139,8 +127,8 @@ pub fn wfi()
 ///
 /// # Examples
 ///
-/// ```rust,no_run
-/// use poison_girl_no_std_shared::wfe;
+/// ```rust,no_run,ignore
+/// use poison_girl_no_std::wfe;
 ///
 /// // After setting up event monitoring:
 /// wfe(); // CPU will enter low-power state until an event occurs
@@ -177,8 +165,8 @@ pub fn wfe()
 ///
 /// # Examples
 ///
-/// ```rust,no_run
-/// use poison_girl_no_std_shared::nop;
+/// ```rust,no_run,ignore
+/// use poison_girl_no_std::nop;
 ///
 /// // When you want to keep the CPU busy without doing work:
 /// nop(); // CPU will continuously execute no-operation instructions

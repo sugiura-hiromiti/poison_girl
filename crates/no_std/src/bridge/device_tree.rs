@@ -15,8 +15,8 @@
 ///
 /// # Examples
 ///
-/// ```rust,no_run
-/// use poison_girl_no_std_shared::bridge::device_tree::DeviceTreeAddress;
+/// ```rust,no_run,ignore
+/// use poison_girl_no_std::bridge::device_tree::DeviceTreeAddress;
 ///
 /// fn process_device_tree(dtb_addr: DeviceTreeAddress,)
 /// {

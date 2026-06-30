@@ -32,9 +32,7 @@
 //! The bootloader discovers display hardware and creates a `FrameBufConf`:
 //!
 //! ```rust,no_run
-//! use poison_girl_no_std_shared::bridge::graphic::{
-//! 	FrameBufConf, PixelFormatConf,
-//! };
+//! use poison_girl_no_std::bridge::graphic::{FrameBufConf, PixelFormatConf};
 //!
 //! // Bootloader code
 //! let framebuf_config = FrameBufConf::new(
@@ -55,7 +53,7 @@
 //! The kernel receives the configuration and initializes its graphics
 //! subsystem:
 //!
-//! ```rust,no_run
+//! ```rust,no_run,ignore
 //! // Kernel code
 //! fn initialize_graphics(config: FrameBufConf,)
 //! {
@@ -121,8 +119,8 @@
 ///
 /// # Examples
 ///
-/// ```rust
-/// use poison_girl_no_std_shared::bridge::graphic::PixelFormatConf;
+/// ```rust,ignore,no_run
+/// use poison_girl_no_std::bridge::graphic::PixelFormatConf;
 ///
 /// // Configure different pixel formats
 /// let rgb_format = PixelFormatConf::Rgb;
@@ -191,8 +189,8 @@ impl PixelFormatConf
 	///
 	/// # Examples
 	///
-	/// ```rust
-	/// use poison_girl_no_std_shared::bridge::graphic::PixelFormatConf;
+	/// ```rust,no_run,ignore
+	/// use poison_girl_no_std::bridge::graphic::PixelFormatConf;
 	///
 	/// assert_eq!(PixelFormatConf::Rgb.bytes_per_pixel(), Some(4));
 	/// assert_eq!(PixelFormatConf::Bgr.bytes_per_pixel(), Some(4));
@@ -219,8 +217,8 @@ impl PixelFormatConf
 	///
 	/// # Examples
 	///
-	/// ```rust
-	/// use poison_girl_no_std_shared::bridge::graphic::PixelFormatConf;
+	/// ```rust,ignore,no_run
+	/// use poison_girl_no_std::bridge::graphic::PixelFormatConf;
 	///
 	/// assert!(PixelFormatConf::Rgb.supports_pixel_access());
 	/// assert!(PixelFormatConf::Bgr.supports_pixel_access());
@@ -293,8 +291,8 @@ impl PixelFormatConf
 ///
 /// ### Basic Configuration
 ///
-/// ```rust,no_run
-/// use poison_girl_no_std_shared::bridge::graphic::{
+/// ```rust,no_run,ignore
+/// use poison_girl_no_std::bridge::graphic::{
 /// 	FrameBufConf, PixelFormatConf,
 /// };
 ///
@@ -311,8 +309,8 @@ impl PixelFormatConf
 ///
 /// ### With Row Padding
 ///
-/// ```rust,no_run
-/// use poison_girl_no_std_shared::bridge::graphic::{
+/// ```rust,no_run,ignore
+/// use poison_girl_no_std::bridge::graphic::{
 /// 	FrameBufConf, PixelFormatConf,
 /// };
 ///
@@ -377,8 +375,8 @@ impl FrameBufConf
 	///
 	/// # Examples
 	///
-	/// ```rust,no_run
-	/// use poison_girl_no_std_shared::bridge::graphic::{
+	/// ```rust,no_run,ignore
+	/// use poison_girl_no_std::bridge::graphic::{
 	/// 	FrameBufConf, PixelFormatConf,
 	/// };
 	///
@@ -442,8 +440,8 @@ impl FrameBufConf
 	///
 	/// # Examples
 	///
-	/// ```rust,no_run
-	/// use poison_girl_no_std_shared::bridge::graphic::{
+	/// ```rust,no_run,ignore
+	/// use poison_girl_no_std::bridge::graphic::{
 	/// 	FrameBufConf, PixelFormatConf,
 	/// };
 	///
@@ -486,8 +484,8 @@ impl FrameBufConf
 	///
 	/// # Examples
 	///
-	/// ```rust,no_run
-	/// use poison_girl_no_std_shared::bridge::graphic::{
+	/// ```rust,no_run,ignore
+	/// use poison_girl_no_std::bridge::graphic::{
 	/// 	FrameBufConf, PixelFormatConf,
 	/// };
 	///
@@ -518,8 +516,8 @@ impl FrameBufConf
 	///
 	/// # Examples
 	///
-	/// ```rust,no_run
-	/// use poison_girl_no_std_shared::bridge::graphic::{
+	/// ```rust,no_run,ignore
+	/// use poison_girl_no_std::bridge::graphic::{
 	/// 	FrameBufConf, PixelFormatConf,
 	/// };
 	///

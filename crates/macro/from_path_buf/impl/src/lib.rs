@@ -48,13 +48,21 @@ struct EnumParts
 	variants_attr: Vec<Option<proc_macro2::TokenStream,>,>,
 	paths:         Vec<proc_macro2::TokenStream,>,
 	bin_names:     Vec<proc_macro2::TokenStream,>,
+	package_names: Vec<String,>,
 }
 
 impl EnumParts
 {
 	pub fn dump(&self,) -> proc_macro2::TokenStream
 	{
-		let Self { name, variants, variants_attr, paths, bin_names, } = self;
+		let Self {
+			name,
+			variants,
+			variants_attr,
+			paths,
+			bin_names,
+			package_names,
+		} = self;
 
 		quote::quote! {
 			#[derive(Default, PartialEq, Eq, Clone, Debug, Copy)]
@@ -82,6 +90,12 @@ impl EnumParts
 					vec![
 						#(Self::#variants,)*
 					]
+				}
+
+				pub fn package_name(&self) -> &str {
+					match self {
+						#(Self::#variants => #package_names,)*
+					}
 				}
 			}
 
@@ -147,7 +161,13 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 				} else {
 					None
 				};
-				Rslt::new((variant, attr, path, bin_name,),)
+				Rslt::new((
+					variant,
+					attr,
+					path,
+					bin_name,
+					manifest.package_name,
+				),)
 			},)
 		},)
 		.fold(Rslt::new(vec![],), |acc, item| acc.push_elem(item,),)
@@ -157,11 +177,14 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 			let mut variants_attr = Vec::with_capacity(len,);
 			let mut paths = Vec::with_capacity(len,);
 			let mut bin_names = Vec::with_capacity(len,);
-			val.into_iter().for_each(|(v, a, p, b,)| {
+			let mut package_names = Vec::with_capacity(len,);
+
+			val.into_iter().for_each(|(v, a, p, b, package_name,)| {
 				variants.push(v,);
 				variants_attr.push(a,);
 				paths.push(p,);
 				bin_names.push(b,);
+				package_names.push(package_name,);
 			},);
 			let rslt = Rslt::new(EnumParts {
 				name,
@@ -169,6 +192,7 @@ fn enum_parts(struct_def: &syn::DeriveInput,) -> Rslt<EnumParts,>
 				variants_attr,
 				paths,
 				bin_names,
+				package_names,
 			},);
 
 			#[cfg(feature = "debug-diagnostics")]
