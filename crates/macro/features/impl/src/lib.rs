@@ -71,8 +71,9 @@ pub fn features(attr: syn::Expr, mut item: syn::ItemEnum,)
 	let enum_name = item.ident.clone();
 	let conversion_partner = expr_path_guard(attr,)?;
 	let partner_name = last_expr_path_segment(&conversion_partner,)?;
-	let from_fn_name = format_ident!("from_{partner_name}");
-	let into_fn_name = format_ident!("into_{partner_name}");
+	let partner_name_sneak_case: String = partner_name.to_string().to_snake();
+	let from_fn_name = format_ident!("from_{partner_name_sneak_case}");
+	let into_fn_name = format_ident!("into_{partner_name_sneak_case}");
 
 	feature_list.iter().for_each(|feature| {
 		let variant: syn::Variant = syn::parse_quote!(#feature);

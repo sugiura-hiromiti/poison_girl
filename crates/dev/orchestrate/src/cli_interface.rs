@@ -71,6 +71,22 @@ impl Policy
 	{
 		self.global.locked
 	}
+
+	pub fn with_features_supported_by(
+		mut self,
+		chart: &PoisonGirlCrateChart,
+	) -> Self
+	{
+		let features: Vec<_,> = self
+			.global
+			.features
+			.into_iter()
+			.filter(|f| f.is_supported_by(chart,),)
+			.collect();
+
+		self.global.features = features;
+		self
+	}
 }
 
 impl AsCargoOpt for Policy
@@ -90,13 +106,19 @@ impl AsCargoOpt for Policy
 
 #[features(PoisonGirlCrateChart)]
 #[derive(
-	strum_macros::AsRefStr,
-	strum_macros::EnumIs,
-	strum_macros::EnumString,
-	Clone,
+	strum_macros::AsRefStr, strum_macros::EnumString, Clone, Eq, PartialEq,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum Feature {}
+
+impl Feature
+{
+	pub(crate) fn is_supported_by(&self, chart: &PoisonGirlCrateChart,)
+	-> bool
+	{
+		self.clone().into_poison_girl_crate_chart().contains(chart,)
+	}
+}
 
 impl AsCargoOpt for Vec<Feature,>
 {

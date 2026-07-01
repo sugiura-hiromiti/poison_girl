@@ -269,8 +269,10 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 	/// ergo and scalability, this code have to be refactored
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		let straight_cmd = self.policy.as_cargo_opt();
-		let command = self.policy.command_discriminant();
+		let policy =
+			self.policy.clone().with_features_supported_by(self.ws.as_chart(),);
+		let straight_cmd = policy.as_cargo_opt();
+		let command = policy.command_discriminant();
 		let target = self.target_policy().as_cargo_opt();
 		let build_std = self.build_std_policies().as_cargo_opt();
 		let build_std_features =
