@@ -1,13 +1,12 @@
 use {
 	crate::{
-		CliCommand, CliCommandDiscriminants, FixArgs, Policy,
+		CliCommandDiscriminants, Policy,
 		decl_manage::crate_::{
 			Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
+			PoisonGirlCrateChart,
 		},
 	},
-	poison_girl_dev_error::{
-		PointerOperationFailed, PoisonGirlB, ReShape, X, poison_girl_err,
-	},
+	poison_girl_dev_error::{PoisonGirlB, X},
 };
 
 pub trait Workspace: WorkspaceAction + WorkspaceSurvey
@@ -63,10 +62,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		at: impl CrateCalled,
 	) -> PoisonGirlB<(),>
 	where
-		Self: WorkspaceSurvey,
-	{
-		self.cargo_xxx_at_with(cmd, at, &Policy::default(),)
-	}
+		Self: WorkspaceSurvey;
 
 	// actions for specific package with specific options
 
@@ -103,7 +99,8 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		self.cargo_xxx_at_with(CliCommandDiscriminants::Run, at, opt,)
 	}
 
-	/// TODO: support kernel/loader check
+	/// Kernel and loader use custom targets for production code, but their
+	/// unit tests need the host target because they depend on `std`.
 	fn clippy_at_with(
 		&self,
 		at: impl CrateCalled,
@@ -112,6 +109,24 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where
 		Self: WorkspaceSurvey,
 	{
+		let chart = PoisonGirlCrateChart::from(at.path_buf(),);
+		if chart.uses_custom_runtime() && opt.clippy_lints_all_targets() {
+			let custom_lib = opt.clone().with_clippy_custom_target_lib()?;
+			self.cargo_xxx_at_with(
+				CliCommandDiscriminants::Clippy,
+				at.clone(),
+				&custom_lib,
+			)?;
+
+			let host_tests = opt.clone().with_clippy_host_tests()?;
+			self.cargo_xxx_at_with(
+				CliCommandDiscriminants::Clippy,
+				at,
+				&host_tests,
+			)?;
+			return X((),);
+		}
+
 		self.cargo_xxx_at_with(CliCommandDiscriminants::Clippy, at, opt,)
 	}
 
@@ -123,10 +138,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where
 		Self: WorkspaceSurvey,
 	{
-		let opt = opt
-			.clone()
-			.with_command(CliCommand::Fix(FixArgs::allow_dirty_and_staged(),),);
-		self.cargo_xxx_at_with(CliCommandDiscriminants::Fix, at, &opt,)
+		self.cargo_xxx_at_with(CliCommandDiscriminants::Fix, at, opt,)
 	}
 
 	fn cargo_xxx_at_with(
@@ -136,17 +148,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	where
-		Self: WorkspaceSurvey,
-	{
-		let current = self.whoami();
-		//  this operation is safe due to `&self` is valid
-		let self_mut = unsafe { (self as *const Self).cast_mut().as_mut() }
-			.reshape(poison_girl_err!(PointerOperationFailed),)?;
-		self_mut.land_on(at,)?;
-		self_mut.cargo_xxx_with(cmd, opt,)?;
-		self_mut.land_on(current,)?;
-		X((),)
-	}
+		Self: WorkspaceSurvey;
 }
 
 pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey

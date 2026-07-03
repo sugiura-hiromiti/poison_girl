@@ -274,6 +274,15 @@ impl From<InvalidMetadataSchema,> for PoisonGirlError
 	}
 }
 
+impl From<InvalidPolicy,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: InvalidPolicy,) -> Self
+	{
+		Self { loc: Location::caller(), src: DevError::InvalidPolicy(value,), }
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
@@ -299,6 +308,7 @@ enum DevError
 	PointerOperationFailed(PointerOperationFailed,),
 	StrumError(strum::ParseError,),
 	InvalidMetadataSchema(InvalidMetadataSchema,),
+	InvalidPolicy(InvalidPolicy,),
 }
 
 #[derive(Debug,)]
@@ -359,6 +369,9 @@ pub struct PointerOperationFailed;
 
 #[derive(Debug,)]
 pub struct InvalidMetadataSchema;
+
+#[derive(Debug,)]
+pub struct InvalidPolicy;
 
 #[macro_export]
 macro_rules! poison_girl_err {
