@@ -196,6 +196,10 @@ impl BuildStdPoliyResolver for PoisonGirlCargoInterface
 	{
 		let command = self.policy.command_discriminant();
 		let chart = self.ws.as_chart();
+		let uses_custom_target = command == CliCommandDiscriminants::Build
+			|| command == CliCommandDiscriminants::Fix
+			|| (command == CliCommandDiscriminants::Clippy
+				&& !self.policy.clippy_uses_host_target());
 
 		// TODO: avoid hardcoding crate chart. Instead, consider alternative
 		// solutions below.
@@ -203,9 +207,7 @@ impl BuildStdPoliyResolver for PoisonGirlCargoInterface
 		//    requires unstable options
 		// 2. move responsibility of building `build_std_policy` to policy
 		//    definition
-		let policies = if command == CliCommandDiscriminants::Build
-			|| command == CliCommandDiscriminants::Clippy
-		{
+		let policies = if uses_custom_target {
 			if *chart == PoisonGirlCrateChart::KERNEL {
 				vec![BuildStdPolicy::Core]
 			} else if *chart == PoisonGirlCrateChart::LOADER {
@@ -230,9 +232,11 @@ impl BuildStdFeaturesPolicyResolver for PoisonGirlCargoInterface
 	{
 		let command = self.policy.command_discriminant();
 		let chart = self.ws.as_chart();
-		let policies = if command == CliCommandDiscriminants::Build
-			|| command == CliCommandDiscriminants::Clippy
-		{
+		let uses_custom_target = command == CliCommandDiscriminants::Build
+			|| command == CliCommandDiscriminants::Fix
+			|| (command == CliCommandDiscriminants::Clippy
+				&& !self.policy.clippy_uses_host_target());
+		let policies = if uses_custom_target {
 			if *chart == PoisonGirlCrateChart::KERNEL
 				|| *chart == PoisonGirlCrateChart::LOADER
 			{
@@ -253,7 +257,9 @@ impl TargetPolicyResolver for PoisonGirlCargoInterface
 	{
 		let arch = self.policy.arch();
 
-		if self.policy.command_discriminant() == CliCommandDiscriminants::Test {
+		if self.policy.command_discriminant() == CliCommandDiscriminants::Test
+			|| self.policy.clippy_uses_host_target()
+		{
 			return TargetPolicy::new(arch, Runtime::Host,);
 		}
 
@@ -308,6 +314,68 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 			.collect();
 
 		X(opts,)
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+	};
+
+	#[test]
+	fn clippy_custom_target_lib_for_loader_uses_uefi_build_std()
+	-> PoisonGirlTestB
+	{
+		let policy = Policy::from_cmd(CliCommandDiscriminants::Clippy,)
+			.with_clippy_custom_target_lib()?;
+		let interface = PoisonGirlCargoInterface::new(
+			PoisonGirlCrateChart::LOADER,
+			policy,
+		);
+
+		let args = interface.as_cargo_opt()?;
+
+		assert!(args.iter().any(|arg| arg == "--lib",));
+		assert!(!args.iter().any(|arg| arg == "--all-targets",));
+		assert!(args.iter().any(|arg| arg == "--target",));
+		assert!(args.iter().any(|arg| arg == "aarch64-unknown-uefi",));
+		assert!(args.iter().any(|arg| {
+			arg.starts_with("build-std=",)
+				&& arg.contains("core",)
+				&& arg.contains("alloc",)
+				&& arg.contains("compiler_builtins",)
+		},));
+		assert!(
+			args.iter().any(|arg| {
+				arg == "build-std-features=compiler-builtins-mem"
+			},)
+		);
+		success!()
+	}
+
+	#[test]
+	fn clippy_host_tests_for_loader_do_not_use_custom_target() -> PoisonGirlTestB
+	{
+		let policy = Policy::from_cmd(CliCommandDiscriminants::Clippy,)
+			.with_clippy_host_tests()?;
+		let interface = PoisonGirlCargoInterface::new(
+			PoisonGirlCrateChart::LOADER,
+			policy,
+		);
+
+		let args = interface.as_cargo_opt()?;
+
+		assert!(args.iter().any(|arg| arg == "--tests",));
+		assert!(!args.iter().any(|arg| arg == "--all-targets",));
+		assert!(!args.iter().any(|arg| arg == "--target",));
+		assert!(!args.iter().any(|arg| arg.starts_with("build-std=",),));
+		assert!(
+			!args.iter().any(|arg| arg.starts_with("build-std-features=",),)
+		);
+		success!()
 	}
 }
 

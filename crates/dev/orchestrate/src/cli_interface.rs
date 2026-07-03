@@ -91,6 +91,44 @@ impl Policy
 		self
 	}
 
+	pub fn clippy_lints_all_targets(&self,) -> bool
+	{
+		let CliCommand::Clippy(args,) = self.command() else {
+			return false;
+		};
+
+		args.lints_all_targets()
+	}
+
+	pub fn with_clippy_custom_target_lib(mut self,) -> PoisonGirlB<Self,>
+	{
+		let CliCommand::Clippy(args,) = self.command else {
+			return Y(poison_girl_err!(InvalidPolicy),);
+		};
+
+		self.command = CliCommand::Clippy(args.with_custom_target_lib(),);
+		X(self,)
+	}
+
+	pub fn with_clippy_host_tests(mut self,) -> PoisonGirlB<Self,>
+	{
+		let CliCommand::Clippy(args,) = self.command else {
+			return Y(poison_girl_err!(InvalidPolicy),);
+		};
+
+		self.command = CliCommand::Clippy(args.with_host_tests(),);
+		X(self,)
+	}
+
+	pub(crate) fn clippy_uses_host_target(&self,) -> bool
+	{
+		let CliCommand::Clippy(args,) = self.command() else {
+			return false;
+		};
+
+		args.uses_host_target()
+	}
+
 	pub fn from_cmd(command: CliCommandDiscriminants,) -> Self
 	{
 		Self {
@@ -429,13 +467,55 @@ pub struct ClippyArgs
 	deny_warnings: bool,
 	#[arg(long, default_value_t = true)]
 	all_targets:   bool,
+	#[arg(skip)]
+	target_mode:   ClippyTargetMode,
+}
+
+#[derive(Default, Clone, Copy, Eq, PartialEq,)]
+enum ClippyTargetMode
+{
+	#[default]
+	CargoDefault,
+	CustomTargetLib,
+	HostTests,
 }
 
 impl Default for ClippyArgs
 {
 	fn default() -> Self
 	{
-		Self { deny_warnings: true, all_targets: true, }
+		Self {
+			deny_warnings: true,
+			all_targets:   true,
+			target_mode:   Default::default(),
+		}
+	}
+}
+
+impl ClippyArgs
+{
+	fn with_custom_target_lib(mut self,) -> Self
+	{
+		self.all_targets = false;
+		self.target_mode = ClippyTargetMode::CustomTargetLib;
+		self
+	}
+
+	fn with_host_tests(mut self,) -> Self
+	{
+		self.all_targets = false;
+		self.target_mode = ClippyTargetMode::HostTests;
+		self
+	}
+
+	fn lints_all_targets(&self,) -> bool
+	{
+		self.target_mode == ClippyTargetMode::CargoDefault && self.all_targets
+	}
+
+	fn uses_host_target(&self,) -> bool
+	{
+		self.target_mode == ClippyTargetMode::HostTests
 	}
 }
 
@@ -450,11 +530,17 @@ impl AsCargoOpt for ClippyArgs
 				.into_iter()
 				.map(|s| s.to_string(),)
 				.collect();
-		let cargo_args = if self.all_targets {
-			vec!["--all-targets".to_owned()]
-		} else {
-			vec![]
-		};
+		let cargo_args = match self.target_mode {
+			ClippyTargetMode::CargoDefault if self.all_targets => {
+				vec!["--all-targets"]
+			},
+			ClippyTargetMode::CargoDefault => vec![],
+			ClippyTargetMode::CustomTargetLib => vec!["--lib"],
+			ClippyTargetMode::HostTests => vec!["--tests"],
+		}
+		.into_iter()
+		.map(|s| s.to_owned(),)
+		.collect();
 
 		CargoInvocationArgs { cargo_args, tool_args, }
 	}
@@ -568,6 +654,7 @@ mod tests
 			command: CliCommand::Clippy(ClippyArgs {
 				deny_warnings: true,
 				all_targets:   true,
+				target_mode:   Default::default(),
 			},),
 		};
 
@@ -578,6 +665,46 @@ mod tests
 			vec![
 				"--release".to_string(),
 				"--all-targets".to_string(),
+				"--".to_string(),
+				"-D".to_string(),
+				"warnings".to_string()
+			]
+		);
+		success!()
+	}
+
+	#[test]
+	fn clippy_custom_target_lib_args_are_lib_only() -> PoisonGirlTestB
+	{
+		let policy = Policy::from_cmd(CliCommandDiscriminants::Clippy,)
+			.with_clippy_custom_target_lib()?;
+
+		let opt = policy.as_cargo_opt();
+
+		assert_eq!(
+			opt.into_cargo_args(),
+			vec![
+				"--lib".to_string(),
+				"--".to_string(),
+				"-D".to_string(),
+				"warnings".to_string()
+			]
+		);
+		success!()
+	}
+
+	#[test]
+	fn clippy_host_tests_args_are_tests_only() -> PoisonGirlTestB
+	{
+		let policy = Policy::from_cmd(CliCommandDiscriminants::Clippy,)
+			.with_clippy_host_tests()?;
+
+		let opt = policy.as_cargo_opt();
+
+		assert_eq!(
+			opt.into_cargo_args(),
+			vec![
+				"--tests".to_string(),
 				"--".to_string(),
 				"-D".to_string(),
 				"warnings".to_string()

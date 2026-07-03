@@ -3,9 +3,10 @@ use {
 		CliCommandDiscriminants, Policy,
 		decl_manage::crate_::{
 			Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
+			PoisonGirlCrateChart,
 		},
 	},
-	poison_girl_dev_error::PoisonGirlB,
+	poison_girl_dev_error::{PoisonGirlB, X},
 };
 
 pub trait Workspace: WorkspaceAction + WorkspaceSurvey
@@ -98,7 +99,8 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		self.cargo_xxx_at_with(CliCommandDiscriminants::Run, at, opt,)
 	}
 
-	/// TODO: support kernel/loader check
+	/// Kernel and loader use custom targets for production code, but their
+	/// unit tests need the host target because they depend on `std`.
 	fn clippy_at_with(
 		&self,
 		at: impl CrateCalled,
@@ -107,6 +109,24 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where
 		Self: WorkspaceSurvey,
 	{
+		let chart = PoisonGirlCrateChart::from(at.path_buf(),);
+		if chart.uses_custom_runtime() && opt.clippy_lints_all_targets() {
+			let custom_lib = opt.clone().with_clippy_custom_target_lib()?;
+			self.cargo_xxx_at_with(
+				CliCommandDiscriminants::Clippy,
+				at.clone(),
+				&custom_lib,
+			)?;
+
+			let host_tests = opt.clone().with_clippy_host_tests()?;
+			self.cargo_xxx_at_with(
+				CliCommandDiscriminants::Clippy,
+				at,
+				&host_tests,
+			)?;
+			return X((),);
+		}
+
 		self.cargo_xxx_at_with(CliCommandDiscriminants::Clippy, at, opt,)
 	}
 

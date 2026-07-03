@@ -281,6 +281,11 @@ impl PoisonGirlCrateChart
 	pub const KERNEL: Self = Self::Kernel;
 	pub const LOADER: Self = Self::Loader;
 	pub const XTASK: Self = Self::PoisonGirl;
+
+	pub fn uses_custom_runtime(&self,) -> bool
+	{
+		matches!(self, Self::Kernel | Self::Loader)
+	}
 }
 
 impl PoisonGirlCrate
