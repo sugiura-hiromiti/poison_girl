@@ -1,6 +1,6 @@
 use {
 	crate::{
-		AsCargoOpt, CliCommand, CliCommandDiscriminants, FixArgs, Policy,
+		AsCargoOpt, CliCommandDiscriminants, Policy,
 		decl_manage::{
 			PoisonGirlCargoInterface, PoisonGirlPackageMetadata,
 			package::{Package, PackageAction, PackageInfo, PackageSurvey},
@@ -99,7 +99,7 @@ pub trait CrateAction: CrateInfo
 
 	fn cargo_xxx(&self, cmd: CliCommandDiscriminants,) -> PoisonGirlB<(),>
 	{
-		self.cargo_xxx_with(cmd, &Policy::default(),)
+		self.cargo_xxx_with(cmd, &Policy::from_cmd(cmd,),)
 	}
 
 	// actions for all packages with specific options
@@ -126,10 +126,7 @@ pub trait CrateAction: CrateInfo
 
 	fn fix_with(&self, opt: &Policy,) -> PoisonGirlB<(),>
 	{
-		let opt = opt
-			.clone()
-			.with_command(CliCommand::Fix(FixArgs::allow_dirty_and_staged(),),);
-		self.cargo_xxx_with(CliCommandDiscriminants::Fix, &opt,)
+		self.cargo_xxx_with(CliCommandDiscriminants::Fix, opt,)
 	}
 
 	fn cargo_xxx_with(
@@ -138,19 +135,13 @@ pub trait CrateAction: CrateInfo
 		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	{
-		let command = if opt.command_discriminant() == cmd {
-			opt.command().clone()
-		} else {
-			cmd.default_command()
-		};
-		let policy = opt.clone().with_command(command,);
-
 		let mut cargo = Command::new("cargo",);
-		let cargo = cargo.arg(policy.command().as_ref(),);
+		let cargo = cargo.arg(cmd.as_ref(),);
 
+		let opt = opt.reuse_args(cmd,)?;
 		let interface = PoisonGirlCargoInterface::new(
 			PoisonGirlCrateChart::from(self.path(),),
-			policy,
+			opt,
 		);
 		let opt = interface.as_cargo_opt()?;
 		if !opt.is_empty() {
@@ -394,6 +385,37 @@ impl Workspace for PoisonGirlCrate
 }
 impl WorkspaceAction for PoisonGirlCrate
 {
+	fn cargo_xxx_at(
+		&self,
+		cmd: CliCommandDiscriminants,
+		at: impl CrateCalled,
+	) -> PoisonGirlB<(),>
+	where
+		Self: WorkspaceSurvey,
+	{
+		let target_crate = PoisonGirlCargoInterface {
+			ws:     PoisonGirlCrate::from(at.path_buf(),),
+			policy: Policy::from_cmd(cmd,),
+		};
+		target_crate.run()
+	}
+
+	fn cargo_xxx_at_with(
+		&self,
+		cmd: CliCommandDiscriminants,
+		at: impl CrateCalled,
+		opt: &Policy,
+	) -> PoisonGirlB<(),>
+	where
+		Self: WorkspaceSurvey,
+	{
+		let opt = opt.reuse_args(cmd,)?;
+		let target_crate = PoisonGirlCargoInterface {
+			ws:     PoisonGirlCrate::from(at.path_buf(),),
+			policy: opt.clone(),
+		};
+		target_crate.run()
+	}
 }
 
 impl WorkspaceSurvey for PoisonGirlCrate

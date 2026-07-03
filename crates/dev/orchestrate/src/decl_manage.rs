@@ -2,7 +2,8 @@ use {
 	crate::{
 		AsCargoOpt, CliCommandDiscriminants, CompileOpt, Policy,
 		decl_manage::crate_::{
-			Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
+			Crate, CrateAction, CrateInfo, PoisonGirlCrate,
+			PoisonGirlCrateChart,
 		},
 		policy::{
 			build_artifact_policy::{
@@ -55,6 +56,12 @@ impl PoisonGirlCargoInterface
 	pub fn ws(&self,) -> PoisonGirlCrate
 	{
 		self.ws.clone()
+	}
+
+	pub fn run(&self,) -> PoisonGirlB<(),>
+	{
+		self.ws()
+			.cargo_xxx_with(self.policy().command_discriminant(), self.policy(),)
 	}
 }
 

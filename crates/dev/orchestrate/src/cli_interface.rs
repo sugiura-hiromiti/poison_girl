@@ -2,6 +2,9 @@ use {
 	crate::decl_manage::crate_::PoisonGirlCrateChart,
 	clap::{Parser, Subcommand},
 	poison_girl_dev_cargo::{Arch, BuildMode},
+	poison_girl_dev_error::{
+		InvalidPolicy, PoisonGirlB, X, Y, poison_girl_err,
+	},
 	poison_girl_macro_def_features::features,
 	std::path::PathBuf,
 	strum::IntoDiscriminant,
@@ -86,6 +89,46 @@ impl Policy
 
 		self.global.features = features;
 		self
+	}
+
+	pub fn from_cmd(command: CliCommandDiscriminants,) -> Self
+	{
+		Self {
+			global:  Default::default(),
+			command: CliCommand::from_discriminants(command,),
+		}
+	}
+
+	pub(crate) fn reuse_args(
+		&self,
+		cmd: CliCommandDiscriminants,
+	) -> PoisonGirlB<Self,>
+	{
+		let rslt = if cmd == CliCommandDiscriminants::Build {
+			match self.command().discriminant() {
+				CliCommandDiscriminants::Build => self.clone(),
+				CliCommandDiscriminants::Run => {
+					let Policy { global, command, } = self;
+					let CliCommand::Run(run_args,) = command else {
+						return Y(poison_girl_err!(InvalidPolicy),);
+					};
+
+					Self {
+						global:  global.clone(),
+						command: CliCommand::Build(run_args.build_opts.clone(),),
+					}
+				},
+				_ => return Y(poison_girl_err!(InvalidPolicy),),
+			}
+		} else {
+			if cmd == self.command().discriminant() {
+				self.clone()
+			} else {
+				return Y(poison_girl_err!(InvalidPolicy),);
+			}
+		};
+
+		X(rslt,)
 	}
 }
 
@@ -177,7 +220,6 @@ impl AsCargoOpt for BuildMode
 }
 
 #[derive(Parser, Default, Clone,)]
-// #[command(version, about)]
 pub struct Cli
 {
 	#[command(flatten)]
@@ -288,8 +330,28 @@ pub enum CliCommand
 	Run(RunArgs,),
 	Clippy(ClippyArgs,),
 	Fixture(FixtureArgs,),
-	/// cargo fix
 	Fix(FixArgs,),
+}
+
+impl CliCommand
+{
+	pub fn from_discriminants(cmd: CliCommandDiscriminants,) -> Self
+	{
+		match cmd {
+			CliCommandDiscriminants::Build => {
+				Self::Build(BuildArgs::default(),)
+			},
+			CliCommandDiscriminants::Test => Self::Test(TestArgs::default(),),
+			CliCommandDiscriminants::Run => Self::Run(RunArgs::default(),),
+			CliCommandDiscriminants::Clippy => {
+				Self::Clippy(ClippyArgs::default(),)
+			},
+			CliCommandDiscriminants::Fixture => {
+				Self::Fixture(FixtureArgs::default(),)
+			},
+			CliCommandDiscriminants::Fix => Self::Fix(FixArgs::default(),),
+		}
+	}
 }
 
 impl AsCargoOpt for CliCommand
@@ -305,21 +367,6 @@ impl AsCargoOpt for CliCommand
 			Self::Clippy(args,) => args.as_cargo_opt(),
 			Self::Fixture(args,) => args.as_cargo_opt(),
 			Self::Fix(args,) => args.as_cargo_opt(),
-		}
-	}
-}
-
-impl CliCommandDiscriminants
-{
-	pub fn default_command(self,) -> CliCommand
-	{
-		match self {
-			Self::Build => CliCommand::Build(Default::default(),),
-			Self::Test => CliCommand::Test(Default::default(),),
-			Self::Run => CliCommand::Run(Default::default(),),
-			Self::Clippy => CliCommand::Clippy(Default::default(),),
-			Self::Fixture => CliCommand::Fixture(Default::default(),),
-			Self::Fix => CliCommand::Fix(Default::default(),),
 		}
 	}
 }
@@ -359,7 +406,11 @@ impl AsCargoOpt for TestArgs
 }
 
 #[derive(clap::Args, Default, Clone,)]
-pub struct RunArgs {}
+pub struct RunArgs
+{
+	#[command(flatten)]
+	build_opts: BuildArgs,
+}
 
 impl AsCargoOpt for RunArgs
 {
@@ -371,11 +422,21 @@ impl AsCargoOpt for RunArgs
 	}
 }
 
-#[derive(clap::Args, Default, Clone,)]
+#[derive(clap::Args, Clone,)]
 pub struct ClippyArgs
 {
-	#[arg(long)]
+	#[arg(long, default_value_t = true)]
 	deny_warnings: bool,
+	#[arg(long, default_value_t = true)]
+	all_targets:   bool,
+}
+
+impl Default for ClippyArgs
+{
+	fn default() -> Self
+	{
+		Self { deny_warnings: true, all_targets: true, }
+	}
 }
 
 impl AsCargoOpt for ClippyArgs
@@ -389,7 +450,13 @@ impl AsCargoOpt for ClippyArgs
 				.into_iter()
 				.map(|s| s.to_string(),)
 				.collect();
-		CargoInvocationArgs::from_tool_args(tool_args,)
+		let cargo_args = if self.all_targets {
+			vec!["--all-targets".to_owned()]
+		} else {
+			vec![]
+		};
+
+		CargoInvocationArgs { cargo_args, tool_args, }
 	}
 }
 
@@ -406,18 +473,18 @@ impl AsCargoOpt for FixtureArgs
 	}
 }
 
-#[derive(clap::Args, Default, Clone,)]
+#[derive(clap::Args, Clone,)]
 pub struct FixArgs
 {
-	#[arg(long)]
+	#[arg(long, default_value_t = true)]
 	allow_dirty:  bool,
-	#[arg(long)]
+	#[arg(long, default_value_t = true)]
 	allow_staged: bool,
 }
 
-impl FixArgs
+impl Default for FixArgs
 {
-	pub fn allow_dirty_and_staged() -> Self
+	fn default() -> Self
 	{
 		Self { allow_dirty: true, allow_staged: true, }
 	}
@@ -470,18 +537,6 @@ mod tests
 	}
 
 	#[test]
-	fn policy_with_command_replaces_command() -> PoisonGirlTestB
-	{
-		let policy = Policy::default()
-			.with_command(CliCommand::Fix(FixArgs::allow_dirty_and_staged(),),);
-
-		assert_eq!(policy.command_discriminant(), CliCommandDiscriminants::Fix);
-		assert!(policy.arch().is_aarch_64());
-		assert!(policy.build_mode().is_debug());
-		success!()
-	}
-
-	#[test]
 	fn policy_as_cargo_opt_does_not_emit_subcommand() -> PoisonGirlTestB
 	{
 		let policy = Policy {
@@ -510,7 +565,10 @@ mod tests
 				build_mode: BuildMode::Release,
 				..Default::default()
 			},
-			command: CliCommand::Clippy(ClippyArgs { deny_warnings: true, },),
+			command: CliCommand::Clippy(ClippyArgs {
+				deny_warnings: true,
+				all_targets:   true,
+			},),
 		};
 
 		let opt = policy.as_cargo_opt();
@@ -519,6 +577,7 @@ mod tests
 			opt.into_cargo_args(),
 			vec![
 				"--release".to_string(),
+				"--all-targets".to_string(),
 				"--".to_string(),
 				"-D".to_string(),
 				"warnings".to_string()

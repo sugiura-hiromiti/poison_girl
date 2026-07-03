@@ -146,6 +146,9 @@ impl Xtask
 	fn fix(&self,) -> PoisonGirlB<(),>
 	{
 		let args = self.interface.policy();
-		self.ws().fix_at_with(PoisonGirlCrateChart::XTASK, args,)
+		PoisonGirlCrateChart::all_variants()
+			.into_iter()
+			.try_for_each(|at| self.ws().fix_at_with(at, args,),)?;
+		X((),)
 	}
 }

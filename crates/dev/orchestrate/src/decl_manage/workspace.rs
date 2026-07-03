@@ -1,13 +1,11 @@
 use {
 	crate::{
-		CliCommand, CliCommandDiscriminants, FixArgs, Policy,
+		CliCommandDiscriminants, Policy,
 		decl_manage::crate_::{
 			Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
 		},
 	},
-	poison_girl_dev_error::{
-		PointerOperationFailed, PoisonGirlB, ReShape, X, poison_girl_err,
-	},
+	poison_girl_dev_error::PoisonGirlB,
 };
 
 pub trait Workspace: WorkspaceAction + WorkspaceSurvey
@@ -63,10 +61,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		at: impl CrateCalled,
 	) -> PoisonGirlB<(),>
 	where
-		Self: WorkspaceSurvey,
-	{
-		self.cargo_xxx_at_with(cmd, at, &Policy::default(),)
-	}
+		Self: WorkspaceSurvey;
 
 	// actions for specific package with specific options
 
@@ -123,10 +118,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where
 		Self: WorkspaceSurvey,
 	{
-		let opt = opt
-			.clone()
-			.with_command(CliCommand::Fix(FixArgs::allow_dirty_and_staged(),),);
-		self.cargo_xxx_at_with(CliCommandDiscriminants::Fix, at, &opt,)
+		self.cargo_xxx_at_with(CliCommandDiscriminants::Fix, at, opt,)
 	}
 
 	fn cargo_xxx_at_with(
@@ -136,17 +128,7 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 		opt: &Policy,
 	) -> PoisonGirlB<(),>
 	where
-		Self: WorkspaceSurvey,
-	{
-		let current = self.whoami();
-		//  this operation is safe due to `&self` is valid
-		let self_mut = unsafe { (self as *const Self).cast_mut().as_mut() }
-			.reshape(poison_girl_err!(PointerOperationFailed),)?;
-		self_mut.land_on(at,)?;
-		self_mut.cargo_xxx_with(cmd, opt,)?;
-		self_mut.land_on(current,)?;
-		X((),)
-	}
+		Self: WorkspaceSurvey;
 }
 
 pub trait WorkspaceSurvey: WorkspaceInfo + CrateSurvey
