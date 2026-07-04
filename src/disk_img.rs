@@ -31,14 +31,23 @@ struct DiskImageBuilder
 	/// Keep in mind that this is not the name of build artifact of loader
 	/// crate.
 	boot_loader_file_name: String,
+	options:               DiskImageOptions,
 }
 
-impl DiskImageBuilder
+#[derive(Clone, Copy,)]
+struct DiskImageOptions
 {
-	/// boot loaderが置かれる(fat内の)パス
-	const BOOT_DIR: &str = "efi/boot";
+	size_bytes:          u64,
+	fat_type:            FatTypeSelection,
+	fat_copies:          u8,
+	sectors_per_cluster: Option<u8,>,
+	volume_label:        &'static str,
+}
+
+impl DiskImageOptions
+{
 	/// 200MiB
-	const DISK_IMG_SIZE: u64 = 200 * 1024 * 1024;
+	const BOOT_IMAGE_SIZE: u64 = 200 * 1024 * 1024;
 	/// FATテーブルの個数を指定
 	/// ファイルのクラスタ連鎖情報を持つ領域がfile allocation table,
 	/// FATテーブルと呼ばれている 冗長性のため複数である事が多く、デフォルトは2
@@ -50,19 +59,53 @@ impl DiskImageBuilder
 	/// 値は2の羃である必要がある
 	/// クラスタサイズ = 論理セクタサイズ * クラスタ毎のセクタ数
 	/// なので、セクタ数を増やせばクラスタのサイズが大きくなる
-	/// クラスタを大きくすると:
-	/// - fatテーブルが小さくなる
-	/// - 大きいファイル中心の時に効率が良い
-	///
-	/// クラスタを小さくすると:
-	/// - fatテーブルが大きくなる
-	/// - 小さいファイルの無駄が減る
-	/// - fat種別との兼ね合いで作成できない場合がある
-	///
 	/// NOTE: 指定しない場合は適切な値が自動選択される
 	const SECTORS_PER_CLUSTER: u8 = 2;
 	/// ラベルは最大11文字
 	const VOLUME_LABEL: &str = check_volume_label("POISON GIRL",);
+
+	fn default_boot() -> Self
+	{
+		Self {
+			size_bytes:          Self::BOOT_IMAGE_SIZE,
+			fat_type:            FatTypeSelection::Fat32,
+			fat_copies:          Self::FAT_COPIES,
+			sectors_per_cluster: Some(Self::SECTORS_PER_CLUSTER,),
+			volume_label:        Self::VOLUME_LABEL,
+		}
+	}
+
+	#[cfg(test)]
+	fn small_test_image() -> Self
+	{
+		Self {
+			size_bytes:          4 * 1024 * 1024,
+			fat_type:            FatTypeSelection::Fat16,
+			fat_copies:          Self::FAT_COPIES,
+			sectors_per_cluster: Some(1,),
+			volume_label:        Self::VOLUME_LABEL,
+		}
+	}
+
+	fn format_options(&self,) -> FormatOptions
+	{
+		let options = FormatOptions::new(self.size_bytes,)
+			.with_fat_type(self.fat_type,)
+			.with_label(self.volume_label,)
+			.with_fat_copies(self.fat_copies,);
+
+		if let Some(sectors_per_cluster,) = self.sectors_per_cluster {
+			options.with_sectors_per_cluster(sectors_per_cluster,)
+		} else {
+			options
+		}
+	}
+}
+
+impl DiskImageBuilder
+{
+	/// boot loaderが置かれる(fat内の)パス
+	const BOOT_DIR: &str = "efi/boot";
 
 	pub fn new(
 		disk_img: impl Into<PathBuf,>,
@@ -70,10 +113,26 @@ impl DiskImageBuilder
 		boot_loader_file_name: impl Into<String,>,
 	) -> Self
 	{
+		Self::with_options(
+			disk_img,
+			boot_loader,
+			boot_loader_file_name,
+			DiskImageOptions::default_boot(),
+		)
+	}
+
+	fn with_options(
+		disk_img: impl Into<PathBuf,>,
+		boot_loader: impl Into<PathBuf,>,
+		boot_loader_file_name: impl Into<String,>,
+		options: DiskImageOptions,
+	) -> Self
+	{
 		Self {
-			disk_img:              disk_img.into(),
-			boot_loader:           boot_loader.into(),
+			disk_img: disk_img.into(),
+			boot_loader: boot_loader.into(),
 			boot_loader_file_name: boot_loader_file_name.into(),
+			options,
 		}
 	}
 
@@ -102,18 +161,14 @@ impl DiskImageBuilder
 			.create(true,)
 			.truncate(true,)
 			.open(&self.disk_img,)?;
-		disk_img_file.set_len(Self::DISK_IMG_SIZE,)?;
+		disk_img_file.set_len(self.options.size_bytes,)?;
 
 		X(disk_img_file,)
 	}
 
 	fn place_boot_loader(&self, disk_img_file: File,) -> PoisonGirlB<(),>
 	{
-		let options = FormatOptions::new(Self::DISK_IMG_SIZE,)
-			.with_fat_type(FatTypeSelection::Fat32,)
-			.with_label(Self::VOLUME_LABEL,)
-			.with_sectors_per_cluster(Self::SECTORS_PER_CLUSTER,)
-			.with_fat_copies(Self::FAT_COPIES,);
+		let options = self.options.format_options();
 		let fat_hndlr = FatVolumeFormatter::format(disk_img_file, options,)?;
 		let fat_root = fat_hndlr.root_dir();
 
@@ -155,6 +210,7 @@ impl DiskImageBuilder
 			let written = boot_loader_writer.write(&buf[written_size..],)?;
 			written_size += written;
 		}
+		boot_loader_writer.finish()?;
 
 		X((),)
 	}
@@ -207,5 +263,45 @@ impl Xtask
 		let path = self.ws().path().join("target",).join(XTASK_ASSETS_DIR,);
 		std::fs::create_dir_all(&path,)?;
 		X(path,)
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		hadris_fat::FatFs,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+	};
+
+	#[test]
+	fn disk_img_builder_creates_bootable_fat_image() -> PoisonGirlTestB
+	{
+		let tmp = tempfile::tempdir()?;
+		let disk_img = tmp.path().join("disk.img",);
+		let boot_loader = tmp.path().join("loader.efi",);
+		let boot_loader_bytes = b"fake uefi loader";
+		std::fs::write(&boot_loader, boot_loader_bytes,)?;
+		let options = DiskImageOptions::small_test_image();
+
+		DiskImageBuilder::with_options(
+			&disk_img,
+			&boot_loader,
+			"BOOTAA64.EFI",
+			options,
+		)
+		.build_boot_disk_img()?;
+
+		assert_eq!(std::fs::metadata(&disk_img,)?.len(), options.size_bytes);
+
+		let disk_img_file = std::fs::File::open(&disk_img,)?;
+		let fat = FatFs::open(disk_img_file,)?;
+		let mut boot_loader_reader =
+			fat.open_file_path("efi/boot/BOOTAA64.EFI",)?;
+		let actual = boot_loader_reader.read_to_vec()?;
+
+		assert_eq!(actual, boot_loader_bytes);
+		success!()
 	}
 }

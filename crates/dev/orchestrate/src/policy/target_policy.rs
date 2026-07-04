@@ -2,11 +2,6 @@ use poison_girl_dev_cargo::{Arch, Runtime};
 
 use crate::{AsCargoOpt, cli_interface::CargoInvocationArgs};
 
-pub trait TargetPolicyResolver
-{
-	fn target_policy(&self,) -> TargetPolicy;
-}
-
 pub struct TargetPolicy
 {
 	arch:    Arch,

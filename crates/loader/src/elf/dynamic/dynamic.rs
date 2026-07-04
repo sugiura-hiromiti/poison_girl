@@ -11,7 +11,9 @@ use {
 	},
 	alloc::{string::String, vec::Vec},
 	core::cmp,
-	poison_girl_no_std_error::{PoisonGirlB, X},
+	poison_girl_no_std_error::{
+		ElfParseError, ElfParseStage, PoisonGirlB, X, Y, poison_girl_err,
+	},
 };
 
 pub mod dynamic_consts;
@@ -43,11 +45,26 @@ impl Dynamic
 			if program_header.ty == ProgramHeaderType::Dynamic {
 				let offset = program_header.offset as usize;
 				let file_size = program_header.file_size as usize;
-				let bytes = if file_size > 0 {
-					&binary[offset..offset + file_size]
-				} else {
-					&[]
+				let Some(end,) = offset.checked_add(file_size,) else {
+					return Y(poison_girl_err!(ElfParseError::SizeOverflow {
+						stage:    ElfParseStage::Dynamic,
+						name:     0,
+						expected: binary.len() as u64,
+						base:     offset as u64,
+						size:     file_size as u64,
+					}),);
 				};
+				if end > binary.len() {
+					return Y(poison_girl_err!(ElfParseError::SizeOverflow {
+						stage:    ElfParseStage::Dynamic,
+						name:     0,
+						expected: binary.len() as u64,
+						base:     offset as u64,
+						size:     file_size as u64,
+					}),);
+				}
+				let bytes =
+					if file_size > 0 { &binary[offset..end] } else { &[] };
 				let size = Dyn::size_of(&ElfContext {
 					container: ElfContainerSize::Big,
 					..Default::default()
@@ -82,8 +99,7 @@ impl Dynamic
 			return Vec::new();
 		};
 
-		let count =
-			inner.dyns.len().min(inner.info.version_need_count as usize,);
+		let count = inner.dyns.len().min(inner.info.required_shared_lib_count,);
 		let mut needed = Vec::with_capacity(count,);
 		for dynamic in &inner.dyns {
 			if dynamic.tag == Self::DT_NEEDED
@@ -104,9 +120,10 @@ impl Dynamic
 		inner.info.extended_flags & Self::DF_EXTEND_PIE != 0
 	}
 
-	#[expect(dead_code)]
-	fn dynamic_string_table(&self, binary: &[u8],)
-	-> PoisonGirlB<StringTable,>
+	pub(in crate::elf) fn dynamic_string_table(
+		&self,
+		binary: &[u8],
+	) -> PoisonGirlB<StringTable,>
 	{
 		let Some(ref inner,) = self.0 else {
 			return X(Self::DYNAMIC_STRING_TABLE,);
@@ -140,9 +157,7 @@ impl Dynamic
 		dyn_str_table: &StringTable,
 	) -> Vec<String,>
 	{
-		if let Some(ref inner,) = self.0
-			&& inner.info.version_need_count > 0
-		{
+		if self.0.is_some() {
 			self.get_libraries(dyn_str_table,)
 		} else {
 			Self::LIBRARIES
@@ -302,5 +317,79 @@ impl Dynamic
 			procedure_linkage_table_relocation,
 			dynamic_symbol_table,
 		),)
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		crate::elf::{
+			program_header::{ProgramHeader, ProgramHeaderType},
+			test_helpers,
+		},
+		alloc::vec,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::{
+			ElfParseError, ElfParseStage, PoisonGirlErrorKind, Y,
+		},
+	};
+
+	fn dynamic_program_header(offset: u64, file_size: u64,) -> ProgramHeader
+	{
+		ProgramHeader {
+			ty: ProgramHeaderType::Dynamic,
+			flags: 0,
+			offset,
+			virtual_address: 0,
+			physical_address: 0,
+			file_size,
+			memory_size: file_size,
+			align: 8,
+		}
+	}
+
+	#[test]
+	fn dt_null_stops_dynamic_parsing() -> PoisonGirlTestB
+	{
+		let mut binary = test_helpers::dynamic_entry(Dynamic::DT_NULL, 0,);
+		binary.extend_from_slice(&test_helpers::dynamic_entry(
+			Dynamic::DT_STRTAB,
+			0xdead,
+		),);
+		let program_headers =
+			vec![dynamic_program_header(0, binary.len() as u64,)];
+
+		let dynamic = Dynamic::parse(&binary, &program_headers,)?;
+		let Some(inner,) = dynamic.as_ref().as_ref() else {
+			return PoisonGirlTestB::y("dynamic section was not parsed",);
+		};
+
+		assert_eq!(inner.dyns.len(), 1);
+		assert_eq!(inner.dyns[0].tag, Dynamic::DT_NULL);
+		success!()
+	}
+
+	#[test]
+	fn dynamic_segment_outside_binary_returns_error()
+	{
+		let binary = vec![0; 16];
+		let program_headers = vec![dynamic_program_header(8, 16,)];
+
+		let Y(err,) = Dynamic::parse(&binary, &program_headers,) else {
+			panic!("dynamic parser accepted segment outside binary");
+		};
+
+		assert!(matches!(
+			err.kind(),
+			PoisonGirlErrorKind::ElfParse(ElfParseError::SizeOverflow {
+				stage: ElfParseStage::Dynamic,
+				expected: 16,
+				base: 8,
+				size: 16,
+				..
+			})
+		));
 	}
 }

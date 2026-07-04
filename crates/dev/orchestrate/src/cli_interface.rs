@@ -559,21 +559,13 @@ impl AsCargoOpt for FixtureArgs
 	}
 }
 
-#[derive(clap::Args, Clone,)]
+#[derive(clap::Args, Default, Clone,)]
 pub struct FixArgs
 {
-	#[arg(long, default_value_t = true)]
+	#[arg(long)]
 	allow_dirty:  bool,
-	#[arg(long, default_value_t = true)]
+	#[arg(long)]
 	allow_staged: bool,
-}
-
-impl Default for FixArgs
-{
-	fn default() -> Self
-	{
-		Self { allow_dirty: true, allow_staged: true, }
-	}
 }
 
 impl AsCargoOpt for FixArgs
@@ -602,6 +594,7 @@ mod tests
 {
 	use {
 		super::*,
+		poison_girl_dev_error::Y,
 		poison_girl_dev_test::{PoisonGirlTestB, success},
 	};
 
@@ -674,6 +667,37 @@ mod tests
 	}
 
 	#[test]
+	fn fix_args_default_does_not_allow_dirty_or_staged() -> PoisonGirlTestB
+	{
+		let policy = Policy::from_cmd(CliCommandDiscriminants::Fix,);
+
+		let opt = policy.as_cargo_opt();
+
+		assert_eq!(opt.into_cargo_args(), Vec::<String,>::new());
+		success!()
+	}
+
+	#[test]
+	fn fix_cli_emits_explicit_allow_flags() -> PoisonGirlTestB
+	{
+		let cli = Cli::parse_from([
+			"poison-girl",
+			"fix",
+			"--allow-dirty",
+			"--allow-staged",
+		],);
+		let policy = Policy::from_cli(cli,);
+
+		let opt = policy.as_cargo_opt();
+
+		assert_eq!(
+			opt.into_cargo_args(),
+			vec!["--allow-dirty".to_string(), "--allow-staged".to_string()]
+		);
+		success!()
+	}
+
+	#[test]
 	fn clippy_custom_target_lib_args_are_lib_only() -> PoisonGirlTestB
 	{
 		let policy = Policy::from_cmd(CliCommandDiscriminants::Clippy,)
@@ -709,6 +733,59 @@ mod tests
 				"-D".to_string(),
 				"warnings".to_string()
 			]
+		);
+		success!()
+	}
+
+	#[test]
+	fn reuse_args_accepts_run_policy_for_build() -> PoisonGirlTestB
+	{
+		let policy = Policy {
+			command: CliCommand::Run(RunArgs::default(),),
+			..Default::default()
+		};
+
+		let reused = policy.reuse_args(CliCommandDiscriminants::Build,)?;
+
+		assert_eq!(
+			reused.command_discriminant(),
+			CliCommandDiscriminants::Build
+		);
+		success!()
+	}
+
+	#[test]
+	fn reuse_args_rejects_unrelated_command_policy()
+	{
+		let policy = Policy::from_cmd(CliCommandDiscriminants::Test,);
+
+		assert!(matches!(
+			policy.reuse_args(CliCommandDiscriminants::Build,),
+			Y(_)
+		));
+	}
+
+	#[test]
+	fn cli_parse_applies_global_flags_and_subcommand() -> PoisonGirlTestB
+	{
+		let cli = Cli::parse_from([
+			"poison-girl",
+			"--arch",
+			"riscv64",
+			"--locked",
+			"-m",
+			"release",
+			"build",
+		],);
+
+		let policy = Policy::from_cli(cli,);
+
+		assert!(policy.arch().is_riscv_64());
+		assert!(policy.locked());
+		assert!(policy.build_mode().is_release());
+		assert_eq!(
+			policy.command_discriminant(),
+			CliCommandDiscriminants::Build
 		);
 		success!()
 	}

@@ -143,7 +143,7 @@ impl DynamicInfo
 			Dynamic::DT_FINI_ARRAYSZ => {
 				self.finalization_fn_array_len = dynamic.val as usize
 			},
-			Dynamic::DT_NEEDED => self.version_need_count += 1,
+			Dynamic::DT_NEEDED => self.required_shared_lib_count += 1,
 			Dynamic::DT_FLAGS => self.flags = dynamic.val,
 			Dynamic::DT_FLAGS_1 => self.extended_flags = dynamic.val,
 			Dynamic::DT_SONAME => {
@@ -174,8 +174,10 @@ fn required_vm_offset(
 mod tests
 {
 	use {
-		super::*, crate::elf::program_header::ProgramHeaderType,
-		poison_girl_no_std_error::Y,
+		super::*,
+		crate::elf::program_header::ProgramHeaderType,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::{ElfParseError, PoisonGirlErrorKind, Y},
 	};
 
 	#[test]
@@ -194,6 +196,61 @@ mod tests
 		},];
 		let dynamic = Dyn { tag: Dynamic::DT_STRTAB, val: 0x3000, };
 
-		assert!(matches!(info.update(&phdrs, &dynamic,), Y(_)));
+		let Y(err,) = info.update(&phdrs, &dynamic,) else {
+			panic!("dynamic info accepted an unmapped dynamic address");
+		};
+
+		assert!(matches!(
+			err.kind(),
+			PoisonGirlErrorKind::ElfParse(
+				ElfParseError::InvalidDynamicAddress {
+					tag:     Dynamic::DT_STRTAB,
+					address: 0x3000,
+				}
+			)
+		));
+	}
+
+	#[test]
+	fn update_maps_dynamic_addresses_and_retains_counts_flags()
+	-> PoisonGirlTestB
+	{
+		let mut info = DynamicInfo::default();
+		let phdrs = [ProgramHeader {
+			ty:               ProgramHeaderType::Load,
+			flags:            0,
+			offset:           0x40,
+			virtual_address:  0x1000,
+			physical_address: 0x1000,
+			file_size:        0x400,
+			memory_size:      0x400,
+			align:            0,
+		},];
+
+		for dynamic in [
+			Dyn { tag: Dynamic::DT_STRTAB, val: 0x1100, },
+			Dyn { tag: Dynamic::DT_STRSZ, val: 0x30, },
+			Dyn { tag: Dynamic::DT_SYMTAB, val: 0x1200, },
+			Dyn { tag: Dynamic::DT_SYMENT, val: 0x18, },
+			Dyn { tag: Dynamic::DT_VERNEEDNUM, val: 7, },
+			Dyn { tag: Dynamic::DT_NEEDED, val: 0x01, },
+			Dyn { tag: Dynamic::DT_NEEDED, val: 0x10, },
+			Dyn { tag: Dynamic::DT_SONAME, val: 0x20, },
+			Dyn { tag: Dynamic::DT_FLAGS_1, val: Dynamic::DF_EXTEND_PIE, },
+			Dyn { tag: Dynamic::DT_TEXTREL, val: 0, },
+		] {
+			info.update(&phdrs, &dynamic,)?;
+		}
+
+		assert_eq!(info.string_table_address, 0x140);
+		assert_eq!(info.string_table_size, 0x30);
+		assert_eq!(info.symbol_table, 0x240);
+		assert_eq!(info.symbol_table_entry, 0x18);
+		assert_eq!(info.version_need_count, 7);
+		assert_eq!(info.required_shared_lib_count, 2);
+		assert_eq!(info.shared_object_name_offset, 0x20);
+		assert_eq!(info.extended_flags, Dynamic::DF_EXTEND_PIE);
+		assert!(info.text_section_relocation);
+		success!()
 	}
 }

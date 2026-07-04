@@ -2,11 +2,6 @@ use std::collections::HashSet;
 
 use crate::{AsCargoOpt, cli_interface::CargoInvocationArgs};
 
-pub trait BuildStdPoliyResolver
-{
-	fn build_std_policies(&self,) -> BuildStdPolicies;
-}
-
 pub struct BuildStdPolicies(HashSet<BuildStdPolicy,>,);
 
 impl AsCargoOpt for BuildStdPolicies

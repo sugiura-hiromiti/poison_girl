@@ -185,3 +185,71 @@ fn block_device(disk_img: &Path,) -> Vec<String,>
 		"virtio-blk-pci,drive=hd0".to_string(),
 	]
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {super::*, std::path::Path};
+
+	#[test]
+	fn basic_args_are_arch_specific()
+	{
+		let aarch64 = basic_args(Arch::Aarch64,);
+		assert!(
+			aarch64
+				.windows(2,)
+				.any(|args| args[0] == "-cpu" && args[1] == "cortex-a72")
+		);
+		assert!(
+			aarch64
+				.windows(2,)
+				.any(|args| args[0] == "-machine" && args[1] == "virt")
+		);
+
+		let riscv64 = basic_args(Arch::Riscv64,);
+		assert!(
+			riscv64
+				.windows(2,)
+				.any(|args| args[0] == "-cpu" && args[1] == "rv64")
+		);
+		assert!(
+			riscv64
+				.windows(2,)
+				.any(|args| args[0] == "-machine" && args[1] == "virt")
+		);
+	}
+
+	#[test]
+	fn pflash_args_preserve_mode_and_path()
+	{
+		let readonly = persistent_flash_memory_args(
+			Path::new("/firmware/code.fd",),
+			PflashMode::ReadOnly,
+		);
+		let readwrite = persistent_flash_memory_args(
+			Path::new("/firmware/vars.fd",),
+			PflashMode::ReadWrite,
+		);
+
+		assert_eq!(readonly[0], "-drive");
+		assert!(readonly[1].contains("readonly=on",));
+		assert!(readonly[1].contains("file=/firmware/code.fd",));
+
+		assert_eq!(readwrite[0], "-drive");
+		assert!(readwrite[1].contains("readonly=off",));
+		assert!(readwrite[1].contains("file=/firmware/vars.fd",));
+	}
+
+	#[test]
+	fn block_device_wires_disk_image_to_virtio_drive()
+	{
+		let args = block_device(Path::new("/tmp/disk.img",),);
+
+		assert!(args.iter().any(|arg| arg == "-monitor",));
+		assert!(args.iter().any(|arg| arg == "stdio",));
+		assert!(args.iter().any(|arg| {
+			arg == "file=/tmp/disk.img,format=raw,if=none,id=hd0"
+		},));
+		assert!(args.iter().any(|arg| arg == "virtio-blk-pci,drive=hd0",));
+	}
+}

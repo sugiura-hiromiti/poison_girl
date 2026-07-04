@@ -2,36 +2,27 @@ use {
 	crate::{
 		AsCargoOpt, CliCommandDiscriminants, CompileOpt, Policy,
 		decl_manage::crate_::{
-			Crate, CrateAction, CrateInfo, PoisonGirlCrate,
-			PoisonGirlCrateChart,
+			Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
 		},
-		policy::{
-			build_artifact_policy::{
-				BuildArtifact, BuildArtifactPolicyResolver,
-			},
-			build_std_features_policy::{
-				BuildStdFeaturesPolicies, BuildStdFeaturesPolicy,
-				BuildStdFeaturesPolicyResolver,
-			},
-			build_std_policy::{
-				BuildStdPolicies, BuildStdPolicy, BuildStdPoliyResolver,
-			},
-			target_policy::{TargetPolicy, TargetPolicyResolver},
+		policy::build_artifact_policy::{
+			BuildArtifact, BuildArtifactPolicyResolver,
 		},
 	},
-	poison_girl_dev_cargo::Runtime,
+	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{
-		InvalidMetadataSchema, PoisonGirlB, X, Y,
-		YourHostPlatformIsOutOfSupport, poison_girl_err,
+		InvalidMetadataSchema, PoisonGirlB, X, Y, poison_girl_err,
 	},
 	poison_girl_dev_fs::{current_crate_path, project_root_path},
 	std::{
-		ffi::OsStr,
 		path::{Path, PathBuf},
+		process::Command,
 	},
 };
 
+use self::invocation_plan::CargoInvocationPlan;
+
 pub mod crate_;
+mod invocation_plan;
 pub mod package;
 pub mod workspace;
 
@@ -60,8 +51,31 @@ impl PoisonGirlCargoInterface
 
 	pub fn run(&self,) -> PoisonGirlB<(),>
 	{
-		self.ws()
-			.cargo_xxx_with(self.policy().command_discriminant(), self.policy(),)
+		let command = self.policy().command_discriminant();
+		for args in self.invocation_args()? {
+			let mut cargo = Command::new("cargo",);
+			let cargo = cargo.arg(command.as_ref(),);
+			if !args.is_empty() {
+				cargo.args(args,);
+			}
+			cargo.run()?;
+		}
+
+		X((),)
+	}
+
+	fn invocation_plan(&self,) -> CargoInvocationPlan
+	{
+		CargoInvocationPlan::new(*self.ws.as_chart(), self.policy.clone(),)
+	}
+
+	fn invocation_args(&self,) -> PoisonGirlB<Vec<Vec<String,>,>,>
+	{
+		let mut args = vec![];
+		for policy in self.invocation_plan().invocation_policies()? {
+			args.push(Self::new(*self.ws.as_chart(), policy,).as_cargo_opt()?,);
+		}
+		X(args,)
 	}
 }
 
@@ -74,62 +88,49 @@ impl BuildArtifactPolicyResolver for PoisonGirlCargoInterface
 			self.resolve_target_triple_representation()?;
 		let profile = self.resolve_profile();
 		let artifact_name = self.resolve_artifact_name()?;
+		let artifact_path = target_dir
+			.join(target_tuple_representation,)
+			.join(profile,)
+			.join(artifact_name,);
 
-		X(BuildArtifact::new(
-			target_dir,
-			target_tuple_representation,
-			profile,
-			artifact_name,
-		),)
+		X(BuildArtifact::new(artifact_path,),)
 	}
 
 	/// current(20260609) cargo's target directory determination follows these
 	/// rules (numbers are priority)
 	/// 1. --target-dir <path>
 	/// 2. CARGO_TARGET_DIR=<path>
-	/// 3. .cargo/config.toml: [build] target-dir = ..
-	/// 4. default <workspace-root>/target
+	/// 3. CARGO_BUILD_TARGET_DIR=<path>
+	/// 4. .cargo/config.toml: [build] target-dir = ..
+	/// 5. default <workspace-root>/target
 	///
 	/// for rule 1, we ignore by filtering in xtask. this keeps things easy
 	fn resolve_target_dir(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		// 2 TODO: check does xtask managed process really affected parent env
-		// var.
 		let cwd = std::env::current_dir()?;
-		if let Some(path,) = env_var_path("CARGO_TARGET_DIR", cwd.as_path(),)? {
-			return X(path,);
+		if let Some(path,) =
+			std::env::var_os("CARGO_TARGET_DIR",).map(PathBuf::from,)
+		{
+			return X(resolve_relative_path(path, cwd.as_path(),),);
 		}
 		if let Some(path,) =
-			env_var_path("CARGO_BUILD_TARGET_DIR", cwd.as_path(),)?
+			std::env::var_os("CARGO_BUILD_TARGET_DIR",).map(PathBuf::from,)
 		{
-			return X(path,);
+			return X(resolve_relative_path(path, cwd.as_path(),),);
 		}
 
-		// 3
-		// TODO: make sure that cargo_conf method do not fails when config.toml
-		// not exists or empty
-		let config_toml = self.ws.cargo_conf();
-		match config_toml {
-			X(conf,) => {
-				if let Some(Some(toml::Value::String(target_dir,),),) = conf
-					.get("build",)
-					.map(|build_section| build_section.get("target-dir",),)
-				{
-					let target_dir = PathBuf::from(target_dir,);
-					let target_dir = if target_dir.is_relative() {
-						let crate_path = self.ws.path();
-						crate_path.join(target_dir,)
-					} else {
-						target_dir
-					};
-
-					return X(target_dir,);
-				}
-			},
-			Y(e,) => return Y(e,),
+		let conf = self.ws.cargo_conf()?;
+		let config_target_dir = conf
+			.get("build",)
+			.and_then(|build_section| build_section.get("target-dir",),)
+			.and_then(|target_dir| target_dir.as_str(),);
+		if let Some(path,) = config_target_dir {
+			return X(resolve_relative_path(
+				PathBuf::from(path,),
+				self.ws.path().as_path(),
+			),);
 		}
 
-		// 4
 		X(project_root()?.path().join("target",),)
 	}
 
@@ -144,23 +145,7 @@ impl BuildArtifactPolicyResolver for PoisonGirlCargoInterface
 	/// xtask
 	fn resolve_target_triple_representation(&self,) -> PoisonGirlB<PathBuf,>
 	{
-		let arch = self.policy.arch();
-		let chart = self.ws.as_chart();
-
-		// TODO: extract kernel's vendor-os resolver logic. they should no be
-		// tied to here
-		let vendor_runtime = match chart {
-			PoisonGirlCrateChart::Kernel => "sugiura_hiromiti-poison_girl-elf",
-			PoisonGirlCrateChart::Loader => "unknown-uefi",
-			_ => match std::env::consts::OS {
-				"linux" => "unknown-linux",
-				"macos" => "apple-darwin",
-				_ => {
-					return Y(poison_girl_err!(YourHostPlatformIsOutOfSupport),);
-				},
-			},
-		};
-		X(PathBuf::from([arch.as_ref(), vendor_runtime,].join("-",),),)
+		X(self.invocation_plan().build_target_tuple_representation(),)
 	}
 
 	///then resolve profile. dev|test is debug/, release|bench is release/,
@@ -190,89 +175,6 @@ impl BuildArtifactPolicyResolver for PoisonGirlCargoInterface
 	}
 }
 
-impl BuildStdPoliyResolver for PoisonGirlCargoInterface
-{
-	fn build_std_policies(&self,) -> BuildStdPolicies
-	{
-		let command = self.policy.command_discriminant();
-		let chart = self.ws.as_chart();
-		let uses_custom_target = command == CliCommandDiscriminants::Build
-			|| command == CliCommandDiscriminants::Fix
-			|| (command == CliCommandDiscriminants::Clippy
-				&& !self.policy.clippy_uses_host_target());
-
-		// TODO: avoid hardcoding crate chart. Instead, consider alternative
-		// solutions below.
-		// 1. add methods to cratechart which returns it is no_std feature/it
-		//    requires unstable options
-		// 2. move responsibility of building `build_std_policy` to policy
-		//    definition
-		let policies = if uses_custom_target {
-			if *chart == PoisonGirlCrateChart::KERNEL {
-				vec![BuildStdPolicy::Core]
-			} else if *chart == PoisonGirlCrateChart::LOADER {
-				vec![
-					BuildStdPolicy::Core,
-					BuildStdPolicy::Alloc,
-					BuildStdPolicy::CompilerBuiltins,
-				]
-			} else {
-				vec![]
-			}
-		} else {
-			vec![]
-		};
-		BuildStdPolicies::from(policies,)
-	}
-}
-
-impl BuildStdFeaturesPolicyResolver for PoisonGirlCargoInterface
-{
-	fn build_std_features_policies(&self,) -> BuildStdFeaturesPolicies
-	{
-		let command = self.policy.command_discriminant();
-		let chart = self.ws.as_chart();
-		let uses_custom_target = command == CliCommandDiscriminants::Build
-			|| command == CliCommandDiscriminants::Fix
-			|| (command == CliCommandDiscriminants::Clippy
-				&& !self.policy.clippy_uses_host_target());
-		let policies = if uses_custom_target {
-			if *chart == PoisonGirlCrateChart::KERNEL
-				|| *chart == PoisonGirlCrateChart::LOADER
-			{
-				vec![BuildStdFeaturesPolicy::CompilerBuiltinsMem]
-			} else {
-				vec![]
-			}
-		} else {
-			vec![]
-		};
-		BuildStdFeaturesPolicies::from(policies,)
-	}
-}
-
-impl TargetPolicyResolver for PoisonGirlCargoInterface
-{
-	fn target_policy(&self,) -> TargetPolicy
-	{
-		let arch = self.policy.arch();
-
-		if self.policy.command_discriminant() == CliCommandDiscriminants::Test
-			|| self.policy.clippy_uses_host_target()
-		{
-			return TargetPolicy::new(arch, Runtime::Host,);
-		}
-
-		let runtime = match *self.ws.as_chart() {
-			PoisonGirlCrateChart::KERNEL => Runtime::PoisonGirl,
-			PoisonGirlCrateChart::LOADER => Runtime::Efi,
-			_ => Runtime::Host,
-		};
-
-		TargetPolicy::new(arch, runtime,)
-	}
-}
-
 impl AsCargoOpt for PoisonGirlCargoInterface
 {
 	type Out = PoisonGirlB<Vec<String,>,>;
@@ -282,19 +184,18 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 	/// ergo and scalability, this code have to be refactored
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		let policy =
-			self.policy.clone().with_features_supported_by(self.ws.as_chart(),);
-		let straight_cmd = policy.as_cargo_opt();
-		let command = policy.command_discriminant();
-		let target = self.target_policy().as_cargo_opt();
-		let build_std = self.build_std_policies().as_cargo_opt();
+		let plan = self.invocation_plan().with_supported_features();
+		let straight_cmd = plan.policy().as_cargo_opt();
+		let command = plan.command();
+		let target = plan.target_policy().as_cargo_opt();
+		let build_std = plan.build_std_policies().as_cargo_opt();
 		let build_std_features =
-			self.build_std_features_policies().as_cargo_opt();
+			plan.build_std_features_policies().as_cargo_opt();
 
 		let PoisonGirlPackageMetadata { no_std, } =
 			self.ws.custom_metadata()?;
 		let mut additional_opts: Vec<_,> =
-			vec!["-p", self.ws().as_chart().package_name()]
+			vec!["-p", plan.chart().package_name()]
 				.into_iter()
 				.map(|s| s.to_owned(),)
 				.collect();
@@ -322,6 +223,7 @@ mod tests
 {
 	use {
 		super::*,
+		poison_girl_dev_cargo::{Arch, BuildMode},
 		poison_girl_dev_test::{PoisonGirlTestB, success},
 	};
 
@@ -357,6 +259,32 @@ mod tests
 	}
 
 	#[test]
+	fn clippy_default_for_loader_splits_custom_lib_and_host_tests()
+	-> PoisonGirlTestB
+	{
+		let interface = PoisonGirlCargoInterface::new(
+			PoisonGirlCrateChart::LOADER,
+			Policy::from_cmd(CliCommandDiscriminants::Clippy,),
+		);
+		let invocations = interface.invocation_args()?;
+
+		assert_eq!(invocations.len(), 2);
+
+		let first_args = &invocations[0];
+		let second_args = &invocations[1];
+
+		assert!(first_args.iter().any(|arg| arg == "--lib",));
+		assert!(first_args.iter().any(|arg| arg == "--target",));
+		assert!(first_args.iter().any(|arg| arg == "aarch64-unknown-uefi",));
+		assert!(first_args.iter().any(|arg| arg.starts_with("build-std=",),));
+
+		assert!(second_args.iter().any(|arg| arg == "--tests",));
+		assert!(!second_args.iter().any(|arg| arg == "--target",));
+		assert!(!second_args.iter().any(|arg| arg.starts_with("build-std=",),));
+		success!()
+	}
+
+	#[test]
 	fn clippy_host_tests_for_loader_do_not_use_custom_target() -> PoisonGirlTestB
 	{
 		let policy = Policy::from_cmd(CliCommandDiscriminants::Clippy,)
@@ -376,6 +304,152 @@ mod tests
 			!args.iter().any(|arg| arg.starts_with("build-std-features=",),)
 		);
 		success!()
+	}
+
+	#[test]
+	fn host_test_uses_cargo_default_target_layout() -> PoisonGirlTestB
+	{
+		let policy = Policy::from_cmd(CliCommandDiscriminants::Test,);
+		let interface = PoisonGirlCargoInterface::new(
+			PoisonGirlCrateChart::DevOrchestrate,
+			policy,
+		);
+
+		let args = interface.as_cargo_opt()?;
+
+		assert_eq!(
+			interface.resolve_target_triple_representation()?,
+			PathBuf::new()
+		);
+		assert!(!args.iter().any(|arg| arg == "--target",));
+		assert!(!args.iter().any(|arg| arg.starts_with("build-std=",),));
+		success!()
+	}
+
+	#[test]
+	fn kernel_artifact_uses_build_target_when_policy_command_defaults_to_test()
+	-> PoisonGirlTestB
+	{
+		let interface = PoisonGirlCargoInterface::new(
+			PoisonGirlCrateChart::Kernel,
+			Policy::from_arch_build_mode(Arch::Aarch64, BuildMode::Debug,),
+		);
+
+		assert_eq!(
+			interface.resolve_target_triple_representation()?,
+			PathBuf::from("aarch64-sugiura_hiromiti-poison_girl-elf",)
+		);
+		success!()
+	}
+
+	#[test]
+	fn resolve_target_dir_prefers_cargo_target_dir_env() -> PoisonGirlTestB
+	{
+		let cwd = Path::new("/workspace/current-crate",);
+		let crate_path = Path::new("/workspace/loader",);
+
+		let target_dir = resolve_target_dir_from_inputs(
+			cwd,
+			Some(PathBuf::from("target-from-cargo-target-dir",),),
+			Some(PathBuf::from("target-from-build-target-dir",),),
+			Some("target-from-config",),
+			crate_path,
+			PathBuf::from("/workspace/target",),
+		);
+
+		assert_eq!(target_dir, cwd.join("target-from-cargo-target-dir",));
+		success!()
+	}
+
+	#[test]
+	fn resolve_target_dir_uses_build_env_before_config() -> PoisonGirlTestB
+	{
+		let cwd = Path::new("/workspace/current-crate",);
+		let crate_path = Path::new("/workspace/loader",);
+
+		let target_dir = resolve_target_dir_from_inputs(
+			cwd,
+			None,
+			Some(PathBuf::from("target-from-build-target-dir",),),
+			Some("target-from-config",),
+			crate_path,
+			PathBuf::from("/workspace/target",),
+		);
+
+		assert_eq!(target_dir, cwd.join("target-from-build-target-dir",));
+		success!()
+	}
+
+	#[test]
+	fn resolve_target_dir_uses_config_relative_to_crate_path() -> PoisonGirlTestB
+	{
+		let cwd = Path::new("/workspace/current-crate",);
+		let crate_path = Path::new("/workspace/loader",);
+
+		let target_dir = resolve_target_dir_from_inputs(
+			cwd,
+			None,
+			None,
+			Some("target-from-config",),
+			crate_path,
+			PathBuf::from("/workspace/target",),
+		);
+
+		assert_eq!(target_dir, crate_path.join("target-from-config",));
+		success!()
+	}
+
+	#[test]
+	fn resolve_target_dir_defaults_to_workspace_target() -> PoisonGirlTestB
+	{
+		let default_target = PathBuf::from("/workspace/target",);
+
+		let target_dir = resolve_target_dir_from_inputs(
+			Path::new("/workspace/current-crate",),
+			None,
+			None,
+			None,
+			Path::new("/workspace/loader",),
+			default_target.clone(),
+		);
+
+		assert_eq!(target_dir, default_target);
+		success!()
+	}
+
+	#[test]
+	fn package_metadata_defaults_to_std_when_no_std_is_absent()
+	-> PoisonGirlTestB
+	{
+		let metadata =
+			PoisonGirlPackageMetadata::from_toml_table(&toml::Table::new(),)?;
+
+		assert!(!metadata.no_std);
+		success!()
+	}
+
+	#[test]
+	fn package_metadata_accepts_boolean_no_std() -> PoisonGirlTestB
+	{
+		let mut table = toml::Table::new();
+		table.insert("no_std".to_owned(), toml::Value::Boolean(true,),);
+
+		let metadata = PoisonGirlPackageMetadata::from_toml_table(&table,)?;
+
+		assert!(metadata.no_std);
+		success!()
+	}
+
+	#[test]
+	fn package_metadata_rejects_non_boolean_no_std()
+	{
+		let mut table = toml::Table::new();
+		table.insert("no_std".to_owned(), toml::Value::String("yes".into(),),);
+
+		assert!(matches!(
+			PoisonGirlPackageMetadata::from_toml_table(&table,),
+			Y(_)
+		));
 	}
 }
 
@@ -418,22 +492,33 @@ impl PoisonGirlPackageMetadata
 	}
 }
 
-/// if environment variable points to a relative path, this function resolve
-/// absolute path based on 2nd argument
-fn env_var_path(
-	path: impl AsRef<OsStr,>,
-	base_path: impl AsRef<Path,>,
-) -> PoisonGirlB<Option<PathBuf,>,>
+#[cfg(test)]
+fn resolve_target_dir_from_inputs(
+	cwd: &Path,
+	cargo_target_dir: Option<PathBuf,>,
+	cargo_build_target_dir: Option<PathBuf,>,
+	cargo_config_target_dir: Option<&str,>,
+	cargo_config_base_path: &Path,
+	default_target_dir: PathBuf,
+) -> PathBuf
 {
-	if let Ok(path,) = std::env::var(path,) {
-		// CARGO_TARGET_DIR specifies relative path to current directory
-		let path = PathBuf::from(path,);
-		if path.is_relative() {
-			PoisonGirlB::X(Some(base_path.as_ref().to_path_buf().join(path,),),)
-		} else {
-			X(Some(path,),)
-		}
-	} else {
-		X(None,)
+	if let Some(path,) = cargo_target_dir {
+		return resolve_relative_path(path, cwd,);
 	}
+	if let Some(path,) = cargo_build_target_dir {
+		return resolve_relative_path(path, cwd,);
+	}
+	if let Some(path,) = cargo_config_target_dir {
+		return resolve_relative_path(
+			PathBuf::from(path,),
+			cargo_config_base_path,
+		);
+	}
+
+	default_target_dir
+}
+
+fn resolve_relative_path(path: PathBuf, base_path: &Path,) -> PathBuf
+{
+	if path.is_relative() { base_path.join(path,) } else { path }
 }
