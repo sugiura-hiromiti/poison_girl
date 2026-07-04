@@ -43,3 +43,30 @@ impl Run for Command
 		X((),)
 	}
 }
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		poison_girl_dev_error::{X, Y},
+	};
+
+	#[test]
+	fn run_returns_success_for_zero_exit()
+	{
+		let mut command = Command::new("sh",);
+		command.args(["-c", "exit 0",],);
+
+		assert!(matches!(command.run(), X(_)));
+	}
+
+	#[test]
+	fn run_returns_error_for_nonzero_exit()
+	{
+		let mut command = Command::new("sh",);
+		command.args(["-c", "exit 7",],);
+
+		assert!(matches!(command.run(), Y(_)));
+	}
+}

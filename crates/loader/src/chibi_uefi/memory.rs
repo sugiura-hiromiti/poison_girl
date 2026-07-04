@@ -14,7 +14,7 @@ use {
 		ptr::NonNull,
 	},
 	poison_girl_macro::cfg_if,
-	poison_girl_no_std_error::{PoisonGirlB, X},
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, Y, poison_girl_err},
 };
 
 /**
@@ -60,6 +60,44 @@ unsafe impl GlobalAlloc for LoaderAllocator
 	}
 }
 
+fn allocated_pool_buffer(buf: *mut u8,) -> PoisonGirlB<NonNull<u8,>,>
+{
+	match NonNull::new(buf,) {
+		Some(buf,) => X(buf,),
+		None => Y(poison_girl_err!(UefiError::Custom(
+			"allocate_pool returned null",
+		)),),
+	}
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {
+		super::*,
+		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_no_std_error::Y,
+	};
+
+	#[test]
+	fn allocated_pool_buffer_accepts_non_null_pointer() -> PoisonGirlTestB
+	{
+		let mut byte = 0u8;
+		let ptr = core::ptr::from_mut(&mut byte,);
+
+		let allocated = allocated_pool_buffer(ptr,)?;
+
+		assert_eq!(allocated.as_ptr(), ptr);
+		success!()
+	}
+
+	#[test]
+	fn allocated_pool_buffer_rejects_null_pointer()
+	{
+		assert!(matches!(allocated_pool_buffer(core::ptr::null_mut(),), Y(_)));
+	}
+}
+
 cfg_if!(
 	if #[cfg(all(not(test), target_os = "uefi"))] {
 		/// TODO:
@@ -89,10 +127,7 @@ impl BootServices
 	{
 		let mut buf = core::ptr::null_mut();
 		unsafe { (self.allocate_pool)(mem_ty, size, &mut buf,) }.x_or()?;
-		X(unsafe {
-			// "allocate_pool must not return a null pointer if successful
-			NonNull::new_unchecked(buf,)
-		},)
+		allocated_pool_buffer(buf,)
 	}
 
 	pub fn free_pool(&self, ptr: &mut u8,) -> PoisonGirlB<Status,>

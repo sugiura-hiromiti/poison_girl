@@ -119,3 +119,55 @@ macro_rules! success {
 		return $crate::PoisonGirlTestB::x();
 	}};
 }
+
+#[cfg(test)]
+mod tests
+{
+	use super::*;
+
+	fn b_residual() -> PoisonGirlTestB
+	{
+		let value: B<(), &str,> = Y("b failed",);
+		value?;
+		success!()
+	}
+
+	fn result_residual() -> PoisonGirlTestB
+	{
+		let value: Result<(), &str,> = Err("result failed",);
+		value?;
+		success!()
+	}
+
+	fn option_residual() -> PoisonGirlTestB
+	{
+		let value: Option<(),> = None;
+		value?;
+		success!()
+	}
+
+	#[test]
+	fn converts_b_residual_to_test_failure()
+	{
+		assert!(
+			matches!(b_residual().as_ref(), Y(message) if message == "b failed")
+		);
+	}
+
+	#[test]
+	fn converts_result_residual_to_test_failure()
+	{
+		assert!(
+			matches!(result_residual().as_ref(), Y(message) if message == "result failed")
+		);
+	}
+
+	#[test]
+	fn converts_option_residual_to_test_failure()
+	{
+		assert!(matches!(
+			option_residual().as_ref(),
+			Y(message) if message == "std::option::Option::None"
+		));
+	}
+}

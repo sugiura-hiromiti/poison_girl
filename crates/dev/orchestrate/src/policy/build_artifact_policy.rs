@@ -1,54 +1,24 @@
-// TODO: refactor `BuildArtifact` datatype more decralative and separate
-// policies
-
 use {
-	crate::{
-		cli_interface::CompileOpt,
-		decl_manage::crate_::{Crate, PoisonGirlCrateChart},
-	},
+	crate::{cli_interface::CompileOpt, decl_manage::crate_::Crate},
 	poison_girl_dev_error::PoisonGirlB,
 	std::path::PathBuf,
 };
 
 pub struct BuildArtifact
 {
-	target_dir:                  PathBuf,
-	/// maybe should be Option
-	target_tuple_representation: PathBuf,
-	profile:                     PathBuf,
-	artifact_name:               PathBuf,
+	path: PathBuf,
 }
 
 impl BuildArtifact
 {
-	pub fn new(
-		target_dir: PathBuf,
-		target_tuple_representation: PathBuf,
-		profile: PathBuf,
-		artifact_name: PathBuf,
-	) -> Self
+	pub fn new(path: PathBuf,) -> Self
 	{
-		Self {
-			target_dir, target_tuple_representation, profile, artifact_name,
-		}
+		Self { path, }
 	}
 
 	pub fn path(&self,) -> PathBuf
 	{
-		let Self {
-			target_dir,
-			target_tuple_representation,
-			profile,
-			artifact_name,
-		} = self;
-
-		let workspace_root = PoisonGirlCrateChart::XTASK.to_path_buf();
-
-		workspace_root
-			.join(target_dir,)
-			.join(target_tuple_representation,)
-			.join(profile,)
-			.join(artifact_name,)
+		self.path.clone()
 	}
 }
 
@@ -66,4 +36,23 @@ pub trait BuildArtifactPolicyResolver
 
 	fn as_crate(&self,) -> &impl Crate;
 	fn as_opts(&self,) -> &impl CompileOpt;
+}
+
+#[cfg(test)]
+mod tests
+{
+	use {super::*, std::path::PathBuf};
+
+	#[test]
+	fn build_artifact_path_is_resolved_value()
+	{
+		let path = PathBuf::from("resolved-target",)
+			.join("aarch64-unknown-uefi",)
+			.join("debug",)
+			.join("loader.efi",);
+
+		let artifact = BuildArtifact::new(path.clone(),);
+
+		assert_eq!(artifact.path(), path);
+	}
 }

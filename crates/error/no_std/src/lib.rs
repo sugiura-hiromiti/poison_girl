@@ -24,6 +24,14 @@ pub struct PoisonGirlError
 	_src: PoisonGirlErrorKind,
 }
 
+impl PoisonGirlError
+{
+	pub fn kind(&self,) -> &PoisonGirlErrorKind
+	{
+		&self._src
+	}
+}
+
 impl core::error::Error for PoisonGirlError
 {
 }

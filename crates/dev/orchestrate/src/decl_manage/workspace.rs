@@ -3,10 +3,9 @@ use {
 		CliCommandDiscriminants, Policy,
 		decl_manage::crate_::{
 			Crate, CrateAction, CrateCalled, CrateInfo, CrateSurvey,
-			PoisonGirlCrateChart,
 		},
 	},
-	poison_girl_dev_error::{PoisonGirlB, X},
+	poison_girl_dev_error::PoisonGirlB,
 };
 
 pub trait Workspace: WorkspaceAction + WorkspaceSurvey
@@ -109,24 +108,6 @@ pub trait WorkspaceAction: WorkspaceInfo + CrateAction
 	where
 		Self: WorkspaceSurvey,
 	{
-		let chart = PoisonGirlCrateChart::from(at.path_buf(),);
-		if chart.uses_custom_runtime() && opt.clippy_lints_all_targets() {
-			let custom_lib = opt.clone().with_clippy_custom_target_lib()?;
-			self.cargo_xxx_at_with(
-				CliCommandDiscriminants::Clippy,
-				at.clone(),
-				&custom_lib,
-			)?;
-
-			let host_tests = opt.clone().with_clippy_host_tests()?;
-			self.cargo_xxx_at_with(
-				CliCommandDiscriminants::Clippy,
-				at,
-				&host_tests,
-			)?;
-			return X((),);
-		}
-
 		self.cargo_xxx_at_with(CliCommandDiscriminants::Clippy, at, opt,)
 	}
 
@@ -224,10 +205,12 @@ mod tests
 			PoisonGirlCrate::from(PoisonGirlCrateChart::DevOrchestrate,);
 		let target = PoisonGirlCrate::from(PoisonGirlCrateChart::DevFs,);
 		let target_path = target.path();
+		let cwd_before = std::env::current_dir()?;
 
 		workspace.land_on(target,)?;
 
 		assert_eq!(workspace.path(), target_path);
+		assert_eq!(std::env::current_dir()?, cwd_before);
 		success!()
 	}
 }

@@ -22,6 +22,14 @@ pub(crate) fn push_u64(binary: &mut Vec<u8,>, value: u64,)
 	binary.extend_from_slice(&value.to_le_bytes(),);
 }
 
+pub(crate) fn dynamic_entry(tag: u64, val: u64,) -> Vec<u8,>
+{
+	let mut bytes = Vec::new();
+	push_u64(&mut bytes, tag,);
+	push_u64(&mut bytes, val,);
+	bytes
+}
+
 pub(crate) fn elf64_header(
 	ty: ElfType,
 	entry: u64,
