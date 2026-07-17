@@ -98,6 +98,7 @@ poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
 poison_girl_dev_orchestrate = { workspace = true }
 poison_girl_dev_cli = { workspace = true }
+poison_girl_no_std = { workspace = true }
 
 [dev-dependencies]
 poison_girl_dev_test = { workspace = true }

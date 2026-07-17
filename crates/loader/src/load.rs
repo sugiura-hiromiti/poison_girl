@@ -25,7 +25,7 @@ use {
 		},
 	},
 	core::ptr::NonNull,
-	poison_girl_no_std::bridge::graphic::FrameBufConf,
+	poison_girl_no_std::{KERNEL_FILE_NAME, bridge::graphic::FrameBufConf},
 	poison_girl_no_std_error::{
 		ElfParseError, PoisonGirlB, X, Y, poison_girl_err,
 	},
@@ -132,8 +132,7 @@ fn open_kernel_file() -> PoisonGirlB<NonNull<FileProtocolV1,>,>
 	.open_volume()?;
 
 	// Open the kernel file
-	let kernel_file =
-		volume.open("poison_girl_kernel.elf", open_mode, attrs,)?;
+	let kernel_file = volume.open(KERNEL_FILE_NAME, open_mode, attrs,)?;
 	X(NonNull::from(kernel_file,),)
 }
 
