@@ -57,7 +57,7 @@ poison_girl_macro_error = { path = "./crates/error/macro/" }
 proc-macro2 = "*"
 quickcheck = "*"
 quote = "*"
-string_cache = "*"
+string_cache = "0.9"
 strum = "*"
 strum_macros = "*"
 syn = { version = "*", features = ["full", "extra-traits"] }

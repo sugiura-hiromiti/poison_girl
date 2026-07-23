@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene)]
-
 use {
 	crate::decl_manage::{
 		PoisonGirlCargoInterface, crate_::PoisonGirlCrateChart,
