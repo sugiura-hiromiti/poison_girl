@@ -114,9 +114,9 @@ impl DiskImageOptions
 impl DiskImageBuilder
 {
 	/// boot loaderが置かれる(fat内の)パス
-	const BOOT_DIR: &str = "efi/boot";
+	const BOOT_DIR: &str = "/efi/boot";
 	/// kernelが置かれる(fat内の)パス
-	const KERNEL_DIR: &str = "";
+	const KERNEL_DIR: &str = "/";
 
 	pub fn new(
 		disk_img: impl Into<PathBuf,>,
@@ -256,14 +256,15 @@ impl DiskImageBuilder
 	fn ensure_entry(
 		&self,
 		fat_hndlr: &FatFs<File,>,
-		fat_root: FatDir<File,>,
 		entry_path: impl AsRef<str,>,
 		file_name: impl AsRef<str,>,
 	) -> PoisonGirlB<FileEntry,>
 	{
+		let fat_root = fat_hndlr.root_dir();
 		let boot_dir = entry_path
 			.as_ref()
 			.split("/",)
+			.filter(|s| !s.is_empty(),)
 			.try_fold(fat_root, |a, e| fat_hndlr.create_dir(&a, e,),)?;
 		let entry = fat_hndlr.create_file(&boot_dir, file_name.as_ref(),)?;
 		X(entry,)
