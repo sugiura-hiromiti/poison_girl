@@ -56,6 +56,9 @@ pub mod bridge;
 pub mod data;
 pub mod parser;
 
+/// Kernel file name in disk image
+pub const KERNEL_FILE_NAME: &str = "poison_girl";
+
 /// Puts the CPU into a low-power state until an interrupt occurs.
 ///
 /// This function enters an infinite loop where the CPU is repeatedly put into a

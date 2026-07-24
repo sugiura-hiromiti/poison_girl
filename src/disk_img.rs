@@ -12,7 +12,12 @@ use {
 			crate_::{CrateInfo, PoisonGirlCrateChart},
 		},
 	},
-	std::{fs::File, io::Read, path::PathBuf},
+	poison_girl_no_std::KERNEL_FILE_NAME,
+	std::{
+		fs::File,
+		io::Read,
+		path::{Path, PathBuf},
+	},
 };
 
 /// relative path to directory build assets are put from target/
@@ -31,6 +36,10 @@ struct DiskImageBuilder
 	/// Keep in mind that this is not the name of build artifact of loader
 	/// crate.
 	boot_loader_file_name: String,
+	/// path to kernel file. not directory
+	kernel:                PathBuf,
+	/// name of kernel file in **disk image**
+	kernel_file_name:      String,
 	options:               DiskImageOptions,
 }
 
@@ -105,18 +114,24 @@ impl DiskImageOptions
 impl DiskImageBuilder
 {
 	/// boot loaderが置かれる(fat内の)パス
-	const BOOT_DIR: &str = "efi/boot";
+	const BOOT_DIR: &str = "/efi/boot";
+	/// kernelが置かれる(fat内の)パス
+	const KERNEL_DIR: &str = "/";
 
 	pub fn new(
 		disk_img: impl Into<PathBuf,>,
 		boot_loader: impl Into<PathBuf,>,
 		boot_loader_file_name: impl Into<String,>,
+		kernel: impl Into<PathBuf,>,
+		kernel_file_name: impl Into<String,>,
 	) -> Self
 	{
 		Self::with_options(
 			disk_img,
 			boot_loader,
 			boot_loader_file_name,
+			kernel,
+			kernel_file_name,
 			DiskImageOptions::default_boot(),
 		)
 	}
@@ -125,6 +140,8 @@ impl DiskImageBuilder
 		disk_img: impl Into<PathBuf,>,
 		boot_loader: impl Into<PathBuf,>,
 		boot_loader_file_name: impl Into<String,>,
+		kernel: impl Into<PathBuf,>,
+		kernel_file_name: impl Into<String,>,
 		options: DiskImageOptions,
 	) -> Self
 	{
@@ -132,6 +149,8 @@ impl DiskImageBuilder
 			disk_img: disk_img.into(),
 			boot_loader: boot_loader.into(),
 			boot_loader_file_name: boot_loader_file_name.into(),
+			kernel: kernel.into(),
+			kernel_file_name: kernel_file_name.into(),
 			options,
 		}
 	}
@@ -149,7 +168,10 @@ impl DiskImageBuilder
 	pub fn build_boot_disk_img(&self,) -> PoisonGirlB<(),>
 	{
 		let disk_img_file = self.create_disk_img_file()?;
-		self.place_boot_loader(disk_img_file,)?;
+		let fat_hndlr = self.get_hndlr(disk_img_file,)?;
+
+		self.place_boot_loader(&fat_hndlr,)?;
+		self.place_kernel(&fat_hndlr,)?;
 		X((),)
 	}
 
@@ -166,29 +188,31 @@ impl DiskImageBuilder
 		X(disk_img_file,)
 	}
 
-	fn place_boot_loader(&self, disk_img_file: File,) -> PoisonGirlB<(),>
+	fn get_hndlr(&self, disk_img_file: File,) -> PoisonGirlB<FatFs<File,>,>
 	{
 		let options = self.options.format_options();
 		let fat_hndlr = FatVolumeFormatter::format(disk_img_file, options,)?;
-		let fat_root = fat_hndlr.root_dir();
+		X(fat_hndlr,)
+	}
 
-		let boot_loader_entry =
-			self.ensure_boot_loader_entry(&fat_hndlr, fat_root,)?;
-		self.write_boot_loader(&fat_hndlr, &boot_loader_entry,)
+	fn place_boot_loader(&self, fat_hndlr: &FatFs<File,>,) -> PoisonGirlB<(),>
+	{
+		let boot_loader_entry = self.ensure_boot_loader_entry(fat_hndlr,)?;
+		self.write_boot_loader(fat_hndlr, &boot_loader_entry,)
 	}
 
 	fn ensure_boot_loader_entry(
 		&self,
 		fat_hndlr: &FatFs<File,>,
-		fat_root: FatDir<File,>,
 	) -> PoisonGirlB<FileEntry,>
 	{
-		let boot_dir = Self::BOOT_DIR
-			.split("/",)
-			.try_fold(fat_root, |a, e| fat_hndlr.create_dir(&a, e,),)?;
-		let boot_loader_entry =
-			fat_hndlr.create_file(&boot_dir, &self.boot_loader_file_name,)?;
-		X(boot_loader_entry,)
+		let fat_root = fat_hndlr.root_dir();
+		self.ensure_entry(
+			fat_hndlr,
+			fat_root,
+			Self::BOOT_DIR,
+			self.boot_loader_file_name,
+		)
 	}
 
 	fn write_boot_loader(
@@ -197,20 +221,75 @@ impl DiskImageBuilder
 		boot_loader_entry: &FileEntry,
 	) -> PoisonGirlB<(),>
 	{
-		let mut boot_loader_file =
-			std::fs::OpenOptions::new().read(true,).open(&self.boot_loader,)?;
+		self.write_to_entry(fat_hndlr, boot_loader_entry, &self.boot_loader,)
+	}
+
+	fn place_kernel(&self, fat_hndlr: &FatFs<File,>,) -> PoisonGirlB<(),>
+	{
+		let kernel_entry = self.ensure_kernel_entry(&fat_hndlr,)?;
+		self.write_kernel(&fat_hndlr, kernel_entry,)
+	}
+
+	fn ensure_kernel_entry(
+		&self,
+		fat_hndlr: &FatFs<File,>,
+	) -> PoisonGirlB<FileEntry,>
+	{
+		let fat_root = fat_hndlr.root_dir();
+		self.ensure_entry(
+			fat_hndlr,
+			fat_root,
+			Self::KERNEL_DIR,
+			self.kernel_file_name,
+		)
+	}
+
+	fn write_kernel(
+		&self,
+		fat_hndlr: &FatFs<File,>,
+		kernel_entry: &FileEntry,
+	) -> PoisonGirlB<(),>
+	{
+		self.write_to_entry(fat_hndlr, entry, &self.kernel,)
+	}
+
+	fn ensure_entry(
+		&self,
+		fat_hndlr: &FatFs<File,>,
+		entry_path: impl AsRef<str,>,
+		file_name: impl AsRef<str,>,
+	) -> PoisonGirlB<FileEntry,>
+	{
+		let fat_root = fat_hndlr.root_dir();
+		let boot_dir = entry_path
+			.as_ref()
+			.split("/",)
+			.filter(|s| !s.is_empty(),)
+			.try_fold(fat_root, |a, e| fat_hndlr.create_dir(&a, e,),)?;
+		let entry = fat_hndlr.create_file(&boot_dir, file_name.as_ref(),)?;
+		X(entry,)
+	}
+
+	fn write_to_entry(
+		&self,
+		fat_hndlr: &FatFs<File,>,
+		entry: &FileEntry,
+		file: impl AsRef<Path,>,
+	) -> PoisonGirlB<(),>
+	{
+		let mut file = std::fs::OpenOptions::new().read(true,).open(file,)?;
 		// NOTE: consider Vec::with_capacity for performance optimization.
 		let mut buf = vec![];
-		boot_loader_file.read_to_end(&mut buf,)?;
-		let mut boot_loader_writer = fat_hndlr.write_file(boot_loader_entry,)?;
+		file.read_to_end(&mut buf,)?;
+		let mut writer = fat_hndlr.write_file(entry,)?;
 
 		let size = buf.len();
 		let mut written_size = 0;
 		while written_size < size {
-			let written = boot_loader_writer.write(&buf[written_size..],)?;
+			let written = writer.write(&buf[written_size..],)?;
 			written_size += written;
 		}
-		boot_loader_writer.finish()?;
+		writer.finish()?;
 
 		X((),)
 	}
@@ -238,14 +317,23 @@ impl Xtask
 			self.interface.policy().clone(),
 		);
 		let boot_loader = boot_loader_crate.build_artifact_policy()?.path();
+		// file name in disk image
 		let boot_loader_file_name =
 			self.opts().arch().boot_file_name().to_string();
+
+		let kernel_crate = PoisonGirlCargoInterface::new(
+			PoisonGirlCrateChart::KERNEL,
+			self.interface.policy().clone(),
+		);
+		let kernel = kernel_crate.build_artifact_policy()?.path();
 
 		// TODO: copy kernel binary to disk image
 		let disk_img_bldr = DiskImageBuilder::new(
 			disk_img.clone(),
 			boot_loader,
 			boot_loader_file_name,
+			kernel,
+			KERNEL_FILE_NAME,
 		);
 		disk_img_bldr.build_boot_disk_img()?;
 		X(disk_img,)
