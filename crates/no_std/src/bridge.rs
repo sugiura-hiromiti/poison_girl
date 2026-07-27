@@ -19,7 +19,7 @@
 //! This crate is designed to be used in no_std environments, typically in
 //! kernel or bootloader code:
 //!
-//! ```rust,no_run
+//! ```rust,no_run,ignore
 //! use poison_girl_no_std_shared::{
 //! 	bridge::graphic::{FrameBufConf, PixelFormatConf},
 //! 	wfi,

@@ -155,7 +155,7 @@ impl DiskImageBuilder
 		}
 	}
 
-	/// ```
+	/// ```sh
 	/// qemu-img create -f raw <disk image> 200M
 	/// mkfs.fat -n 'POISON GIRL' -s 2 -f 2 -F 32 <disk image>
 	/// mkdir -p mnt

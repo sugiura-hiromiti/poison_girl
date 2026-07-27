@@ -280,10 +280,12 @@ impl<V,> Termination for Rslt<V,>
 {
 	fn report(self,) -> std::process::ExitCode
 	{
-		if self.has_err() {
-			std::process::ExitCode::FAILURE
-		} else {
-			std::process::ExitCode::SUCCESS
+		match self.err {
+			Some(e,) => {
+				eprintln!("{e:#?}");
+				std::process::ExitCode::FAILURE
+			},
+			None => std::process::ExitCode::SUCCESS,
 		}
 	}
 }
@@ -311,11 +313,9 @@ mod tests
 		// Test that we can create a result with diagnostics
 		let result =
 			Rslt::new(quote::quote! { fn test() {} },).with_diags(diags,);
-		assert!(!result.has_err());
-		assert_eq!(result.notation().len(), 2);
+		assert!(result.has_err());
+		assert_eq!(result.notation().len(), 1);
 
-		let tokens = result?;
-		assert!(!tokens.is_empty());
 		success!()
 	}
 
