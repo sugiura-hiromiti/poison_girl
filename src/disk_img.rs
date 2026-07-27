@@ -1,7 +1,7 @@
 use {
 	crate::Xtask,
 	hadris_fat::{
-		FatDir, FatFs, FatFsWriteExt, FileEntry,
+		FatFs, FatFsWriteExt, FileEntry,
 		format::{FatTypeSelection, FatVolumeFormatter, FormatOptions},
 	},
 	poison_girl_dev_error::{PoisonGirlB, X},
@@ -206,12 +206,10 @@ impl DiskImageBuilder
 		fat_hndlr: &FatFs<File,>,
 	) -> PoisonGirlB<FileEntry,>
 	{
-		let fat_root = fat_hndlr.root_dir();
 		self.ensure_entry(
 			fat_hndlr,
-			fat_root,
 			Self::BOOT_DIR,
-			self.boot_loader_file_name,
+			&self.boot_loader_file_name,
 		)
 	}
 
@@ -227,7 +225,7 @@ impl DiskImageBuilder
 	fn place_kernel(&self, fat_hndlr: &FatFs<File,>,) -> PoisonGirlB<(),>
 	{
 		let kernel_entry = self.ensure_kernel_entry(&fat_hndlr,)?;
-		self.write_kernel(&fat_hndlr, kernel_entry,)
+		self.write_kernel(&fat_hndlr, &kernel_entry,)
 	}
 
 	fn ensure_kernel_entry(
@@ -235,13 +233,7 @@ impl DiskImageBuilder
 		fat_hndlr: &FatFs<File,>,
 	) -> PoisonGirlB<FileEntry,>
 	{
-		let fat_root = fat_hndlr.root_dir();
-		self.ensure_entry(
-			fat_hndlr,
-			fat_root,
-			Self::KERNEL_DIR,
-			self.kernel_file_name,
-		)
+		self.ensure_entry(fat_hndlr, Self::KERNEL_DIR, &self.kernel_file_name,)
 	}
 
 	fn write_kernel(
@@ -250,7 +242,7 @@ impl DiskImageBuilder
 		kernel_entry: &FileEntry,
 	) -> PoisonGirlB<(),>
 	{
-		self.write_to_entry(fat_hndlr, entry, &self.kernel,)
+		self.write_to_entry(fat_hndlr, kernel_entry, &self.kernel,)
 	}
 
 	fn ensure_entry(
@@ -368,15 +360,23 @@ mod tests
 	{
 		let tmp = tempfile::tempdir()?;
 		let disk_img = tmp.path().join("disk.img",);
+
 		let boot_loader = tmp.path().join("loader.efi",);
 		let boot_loader_bytes = b"fake uefi loader";
 		std::fs::write(&boot_loader, boot_loader_bytes,)?;
+
+		let kernel = tmp.path().join("poison_girl",);
+		let kernel_bytes = b"fake kernel";
+		std::fs::write(&kernel, kernel_bytes,)?;
+
 		let options = DiskImageOptions::small_test_image();
 
 		DiskImageBuilder::with_options(
 			&disk_img,
 			&boot_loader,
 			"BOOTAA64.EFI",
+			&kernel,
+			"POISON GIRL",
 			options,
 		)
 		.build_boot_disk_img()?;
