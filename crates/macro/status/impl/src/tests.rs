@@ -140,7 +140,6 @@ fn test_status_codes_info_conversion() -> TestRslt
 }
 
 #[test]
-#[should_panic(expected = "value expected being parsable to integer")]
 fn test_status_codes_info_invalid_value()
 {
 	let raw_data = vec![vec![
@@ -149,7 +148,8 @@ fn test_status_codes_info_invalid_value()
 		"Success".to_string(),
 	]];
 
-	status_codes_info(raw_data,);
+	let rslt = status_codes_info(raw_data,);
+	assert!(rslt.has_err());
 }
 
 #[test]

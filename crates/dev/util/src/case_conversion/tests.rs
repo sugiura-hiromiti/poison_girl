@@ -752,14 +752,9 @@ fn test_pathbuf_edge_cases() -> PoisonGirlTestB
 	let root_path =
 		<std::path::PathBuf as std::convert::From<&str,>>::from("/",);
 	// This should panic when trying to get filename, but we'll catch it
-	let result = std::panic::catch_unwind(|| root_path.dump_string(),);
-	assert!(result.is_err());
+	let result = root_path.dump_string();
+	assert!(result.is_y());
 
-	// Test with current directory
-	let current_dir =
-		<std::path::PathBuf as std::convert::From<&str,>>::from(".",);
-	current_dir.dump_string()?;
-	// This might succeed or fail depending on the system
 	success!()
 }
 

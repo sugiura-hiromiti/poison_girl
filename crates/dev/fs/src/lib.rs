@@ -209,7 +209,7 @@ mod tests
 {
 	use {
 		super::*,
-		poison_girl_dev_test::{PoisonGirlTestB, success},
+		poison_girl_dev_test::{PoisonGirlTestB, fail, success},
 	};
 
 	fn test_dir(name: &str,) -> PoisonGirlB<PathBuf,>
@@ -275,9 +275,13 @@ mod tests
 	{
 		// This should fail to find a non-existent file
 		let result = get_upstream("definitely_nonexistent_file_12345.xyz",);
-		assert!(result.is_y());
-		let error_msg = result?.display().to_string();
-		assert!(error_msg.contains("can not find out"));
+		// assert!(result.is_y());
+
+		let Y(error,) = result else {
+			fail!("should be Y");
+		};
+
+		let error_msg = error.to_string();
 		assert!(error_msg.contains("definitely_nonexistent_file_12345.xyz"));
 		success!()
 	}

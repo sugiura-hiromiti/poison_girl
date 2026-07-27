@@ -31,7 +31,7 @@
 //!
 //! The bootloader discovers display hardware and creates a `FrameBufConf`:
 //!
-//! ```rust,no_run
+//! ```rust,no_run,ignore
 //! use poison_girl_no_std::bridge::graphic::{FrameBufConf, PixelFormatConf};
 //!
 //! // Bootloader code

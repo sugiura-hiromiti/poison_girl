@@ -163,7 +163,7 @@ mod tests
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.has_err());
+		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
 		let tokens = result?;
@@ -186,7 +186,7 @@ mod tests
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.has_err());
+		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
 		let tokens = result?;
@@ -210,7 +210,7 @@ mod tests
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.has_err());
+		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
 		let tokens = result?;
@@ -233,7 +233,7 @@ mod tests
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.has_err());
+		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
 		let tokens = result?;
@@ -257,7 +257,7 @@ mod tests
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.has_err());
+		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
 		let tokens = result?;
@@ -285,7 +285,7 @@ mod tests
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.has_err());
+		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
 		let tokens = result?;
@@ -309,7 +309,7 @@ mod tests
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.has_err());
+		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
 		let tokens = result?;
@@ -332,7 +332,7 @@ mod tests
 		};
 
 		let result = wrapper(static_frame_buffer, trait_def,);
-		assert!(result.has_err());
+		assert!(!result.has_err());
 		assert!(result.notation().is_empty());
 
 		let tokens = result?;
