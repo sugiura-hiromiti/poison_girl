@@ -6,7 +6,6 @@
 #![feature(associated_type_defaults)]
 #![feature(derive_const)]
 #![feature(const_default)]
-#![feature(string_from_utf8_lossy_owned)]
 #![feature(iterator_try_collect)]
 // #![feature(nonzero_internals)]
 //#![feature(stdarch_arm_hints)]
