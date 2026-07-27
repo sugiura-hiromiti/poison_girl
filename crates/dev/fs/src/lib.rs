@@ -16,7 +16,6 @@ use {
 
 pub const CARGO_MANIFEST: &str = "Cargo.toml";
 pub const CARGO_CONFIG: &str = ".cargo/config.toml";
-const CWD: &str = std::env!("CARGO_MANIFEST_DIR");
 const IGNORE_DIR_LIST: [&str; 5] =
 	["target", ".git", ".github", ".direnv", ".cargo",];
 
@@ -69,12 +68,16 @@ pub fn all_crates_in(path: &Path,) -> PoisonGirlB<Vec<PathBuf,>,>
 
 pub fn project_root_path() -> PoisonGirlB<PathBuf,>
 {
-	let mut p = PathBuf::from(CWD,);
+	let mut p = std::env::current_dir()?;
 	let mut last_cargo_toml = None;
 
-	while p.pop() {
-		if let Some(p,) = search_cargo_toml(&p,)? {
-			last_cargo_toml = Some(p,)
+	loop {
+		if let Some(path,) = search_cargo_toml(&p,)? {
+			last_cargo_toml = Some(path,);
+		}
+
+		if !p.pop() {
+			break;
 		}
 	}
 
@@ -211,6 +214,7 @@ mod tests
 		super::*,
 		poison_girl_dev_test::{PoisonGirlTestB, fail, success},
 	};
+	const CWD: &str = std::env!("CARGO_MANIFEST_DIR");
 
 	fn test_dir(name: &str,) -> PoisonGirlB<PathBuf,>
 	{
