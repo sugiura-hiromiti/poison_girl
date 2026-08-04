@@ -13,6 +13,7 @@
 use {
 	crate::Xtask,
 	poison_girl_dev_cargo::Assets,
+	poison_girl_dev_cli::Run,
 	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::{
 		CliCommandDiscriminants, Policy,
@@ -21,6 +22,7 @@ use {
 			workspace::WorkspaceAction,
 		},
 	},
+	std::process::Command,
 };
 
 impl Xtask
@@ -97,6 +99,72 @@ impl Xtask
 		}
 	}
 
+	/// Run every repository check used by CI.
+	///
+	/// This is the single source of truth for `nix flake check`; Nix only
+	/// supplies the toolchain, dependencies, and sandbox.
+	pub fn check() -> PoisonGirlB<(),>
+	{
+		run_cargo(&[
+			"metadata",
+			"--locked",
+			"--no-deps",
+			"--format-version",
+			"1",
+		],)?;
+		run_cargo(&["build", "--workspace", "--locked",],)?;
+		run_cargo(&[
+			"clippy",
+			"--workspace",
+			"--locked",
+			"--all-targets",
+			"--",
+			"-D",
+			"warnings",
+		],)?;
+		run_cargo(&[
+			"nextest",
+			"run",
+			"--workspace",
+			"--locked",
+			"--no-tests",
+			"pass",
+		],)?;
+
+		Command::new("cargo",)
+			.env(
+				"RUSTDOCFLAGS",
+				"-Z unstable-options --enable-index-page",
+			)
+			.args([
+				"doc",
+				"--workspace",
+				"--locked",
+				"--no-deps",
+				"--document-private-items",
+			],)
+			.run()?;
+
+		run_cargo(&["fmt", "--all", "--", "--check",],)?;
+		run_cargo(&[
+			"check",
+			"-p",
+			"poison_girl_kernel",
+			"--locked",
+			"--target",
+			"aarch64-unknown-none",
+		],)?;
+		run_cargo(&[
+			"check",
+			"-p",
+			"poison_girl_loader",
+			"--locked",
+			"--target",
+			"aarch64-unknown-uefi",
+		],)?;
+		X((),)
+	}
+
 	/// this is workspace build.
 	/// not a package build
 	fn build(&self,) -> PoisonGirlB<(),>
@@ -151,4 +219,9 @@ impl Xtask
 			.try_for_each(|at| self.ws().fix_at_with(at, args,),)?;
 		X((),)
 	}
+}
+
+fn run_cargo(args: &[&str],) -> PoisonGirlB<(),>
+{
+	Command::new("cargo",).args(args,).run()
 }
