@@ -78,47 +78,20 @@
               cargoArtifacts = workspaceDeps;
             }
           );
-          mkCargoCheck =
-            args@{ cargoExtraArgs, ... }:
-            craneLib.mkCargoDerivation (
-              builtins.removeAttrs args [ "cargoExtraArgs" ]
-              // {
-                cargoArtifacts = null;
-                doInstallCargoArtifacts = false;
-                pnameSuffix = "-check";
-                buildPhaseCargoCommand = "cargoWithProfile check ${cargoExtraArgs}";
-                installPhaseCommand = "mkdir -p $out";
-              }
-            );
-          kernelAarch64Check = mkCargoCheck {
-            inherit src;
-            pname = "poison_girl-kernel-aarch64";
-            version = "0.1.0";
-            strictDeps = true;
-            cargoLock = ./Cargo.lock;
-            cargoExtraArgs = "-p poison_girl_kernel --locked --target aarch64-unknown-none";
-          };
-          loaderAarch64UefiCheck = mkCargoCheck {
-            inherit src;
-            pname = "poison_girl-loader-aarch64-uefi";
-            version = "0.1.0";
-            strictDeps = true;
-            cargoLock = ./Cargo.lock;
-            cargoExtraArgs = "-p poison_girl_loader --locked --target aarch64-unknown-uefi";
-          };
-          workspaceMetadata =
-            pkgs.runCommand "poison_girl-workspace-metadata"
-              {
-                nativeBuildInputs = [ rustToolchain ];
-              }
-              ''
-                export CARGO_HOME="$TMPDIR/cargo-home"
-                export RUSTUP_HOME="$TMPDIR/rustup-home"
-                cp -R ${src} source
-                chmod -R u+w source
-                cd source
-                cargo metadata --locked --no-deps --format-version 1 > "$out"
-              '';
+          xtaskCheck = craneLib.mkCargoDerivation (
+            workspaceArgs
+            // {
+              cargoArtifacts = workspaceDeps;
+              pname = "poison_girl";
+              version = "0.1.0";
+              pnameSuffix = "-xtask-check";
+              nativeBuildInputs = [ pkgs.cargo-nextest ];
+              doInstallCargoArtifacts = false;
+              buildPhaseCargoCommand =
+                "cargo run --locked --package poison_girl --bin xtask-check";
+              installPhaseCommand = "mkdir -p $out";
+            }
+          );
         in
         {
           formatter = pkgs.nixfmt;
@@ -126,38 +99,7 @@
             default = workspaceBuild;
           };
           checks = {
-            workspace_metadata = workspaceMetadata;
-            workspace_build = workspaceBuild;
-            workspace_clippy = craneLib.cargoClippy (
-              workspaceArgs
-              // {
-                cargoArtifacts = workspaceDeps;
-                cargoClippyExtraArgs = "--all-targets -- -D warnings";
-              }
-            );
-            workspace_test = craneLib.cargoNextest (
-              workspaceArgs
-              // {
-                cargoArtifacts = workspaceDeps;
-                cargoNextestExtraArgs = "--no-tests pass";
-                partitions = 1;
-                partitionType = "count";
-              }
-            );
-            workspace_doc = craneLib.cargoDoc (
-              workspaceArgs
-              // {
-                cargoArtifacts = workspaceDeps;
-                cargoDocExtraArgs = "--no-deps --document-private-items";
-					 RUSTDOCFLAGS="-Z unstable-options --enable-index-page";
-              }
-            );
-            workspace_fmt = craneLib.cargoFmt {
-              inherit src;
-              cargoExtraArgs = "--all";
-            };
-            kernel_aarch64_check = kernelAarch64Check;
-            loader_aarch64_uefi_check = loaderAarch64UefiCheck;
+            xtask = xtaskCheck;
           };
           devShells = {
             default = craneLib.devShell {
