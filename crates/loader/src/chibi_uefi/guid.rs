@@ -7,7 +7,8 @@ use {
 #[macro_export]
 macro_rules! guid {
 	($s:literal) => {{
-		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,);
+		use poison_girl_no_std_error::ConstContainer;
+		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,).unwrap();
 		GUID
 	}};
 }
@@ -45,12 +46,14 @@ impl Guid
 		),)
 	}
 
-	pub const fn fix_by(s: &str,) -> Self
+	pub const fn fix_by(s: &str,) -> PoisonGirlB<Self,>
 	{
-		let mut hex = [const { Hex::Zero }; 32];
-		read_to_hex(s, &mut hex,);
+		let guid_hex = match GuidHex::new(s,) {
+			X(guid_hex,) => guid_hex,
+			a => return a,
+		};
 
-		let hex: [u8; 16] = AsBytes::<32, [u8; 16],>::as_bytes(&hex,);
+		let hex = guid_hex.into_bytes();
 
 		let time_low: [u8; 4] = [hex[3], hex[2], hex[1], hex[0],];
 		let time_mid: [u8; 2] = [hex[5], hex[4],];
@@ -59,15 +62,94 @@ impl Guid
 		let clock_seq_low = hex[9];
 		let node: [u8; 6] =
 			[hex[10], hex[11], hex[12], hex[13], hex[14], hex[15],];
-		Guid::new(
+		X(Self::new(
 			time_low,
 			time_mid,
 			time_high_and_version,
 			clock_seq_high_and_reserved,
 			clock_seq_low,
 			node,
-		)
+		),)
 	}
+}
+
+struct GuidHex([HexByte; 16],);
+
+impl GuidHex
+{
+	const fn new(s: &str,) -> PoisonGirlB<Self,>
+	{
+		let hex_digits = match parse_hex_digits::<32,>(s,) {
+			X(s,) => s,
+			a => return a,
+		};
+		let hex_bytes = bytes_from_nibble_pairs(hex_digits,);
+		X(Self(hex_bytes,),)
+	}
+
+	const fn into_bytes(self,) -> [u8; 16]
+	{
+		self.0.map(const |hex_byte| hex_byte.into_u8(),)
+	}
+}
+
+struct HexByte
+{
+	high: HexDigit,
+	low:  HexDigit,
+}
+
+impl HexByte
+{
+	const fn into_u8(self,) -> u8
+	{
+		self.high.into_u8() * 16 + self.low.into_u8()
+	}
+}
+
+const fn parse_hex_digits<const N: usize,>(
+	s: &str,
+) -> PoisonGirlB<[HexDigit; N],>
+{
+	let mut buf = [None; N];
+
+	if !s.is_ascii() {
+		return Y(poison_girl_err!(GuidError::NonAsciiChar),);
+	}
+
+	let rslt =
+		s.as_bytes().iter().filter(|c| *c != b'-',).enumerate().try_for_each(
+			|(i, c,)| {
+				let hex_digit = HexDigit::from_u8(*c,)?;
+				if i >= N {
+					return Y(poison_girl_err!(GuidError::InvalidLength),);
+				}
+				buf[i] = Some(hex_digit,);
+				X((),)
+			},
+		);
+
+	match rslt {
+		X(_,) => (),
+		a => return a,
+	}
+
+	if buf[N - 1].is_none() {
+		return Y(poison_girl_err!(GuidError::InvalidLength),);
+	}
+
+	let buf = buf.map(|hex| hex.unwrap_or(HexDigit::Zero,),);
+	X(buf,)
+}
+
+const fn bytes_from_nibble_pairs<const N: usize,>(
+	bytes: [HexDigit; N * 2],
+) -> [HexByte; N]
+{
+	bytes
+		.chunks(2,)
+		.map(|chunk| HexByte { high: chunk[0], low: chunk[1], },)
+		.collect()
 }
 
 fn guid_hexes(s: &str,) -> PoisonGirlB<Vec<u8,>,>
@@ -77,7 +159,7 @@ fn guid_hexes(s: &str,) -> PoisonGirlB<Vec<u8,>,>
 		if c == '-' {
 			continue;
 		}
-		match Hex::try_from(c,) {
+		match HexDigit::try_from(c,) {
 			Ok(hex,) => hexes.push(hex as u8,),
 			Err(err,) => return Y(poison_girl_err!(err),),
 		}
@@ -125,26 +207,9 @@ where [(); N * 2]:
 	X(byte_chunk,)
 }
 
-pub const fn read_to_hex<const N: usize,>(s: &str, buf: &mut [Hex; N],)
-{
-	let s_ptr = s.as_ptr();
-	let s_len = s.len();
-	let mut i = 0;
-	let mut hex_i = 0;
-
-	while i < s_len {
-		let ith = unsafe { *s_ptr.add(i,) };
-		if Hex::is_valid_hex(ith,) {
-			buf[hex_i] = Hex::to_hex(ith,);
-			hex_i += 1;
-		}
-		i += 1;
-	}
-}
-
 #[repr(u8)]
 #[derive(Clone, Copy, Debug,)]
-pub enum Hex
+pub enum HexDigit
 {
 	Zero,
 	One,
@@ -164,30 +229,51 @@ pub enum Hex
 	Fifteen,
 }
 
-impl Hex
+impl HexDigit
 {
-	pub const fn to_hex(byte: u8,) -> Self
+	pub const fn from_u8(byte: u8,) -> PoisonGirlB<Self,>
 	{
-		match byte {
-			b'0' => Hex::Zero,
-			b'1' => Hex::One,
-			b'2' => Hex::Two,
-			b'3' => Hex::Three,
-			b'4' => Hex::Four,
-			b'5' => Hex::Five,
-			b'6' => Hex::Six,
-			b'7' => Hex::Seven,
-			b'8' => Hex::Eight,
-			b'9' => Hex::Nine,
-			b'a' | b'A' => Hex::Ten,
-			b'b' | b'B' => Hex::Eleven,
-			b'c' | b'C' => Hex::Twelve,
-			b'd' | b'D' => Hex::Thirteen,
-			b'e' | b'E' => Hex::Fourteen,
-			b'f' | b'F' => Hex::Fifteen,
-			_ => {
-				panic!("out of hex representation")
-			},
+		let rslt = match byte {
+			b'0' => HexDigit::Zero,
+			b'1' => HexDigit::One,
+			b'2' => HexDigit::Two,
+			b'3' => HexDigit::Three,
+			b'4' => HexDigit::Four,
+			b'5' => HexDigit::Five,
+			b'6' => HexDigit::Six,
+			b'7' => HexDigit::Seven,
+			b'8' => HexDigit::Eight,
+			b'9' => HexDigit::Nine,
+			b'a' | b'A' => HexDigit::Ten,
+			b'b' | b'B' => HexDigit::Eleven,
+			b'c' | b'C' => HexDigit::Twelve,
+			b'd' | b'D' => HexDigit::Thirteen,
+			b'e' | b'E' => HexDigit::Fourteen,
+			b'f' | b'F' => HexDigit::Fifteen,
+			_ => return Y(poison_girl_err!(GuidError::InvalidHexChar),),
+		};
+		X(rslt,)
+	}
+
+	pub const fn into_u8(self,) -> u8
+	{
+		match self {
+			Self::Zero => 0,
+			Self::One => 1,
+			Self::Two => 2,
+			Self::Three => 3,
+			Self::Four => 4,
+			Self::Five => 5,
+			Self::Six => 6,
+			Self::Seven => 7,
+			Self::Eight => 8,
+			Self::Nine => 9,
+			Self::Ten => 10,
+			Self::Eleven => 11,
+			Self::Twelve => 12,
+			Self::Thirteen => 13,
+			Self::Fourteen => 14,
+			Self::Fifteen => 15,
 		}
 	}
 
@@ -196,23 +282,6 @@ impl Hex
 		(byte >= b'0' && byte <= b'9')
 			|| (byte >= b'a' && byte <= b'f')
 			|| (byte >= b'A' && byte <= b'F')
-	}
-}
-
-impl TryFrom<char,> for Hex
-{
-	type Error = GuidError;
-
-	fn try_from(value: char,) -> Result<Self, Self::Error,>
-	{
-		let value = value as u8;
-		let code = match value {
-			c if Hex::is_valid_hex(c,) => Hex::to_hex(c,),
-			_ => {
-				return Err(GuidError::InvalidHexChar,);
-			},
-		};
-		Ok(code,)
 	}
 }
 
@@ -237,105 +306,18 @@ pub const trait BytesToInt<const N: usize,>
 	}
 }
 
-pub trait BytesNotTooLong<const B: bool,>
-{
-}
-impl<const BYTES: usize,> BytesNotTooLong<{ bytes_not_too_long::<BYTES,>() },>
-	for [Hex; BYTES]
-{
-}
-const fn bytes_not_too_long<const BYTES: usize,>() -> bool
-{
-	BYTES <= 32
-}
-
 pub trait BytesIsEven<const B: bool, const N: usize,>
 {
 }
+
 impl<const BYTES: usize,> BytesIsEven<{ bytes_is_even::<BYTES,>() }, BYTES,>
-	for [Hex; BYTES]
+	for [HexDigit; BYTES]
 {
 }
+
 const fn bytes_is_even<const BYTES: usize,>() -> bool
 {
 	BYTES.is_multiple_of(2,)
-}
-
-const impl<const N: usize,> BytesToInt<N,> for [Hex; N]
-where [Hex; N]: BytesNotTooLong<true,>
-{
-	fn le_u128(&self,) -> u128
-	{
-		let mut i = 0;
-		let mut rslt = 0;
-		while i < N {
-			rslt += (self[i] as u128) << (4 * i);
-			i += 1;
-		}
-		rslt
-	}
-}
-
-pub const trait AsBytes<const BYTES: usize, O = Self,>
-{
-	type Output = O;
-	//const LIMIT: usize = BYTES / 2;
-	fn as_bytes(&self,) -> Self::Output;
-}
-
-const impl<const BYTES: usize,> AsBytes<BYTES, [u8; BYTES / 2],>
-	for [Hex; BYTES]
-where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
-{
-	fn as_bytes(&self,) -> Self::Output
-	{
-		let mut rslt = [0; BYTES / 2];
-		let mut i = 0;
-		while i < BYTES / 2 {
-			let left = (self[i * 2] as u8) << 4;
-			let right = self[i * 2 + 1] as u8;
-			rslt[i] = left + right;
-
-			i += 1;
-		}
-		rslt
-	}
-}
-
-const impl<const BYTES: usize,> AsBytes<BYTES, [u8; BYTES],> for [Hex; BYTES]
-{
-	fn as_bytes(&self,) -> Self::Output
-	{
-		let mut rslt = [0; BYTES];
-		let mut i = 0;
-		while i < BYTES {
-			rslt[i] = self[i] as u8;
-			i += 1
-		}
-		rslt
-	}
-}
-
-#[allow(dead_code)]
-const trait AsLeBytes<const BYTES: usize, O = Self,>:
-	AsBytes<BYTES, O,> + BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
-{
-	fn as_le_bytes(&self,) -> Self::Output;
-}
-
-const impl<const BYTES: usize,> AsLeBytes<BYTES, [u8; BYTES],> for [Hex; BYTES]
-where [Hex; BYTES]: BytesNotTooLong<true,> + BytesIsEven<true, BYTES,>
-{
-	fn as_le_bytes(&self,) -> Self::Output
-	{
-		let mut le_ordered_hexes = [Hex::Zero; BYTES];
-		let mut i = 0;
-		while i < BYTES {
-			le_ordered_hexes[i] = self[BYTES - i - 1];
-			i += 1;
-		}
-		le_ordered_hexes.as_bytes()
-	}
 }
 
 #[cfg(test)]

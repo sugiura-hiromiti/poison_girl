@@ -1,8 +1,8 @@
 use {
 	crate::Xtask,
 	hadris_fat::{
-		FatFs, FatFsWriteExt, FileEntry,
-		format::{FatTypeSelection, FatVolumeFormatter, FormatOptions},
+		FatVolume, FatVolumeWriteExt, FileEntry,
+		format::{FatFormatOptions, FatTypeSelection, FatVolumeFormatter},
 	},
 	poison_girl_dev_error::{PoisonGirlB, X},
 	poison_girl_dev_orchestrate::{
@@ -96,15 +96,15 @@ impl DiskImageOptions
 		}
 	}
 
-	fn format_options(&self,) -> FormatOptions
+	fn format_options(&self,) -> FatFormatOptions
 	{
-		let options = FormatOptions::new(self.size_bytes,)
-			.with_fat_type(self.fat_type,)
-			.with_label(self.volume_label,)
-			.with_fat_copies(self.fat_copies,);
+		let options = FatFormatOptions::new(self.size_bytes,)
+			.fat_type(self.fat_type,)
+			.volume_label(self.volume_label,)
+			.fat_copies(self.fat_copies,);
 
 		if let Some(sectors_per_cluster,) = self.sectors_per_cluster {
-			options.with_sectors_per_cluster(sectors_per_cluster,)
+			options.sectors_per_cluster(sectors_per_cluster,)
 		} else {
 			options
 		}
@@ -188,14 +188,18 @@ impl DiskImageBuilder
 		X(disk_img_file,)
 	}
 
-	fn get_hndlr(&self, disk_img_file: File,) -> PoisonGirlB<FatFs<File,>,>
+	fn get_hndlr(&self, disk_img_file: File,)
+	-> PoisonGirlB<FatVolume<File,>,>
 	{
 		let options = self.options.format_options();
 		let fat_hndlr = FatVolumeFormatter::format(disk_img_file, options,)?;
 		X(fat_hndlr,)
 	}
 
-	fn place_boot_loader(&self, fat_hndlr: &FatFs<File,>,) -> PoisonGirlB<(),>
+	fn place_boot_loader(
+		&self,
+		fat_hndlr: &FatVolume<File,>,
+	) -> PoisonGirlB<(),>
 	{
 		let boot_loader_entry = self.ensure_boot_loader_entry(fat_hndlr,)?;
 		self.write_boot_loader(fat_hndlr, &boot_loader_entry,)
@@ -203,7 +207,7 @@ impl DiskImageBuilder
 
 	fn ensure_boot_loader_entry(
 		&self,
-		fat_hndlr: &FatFs<File,>,
+		fat_hndlr: &FatVolume<File,>,
 	) -> PoisonGirlB<FileEntry,>
 	{
 		self.ensure_entry(
@@ -215,14 +219,14 @@ impl DiskImageBuilder
 
 	fn write_boot_loader(
 		&self,
-		fat_hndlr: &FatFs<File,>,
+		fat_hndlr: &FatVolume<File,>,
 		boot_loader_entry: &FileEntry,
 	) -> PoisonGirlB<(),>
 	{
 		self.write_to_entry(fat_hndlr, boot_loader_entry, &self.boot_loader,)
 	}
 
-	fn place_kernel(&self, fat_hndlr: &FatFs<File,>,) -> PoisonGirlB<(),>
+	fn place_kernel(&self, fat_hndlr: &FatVolume<File,>,) -> PoisonGirlB<(),>
 	{
 		let kernel_entry = self.ensure_kernel_entry(&fat_hndlr,)?;
 		self.write_kernel(&fat_hndlr, &kernel_entry,)
@@ -230,7 +234,7 @@ impl DiskImageBuilder
 
 	fn ensure_kernel_entry(
 		&self,
-		fat_hndlr: &FatFs<File,>,
+		fat_hndlr: &FatVolume<File,>,
 	) -> PoisonGirlB<FileEntry,>
 	{
 		self.ensure_entry(fat_hndlr, Self::KERNEL_DIR, &self.kernel_file_name,)
@@ -238,7 +242,7 @@ impl DiskImageBuilder
 
 	fn write_kernel(
 		&self,
-		fat_hndlr: &FatFs<File,>,
+		fat_hndlr: &FatVolume<File,>,
 		kernel_entry: &FileEntry,
 	) -> PoisonGirlB<(),>
 	{
@@ -247,7 +251,7 @@ impl DiskImageBuilder
 
 	fn ensure_entry(
 		&self,
-		fat_hndlr: &FatFs<File,>,
+		fat_hndlr: &FatVolume<File,>,
 		entry_path: impl AsRef<str,>,
 		file_name: impl AsRef<str,>,
 	) -> PoisonGirlB<FileEntry,>
@@ -264,7 +268,7 @@ impl DiskImageBuilder
 
 	fn write_to_entry(
 		&self,
-		fat_hndlr: &FatFs<File,>,
+		fat_hndlr: &FatVolume<File,>,
 		entry: &FileEntry,
 		file: impl AsRef<Path,>,
 	) -> PoisonGirlB<(),>
@@ -351,7 +355,6 @@ mod tests
 {
 	use {
 		super::*,
-		hadris_fat::FatFs,
 		poison_girl_dev_test::{PoisonGirlTestB, success},
 	};
 
@@ -384,7 +387,7 @@ mod tests
 		assert_eq!(std::fs::metadata(&disk_img,)?.len(), options.size_bytes);
 
 		let disk_img_file = std::fs::File::open(&disk_img,)?;
-		let fat = FatFs::open(disk_img_file,)?;
+		let fat = FatVolume::open(disk_img_file,)?;
 		let mut boot_loader_reader =
 			fat.open_file_path("efi/boot/BOOTAA64.EFI",)?;
 		let actual = boot_loader_reader.read_to_vec()?;

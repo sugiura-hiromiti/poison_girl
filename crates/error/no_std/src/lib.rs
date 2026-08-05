@@ -1,4 +1,6 @@
 #![no_std]
+#![feature(const_convert)]
+#![feature(const_trait_impl)]
 
 pub use poison_girl_this_is_b_wrapper_no_std::{
 	B::{X, Y},
@@ -44,7 +46,7 @@ impl Display for PoisonGirlError
 	}
 }
 
-impl From<ElfParseError,> for PoisonGirlError
+const impl From<ElfParseError,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: ElfParseError,) -> Self
@@ -56,7 +58,7 @@ impl From<ElfParseError,> for PoisonGirlError
 	}
 }
 
-impl From<ParserError,> for PoisonGirlError
+const impl From<ParserError,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: ParserError,) -> Self
@@ -68,7 +70,7 @@ impl From<ParserError,> for PoisonGirlError
 	}
 }
 
-impl From<GraphicError,> for PoisonGirlError
+const impl From<GraphicError,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: GraphicError,) -> Self
@@ -80,7 +82,7 @@ impl From<GraphicError,> for PoisonGirlError
 	}
 }
 
-impl From<UefiError,> for PoisonGirlError
+const impl From<UefiError,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: UefiError,) -> Self
@@ -92,7 +94,7 @@ impl From<UefiError,> for PoisonGirlError
 	}
 }
 
-impl From<GuidError,> for PoisonGirlError
+const impl From<GuidError,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: GuidError,) -> Self
@@ -127,6 +129,7 @@ pub enum GuidError
 {
 	InvalidHexChar,
 	InvalidLength,
+	NonAsciiChar,
 }
 
 #[derive(Debug,)]

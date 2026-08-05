@@ -19,8 +19,6 @@ pub mod builder;
 mod disk_img;
 /// detail implementation of qemu orchestration
 pub mod qemu_command;
-/// centerize target spec
-mod target_spec;
 
 pub struct Xtask
 {

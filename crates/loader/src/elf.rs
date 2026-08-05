@@ -17,8 +17,8 @@ use {
 		iter::Sum,
 		mem::size_of,
 		ops::{
-			Add, AddAssign, Div, DivAssign, Mul, MulAssign, Shl, Shr, Sub,
-			SubAssign,
+			Add, AddAssign, BitAnd, Div, DivAssign, Mul, MulAssign, Shl, Shr,
+			Sub, SubAssign,
 		},
 	},
 	poison_girl_no_std_error::{
@@ -165,6 +165,34 @@ impl Elf
 	}
 }
 
+fn read_bytes_with_endian<const IS_LITTLE: bool, I: PrimitiveInteger,>(
+	offset: &mut usize,
+	binary: &[u8],
+) -> Option<I,>
+where
+	for<'a> &'a [u8]: AsInt<I,>,
+{
+	let size = size_of::<I,>();
+	if size + *offset > binary.len() {
+		*offset += size;
+		return None;
+	}
+
+	let mut val = (&binary[*offset..]).as_int();
+	if !IS_LITTLE {
+		let byte_count = size_of::<I,>();
+		val = (0..byte_count)
+			.map(|i| (val & ((1 << ((i + 1) * 8)) - (1 << (i * 8)))) >> (i * 8),)
+			.rev()
+			.enumerate()
+			.map(|(i, v,)| v << (i * 8),)
+			.sum();
+	}
+
+	*offset += size;
+	Some(val,)
+}
+
 fn read_le_bytes<I: PrimitiveInteger,>(
 	offset: &mut usize,
 	binary: &[u8],
@@ -247,6 +275,7 @@ trait Integer<T: PrimitiveInteger,>:
 	+ Clone
 	+ Sum
 	+ Sized
+	+ BitAnd
 {
 	fn cast_int(self,) -> T;
 }
@@ -265,6 +294,7 @@ trait PrimitiveInteger:
 	+ Clone
 	+ Sum
 	+ Sized
+	+ BitAnd
 {
 }
 

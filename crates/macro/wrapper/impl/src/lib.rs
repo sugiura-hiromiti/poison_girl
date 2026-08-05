@@ -16,7 +16,7 @@ pub fn wrapper(
 			// Extract function signature components
 			let constness = sig.constness;
 			let asyncness = sig.asyncness;
-			let unsafety = sig.unsafety;
+			let unsafety = &sig.safety;
 			let abi = &sig.abi;
 			let fn_name = &sig.ident;
 			let generics = &sig.generics;
