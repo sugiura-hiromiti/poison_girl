@@ -7,7 +7,7 @@ metadata = { poison_girl = { no_std = true } }
 [dependencies]
 poison_girl_macro = { workspace = true }
 poison_girl_macro_def_status = { workspace = true }
-poison_girl_no_std = { workspace = true }
+poison_girl_no_std_support = { workspace = true }
 poison_girl_no_std_error = { workspace = true }
 
 [dev-dependencies]

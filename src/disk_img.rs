@@ -12,7 +12,7 @@ use {
 			crate_::{CrateInfo, PoisonGirlCrateChart},
 		},
 	},
-	poison_girl_no_std::KERNEL_FILE_NAME,
+	poison_girl_no_std_boot_contract::KERNEL_FILE_NAME,
 	std::{
 		fs::File,
 		io::Read,
