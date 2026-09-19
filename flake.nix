@@ -3,6 +3,10 @@
   description = "poison girl dev env";
 
   inputs = {
+    advisory-db = {
+      url = "github:RustSec/advisory-db";
+      flake = false;
+    };
 
     nixpkgs = {
       url = "github:nixos/nixpkgs/nixpkgs-unstable";
@@ -33,6 +37,7 @@
 
   outputs =
     inputs@{
+      advisory-db,
       nixpkgs,
       flake-parts,
       systems,
@@ -66,12 +71,18 @@
 
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
-          xtaskWrapper =
-            name:
+          ciCargoDerivationWrapper =
+            command: name:
             craneLib.mkCargoDerivation {
+              src = ./.;
+              cargoLock = ./Cargo.lock;
+              cargoArtifacts = null;
               pnameSuffix = "-workspace-${name}";
-              buildPhaseCargoCommand = "cargo run --locked -p poison_girl -q -- --locked ${name}";
+              buildPhaseCargoCommand = command;
+              doInstallCargoArtifacts = false;
             };
+          xtaskWrapper =
+            name: ciCargoDerivationWrapper "cargo run --locked -p poison_girl -q -- --locked ${name}" name;
         in
         {
 
@@ -79,13 +90,19 @@
 
           checks = {
             # TODO: 以下の５種類をxtaskの薄いwrapperとして定義する
-            # build, clippy, test, fmt
+            # build, clippy, test
             # 以下はnix flake check 独自のlintとして定義する
             # doc, udeps, audit
             workspaceBuild = xtaskWrapper "build";
             workspaceTest = xtaskWrapper "test";
             workspaceClippy = xtaskWrapper "clippy";
-            workspaceFmt = xtaskWrapper "fmt";
+            workspaceFmt = ciCargoDerivationWrapper "cargo fmt --all --check" "fmt";
+            workspaceDoc = xtaskWrapper "doc";
+            workspaceUdeps = xtaskWrapper "udeps";
+            workspaceAudit = craneLib.cargoAudit {
+              src = ./.;
+              inherit advisory-db;
+            };
           };
 
           devShells = {
