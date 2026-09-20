@@ -1,4 +1,3 @@
-# TODO: cache戦略の確定とcacheの導入
 {
   description = "poison girl dev env";
 

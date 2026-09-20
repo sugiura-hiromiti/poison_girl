@@ -2,15 +2,12 @@
   imports = [ inputs.files.flakeModules.default ];
   perSystem = { lib, config, ... }: {
     files = {
-      files = lib.mapAttrsToList (name: drv: {
-        path_ = ".github/workflows/${name}";
-        inherit drv;
-      }) config.githubActions.workflowFiles;
-    };
-    apps = {
-      sync-ci-workflow = {
-        type = "app";
-        program = lib.getExe config.files.writer.drv;
+      file = lib.mapAttrs' (
+        name: drv: lib.nameValuePair ".github/workflows/${name}" { source = drv; }
+      ) config.githubActions.workflowFiles;
+      writer = {
+        app = true;
+        exeFilename = "sync-ci-workflow";
       };
     };
     githubActions = {
