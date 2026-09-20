@@ -1,13 +1,16 @@
 { inputs }: {
-  imports = [ inputs.files.flakeModules.default ];
+  imports = [ (inputs.files + "/flake-module.nix") ];
   perSystem = { lib, config, ... }: {
     files = {
       file = lib.mapAttrs' (
         name: drv: lib.nameValuePair ".github/workflows/${name}" { source = drv; }
       ) config.githubActions.workflowFiles;
-      writer = {
-        app = true;
-        exeFilename = "sync-ci-workflow";
+
+    };
+    apps = {
+      sync-ci-workflow = {
+        type = "app";
+        program = lib.getExe config.files.writer.drv;
       };
     };
     githubActions = {

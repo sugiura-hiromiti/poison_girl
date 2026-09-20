@@ -4,6 +4,7 @@
   inputs = {
     files = {
       url = "github:mightyiam/files";
+      flake = false;
     };
     github-actions-nix = {
       url = "github:synapdeck/github-actions-nix";
