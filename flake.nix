@@ -59,9 +59,11 @@
     }:
 
     flake-parts.lib.mkFlake { inherit inputs; } {
-
+      imports = [
+        github-actions-nix.flakeModules.default
+        ./nix/ci.nix
+      ];
       systems = import systems;
-
       perSystem =
         {
           pkgs,
@@ -69,20 +71,15 @@
           ...
         }:
         let
-
           fx = fenix.packages.${system};
-
           rust = fx.latest;
-
           rustToolchain = fx.combine [
             rust.toolchain
             rust.rust-src
             # fx.targets.aarch64-unknown-none.latest.rust-std
             # fx.targets.aarch64-unknown-uefi.latest.rust-std
           ];
-
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
           cargoVendorDir = craneLib.vendorMultipleCargoDeps {
             cargoLockList = [
               ./Cargo.lock
@@ -104,10 +101,7 @@
             name: ciCargoDerivationWrapper "cargo run --locked -p poison_girl -q -- --locked ${name}" name;
         in
         {
-          imports = [
-            github-actions-nix.flakeModules.default
-            ./nix/ci.nix
-          ];
+
           formatter = pkgs.nixfmt;
 
           checks = {
