@@ -1,8 +1,22 @@
-# TODO: cache戦略の確定とcacheの導入
 {
   description = "poison girl dev env";
 
   inputs = {
+    files = {
+      url = "github:mightyiam/files";
+      flake = false;
+    };
+    github-actions-nix = {
+      url = "github:synapdeck/github-actions-nix";
+      inputs = {
+        nixpkgs = {
+          follows = "nixpkgs";
+        };
+        flake-parts = {
+          follows = "flake-parts";
+        };
+      };
+    };
     advisory-db = {
       url = "github:RustSec/advisory-db";
       flake = false;
@@ -37,6 +51,8 @@
 
   outputs =
     inputs@{
+      files,
+      github-actions-nix,
       advisory-db,
       nixpkgs,
       flake-parts,
@@ -47,9 +63,11 @@
     }:
 
     flake-parts.lib.mkFlake { inherit inputs; } {
-
+      imports = [
+        github-actions-nix.flakeModules.default
+        ./nix/ci.nix
+      ];
       systems = import systems;
-
       perSystem =
         {
           pkgs,
@@ -57,20 +75,15 @@
           ...
         }:
         let
-
           fx = fenix.packages.${system};
-
           rust = fx.latest;
-
           rustToolchain = fx.combine [
             rust.toolchain
             rust.rust-src
             # fx.targets.aarch64-unknown-none.latest.rust-std
             # fx.targets.aarch64-unknown-uefi.latest.rust-std
           ];
-
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
           cargoVendorDir = craneLib.vendorMultipleCargoDeps {
             cargoLockList = [
               ./Cargo.lock
