@@ -3,6 +3,17 @@
   description = "poison girl dev env";
 
   inputs = {
+    github-actions-nix = {
+      url = "github:synapdeck/github-actions-nix";
+      inputs = {
+        nixpkgs = {
+          follows = "nixpkgs";
+        };
+        flake-parts = {
+          follows = "flake-parts";
+        };
+      };
+    };
     advisory-db = {
       url = "github:RustSec/advisory-db";
       flake = false;
@@ -37,6 +48,7 @@
 
   outputs =
     inputs@{
+      github-actions-nix,
       advisory-db,
       nixpkgs,
       flake-parts,
@@ -92,7 +104,10 @@
             name: ciCargoDerivationWrapper "cargo run --locked -p poison_girl -q -- --locked ${name}" name;
         in
         {
-
+          imports = [
+            github-actions-nix.flakeModules.default
+            ./nix/ci.nix
+          ];
           formatter = pkgs.nixfmt;
 
           checks = {
