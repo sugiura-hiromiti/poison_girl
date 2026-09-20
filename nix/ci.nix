@@ -1,5 +1,18 @@
-{
-  perSystem = { ... }: {
+{ inputs }: {
+  imports = [ inputs.files.flakeModules.default ];
+  perSystem = { lib, config, ... }: {
+    files = {
+      files = lib.mapAttrsToList (name: drv: {
+        path_ = ".github/workflows/${name}";
+        inherit drv;
+      }) config.githubActions.workflowFiles;
+    };
+    apps = {
+      sync-ci-workflow = {
+        type = "app";
+        program = lib.getExe config.files.writer.drv;
+      };
+    };
     githubActions = {
       enable = true;
       workflows = {
@@ -14,12 +27,13 @@
             };
           };
           jobs = {
-            permissions = {
-              contents = "read";
-              id-token = "write";
-            };
+
             check = {
               name = "flake check (\${{ matrix.runner }})";
+              permissions = {
+                contents = "read";
+                id-token = "write";
+              };
               strategy = {
                 failFast = false;
                 matrix = {

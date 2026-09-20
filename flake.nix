@@ -3,6 +3,9 @@
   description = "poison girl dev env";
 
   inputs = {
+    files = {
+      url = "github:mightyiam/files";
+    };
     github-actions-nix = {
       url = "github:synapdeck/github-actions-nix";
       inputs = {
@@ -48,6 +51,7 @@
 
   outputs =
     inputs@{
+      files,
       github-actions-nix,
       advisory-db,
       nixpkgs,
