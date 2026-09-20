@@ -313,7 +313,7 @@ mod tests
 			GraphicsOutputModeInfo, GraphicsOutputProtocolMode,
 			GraphicsPixelFormat, PixelBitMask,
 		},
-		poison_girl_no_std::bridge::graphic::PixelFormatConf,
+		poison_girl_no_std_support::bridge::graphic::PixelFormatConf,
 	};
 
 	fn ph(
