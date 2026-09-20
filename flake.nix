@@ -71,11 +71,18 @@
 
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
+          cargoVendorDir = craneLib.vendorMultipleCargoDeps {
+            cargoLockList = [
+              ./Cargo.lock
+              "${rust.rust-src}/lib/rustlib/src/rust/library/Cargo.lock"
+            ];
+          };
           ciCargoDerivationWrapper =
             command: name:
             craneLib.mkCargoDerivation {
               src = ./.;
               cargoLock = ./Cargo.lock;
+              inherit cargoVendorDir;
               cargoArtifacts = null;
               pnameSuffix = "-workspace-${name}";
               buildPhaseCargoCommand = command;
