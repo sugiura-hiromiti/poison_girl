@@ -25,10 +25,11 @@ use {
 		},
 	},
 	core::ptr::NonNull,
-	poison_girl_no_std::{KERNEL_FILE_NAME, bridge::graphic::FrameBufConf},
+	poison_girl_no_std_boot_contract::KERNEL_FILE_NAME,
 	poison_girl_no_std_error::{
 		ElfParseError, PoisonGirlB, X, Y, poison_girl_err,
 	},
+	poison_girl_no_std_support::bridge::graphic::FrameBufConf,
 };
 
 /// Loads the kernel ELF file and prepares it for execution
@@ -312,7 +313,7 @@ mod tests
 			GraphicsOutputModeInfo, GraphicsOutputProtocolMode,
 			GraphicsPixelFormat, PixelBitMask,
 		},
-		poison_girl_no_std::bridge::graphic::PixelFormatConf,
+		poison_girl_no_std_support::bridge::graphic::PixelFormatConf,
 	};
 
 	fn ph(

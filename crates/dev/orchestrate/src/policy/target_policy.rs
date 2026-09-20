@@ -1,6 +1,9 @@
 use poison_girl_dev_cargo::{Arch, Runtime};
 
-use crate::{AsCargoOpt, cli_interface::CargoInvocationArgs};
+use crate::{
+	AsCargoOpt, cli_interface::CargoInvocationArgs,
+	decl_manage::crate_::PoisonGirlCrateChart,
+};
 
 pub struct TargetPolicy
 {
@@ -23,8 +26,12 @@ impl TargetPolicy
 	pub fn target_spec(&self,) -> Option<String,>
 	{
 		let mut tuple = self.target_tuple();
-		if self.has_json_spec() {
-			tuple.as_mut()?.push_str(".json",);
+		if self.has_json_spec()
+			&& let Some(ref mut tuple,) = tuple
+		{
+			tuple.push_str(".json",);
+			let kernel_crate_path = PoisonGirlCrateChart::KERNEL.to_path_buf();
+			*tuple = kernel_crate_path.join(&*tuple,).display().to_string();
 		}
 
 		tuple
@@ -32,6 +39,8 @@ impl TargetPolicy
 
 	fn has_json_spec(&self,) -> bool
 	{
+		// matches! can be used for comparing data types which do not implement
+		// Eq
 		matches!(self.runtime, Runtime::PoisonGirl)
 	}
 
@@ -94,6 +103,11 @@ mod tests
 			"{}-sugiura_hiromiti-poison_girl-elf.json",
 			Arch::Aarch64.as_ref()
 		);
+		let target = PoisonGirlCrateChart::KERNEL
+			.to_path_buf()
+			.join(target,)
+			.display()
+			.to_string();
 
 		assert_eq!(
 			policy.as_cargo_opt().into_cargo_args(),

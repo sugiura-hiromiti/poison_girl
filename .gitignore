@@ -13,3 +13,5 @@ mnt/
 !Cargo.lock
 .serena/
 /.agent-shell/
+.codex
+.agents/

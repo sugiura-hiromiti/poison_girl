@@ -173,10 +173,10 @@ impl From<NotObedientPath,> for PoisonGirlError
 	}
 }
 
-impl From<hadris_fat::error::FatError,> for PoisonGirlError
+impl From<hadris_fat::error::Error,> for PoisonGirlError
 {
 	#[track_caller]
-	fn from(value: hadris_fat::error::FatError,) -> Self
+	fn from(value: hadris_fat::error::Error,) -> Self
 	{
 		Self { loc: Location::caller(), src: DevError::FatError(value,), }
 	}
@@ -298,7 +298,7 @@ enum DevError
 	InvalidManifest(InvalidManifest,),
 	PathIsNotValidUtf8(PathIsNotValidUtf8,),
 	NotObedientPath(NotObedientPath,),
-	FatError(hadris_fat::error::FatError,),
+	FatError(hadris_fat::error::Error,),
 	Todo(String,),
 	ProjectRootNotFound(ProjectRootNotFound,),
 	InvalidProjectRootFound(InvalidProjectRootFound,),

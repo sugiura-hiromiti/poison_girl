@@ -363,11 +363,16 @@ impl AsCargoOpt for Vec<CargoInvocationArgs,>
 #[strum_discriminants(strum(serialize_all = "snake_case"))]
 pub enum CliCommand
 {
+	#[command(alias = "b")]
 	Build(BuildArgs,),
+	#[command(alias = "t")]
 	Test(TestArgs,),
+	#[command(alias = "r")]
 	Run(RunArgs,),
+	#[command(alias = "c")]
 	Clippy(ClippyArgs,),
 	Fixture(FixtureArgs,),
+	#[command(alias = "f")]
 	Fix(FixArgs,),
 }
 

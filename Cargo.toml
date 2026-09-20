@@ -3,7 +3,7 @@ default-members = ["crates/kernel", "crates/loader"]
 members = [
   "crates/kernel",
   "crates/loader",
-  "crates/no_std",
+  "crates/no_std/*",
   "crates/error/*",
   "crates/dev/*",
   "crates/macro/helper",
@@ -47,7 +47,8 @@ poison_girl_macro_impl_status = { path = "./crates/macro/status/impl/" }
 poison_girl_macro_impl_test_elf_header_parse = { path = "./crates/macro/test_elf_header_parse/impl/" }
 poison_girl_macro_impl_test_program_headers_parse = { path = "./crates/macro/test_program_headers_parse/impl/" }
 poison_girl_macro_impl_wrapper = { path = "./crates/macro/wrapper/impl/" }
-poison_girl_no_std = { path = "./crates/no_std/" }
+poison_girl_no_std_support = { path = "./crates/no_std/support/" }
+poison_girl_no_std_boot_contract = { path = "./crates/no_std/boot_contract/" }
 poison_girl_no_std_error = { path = "./crates/error/no_std/" }
 poison_girl_proc_macro_helper = { path = "./crates/macro/helper/" }
 poison_girl_this_is_b_wrapper_dev = { path = "./crates/error/this_is_b_wrapper_dev/" }
@@ -98,7 +99,7 @@ poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
 poison_girl_dev_orchestrate = { workspace = true }
 poison_girl_dev_cli = { workspace = true }
-poison_girl_no_std = { workspace = true }
+poison_girl_no_std_boot_contract = { workspace = true }
 
 [dev-dependencies]
 poison_girl_dev_test = { workspace = true }

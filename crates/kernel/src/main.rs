@@ -7,10 +7,10 @@ use {
 	core::arch::asm,
 	poison_girl_kernel::{init, println},
 	poison_girl_macro::cfg_if,
-	poison_girl_no_std::{
+	poison_girl_no_std_error::{PoisonGirlB, X, Y},
+	poison_girl_no_std_support::{
 		bridge::device_tree::DeviceTreeAddress, idle_cpu_forever, wfe,
 	},
-	poison_girl_no_std_error::{PoisonGirlB, X, Y},
 };
 
 cfg_if! {

@@ -19,10 +19,10 @@ use {
 	chibi_uefi::{protocol::HandleSearchType, table::boot_services},
 	core::ptr::NonNull,
 	poison_girl_macro::cfg_if,
-	poison_girl_no_std::{
+	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, Y, poison_girl_err},
+	poison_girl_no_std_support::{
 		bridge::device_tree::DeviceTreeAddress, idle_cpu_forever,
 	},
-	poison_girl_no_std_error::{PoisonGirlB, UefiError, X, Y, poison_girl_err},
 	raw::{
 		table::SystemTable,
 		types::{Status, UnsafeHandle},

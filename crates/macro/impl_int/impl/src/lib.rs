@@ -83,6 +83,7 @@ fn unwrap_primitive(ty: &syn::Type,) -> Rslt<syn::Ident,>
 	let syn::Type::Path(TypePath {
 		qself: None,
 		path: syn::Path { leading_colon: None, segments: seg, },
+		..
 	},) = ty
 	else {
 		return Rslt::new_err(syn::Error::new(

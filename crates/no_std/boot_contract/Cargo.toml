@@ -1,0 +1,9 @@
+[package]
+name = "poison_girl_no_std_boot_contract"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[lints]
+workspace = true

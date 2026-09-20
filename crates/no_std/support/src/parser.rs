@@ -17,6 +17,5 @@
 //! abstractions and compile-time optimizations suitable for system-level
 //! programming.
 
-pub mod binary;
 pub mod generator;
 pub mod html;
