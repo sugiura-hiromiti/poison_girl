@@ -167,7 +167,7 @@ pub trait WorkspaceInfo: Sized + CrateInfo
 	///
 	/// # Returns
 	///
-	/// A slice of [`Path`] references, each pointing to a crate directory
+	/// A slice of \[`Path`\] references, each pointing to a crate directory
 	/// within the workspace. These paths are relative to the workspace root.
 	///
 	/// # Examples

@@ -15,7 +15,7 @@ use {
 };
 
 /// X/Y はResultの別名ではなく、分岐値 B の左右である
-/// PoisonGirlB<T> は error-specialized B である
+/// `PoisonGirlB<T>` は error-specialized B である
 /// no_std/stdをまたぐ統一的な失敗伝播モデルである
 pub type PoisonGirlB<T,> = B<T, PoisonGirlError,>;
 

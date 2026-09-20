@@ -1090,41 +1090,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "poison_girl_macro_def_test_elf_header_parse"
-version = "0.1.0"
-dependencies = [
- "poison_girl_macro_error",
- "poison_girl_macro_impl_test_elf_header_parse",
- "poison_girl_proc_macro_helper",
- "proc-macro2",
- "quote",
- "syn 3.0.6",
-]
-
-[[package]]
-name = "poison_girl_macro_def_test_program_headers_parse"
-version = "0.1.0"
-dependencies = [
- "poison_girl_macro_error",
- "poison_girl_macro_impl_test_program_headers_parse",
- "poison_girl_proc_macro_helper",
- "proc-macro2",
- "quote",
- "syn 3.0.6",
-]
-
-[[package]]
-name = "poison_girl_macro_def_wrapper"
-version = "0.1.0"
-dependencies = [
- "poison_girl_macro_error",
- "poison_girl_macro_impl_wrapper",
- "poison_girl_proc_macro_helper",
- "quote",
- "syn 3.0.6",
-]
-
-[[package]]
 name = "poison_girl_macro_error"
 version = "0.1.0"
 dependencies = [
@@ -1197,43 +1162,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "string_cache 0.9.0",
- "syn 3.0.6",
-]
-
-[[package]]
-name = "poison_girl_macro_impl_test_elf_header_parse"
-version = "0.1.0"
-dependencies = [
- "poison_girl_dev_test",
- "poison_girl_macro_error",
- "poison_girl_proc_macro_helper",
- "proc-macro2",
- "quote",
- "syn 3.0.6",
-]
-
-[[package]]
-name = "poison_girl_macro_impl_test_program_headers_parse"
-version = "0.1.0"
-dependencies = [
- "poison_girl_dev_cargo",
- "poison_girl_dev_error",
- "poison_girl_dev_orchestrate",
- "poison_girl_macro_error",
- "poison_girl_proc_macro_helper",
- "proc-macro2",
- "quote",
- "syn 3.0.6",
-]
-
-[[package]]
-name = "poison_girl_macro_impl_wrapper"
-version = "0.1.0"
-dependencies = [
- "poison_girl_macro_error",
- "poison_girl_proc_macro_helper",
- "proc-macro2",
- "quote",
  "syn 3.0.6",
 ]
 
