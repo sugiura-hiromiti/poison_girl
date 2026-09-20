@@ -14,11 +14,26 @@
             };
           };
           jobs = {
+            permissions = {
+              contents = "read";
+              id-token = "write";
+            };
             check = {
-              runsOn = "ubuntu-latest";
+              name = "flake check (\${{ matrix.runner }})";
+              strategy = {
+                failFast = false;
+                matrix = {
+                  runner = [
+                    "ubuntu-24.04-arm"
+                    "macos-15"
+                  ];
+                };
+              };
+              runsOn = "\${{ matrix.runner }}";
               steps = [
                 { uses = "actions/checkout@v4"; }
-                { uses = "cachix/install-nix-action@v24"; }
+                { uses = "cachix/install-nix-action@v31"; }
+                { uses = "DeterminateSystems/magic-nix-cache-action@v14"; }
                 { run = "nix flake check -L --show-trace"; }
               ];
             };
