@@ -1,6 +1,6 @@
 use {
 	super::PhysicalAddress, crate::c_style_enum,
-	poison_girl_no_std::bridge::graphic::PixelFormatConf,
+	poison_girl_no_std_support::bridge::graphic::PixelFormatConf,
 };
 
 #[repr(C)]

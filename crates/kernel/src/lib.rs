@@ -3,7 +3,6 @@
 #![feature(associated_type_defaults)]
 // #![feature(impl_trait_in_assoc_type)]
 // #![feature(slice_index_methods)]
-#![feature(generic_const_exprs)]
 #![feature(const_trait_impl)]
 
 #[cfg(test)] extern crate std;

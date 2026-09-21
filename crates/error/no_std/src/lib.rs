@@ -4,7 +4,7 @@
 
 pub use poison_girl_this_is_b_wrapper_no_std::{
 	B::{X, Y},
-	Container,
+	ConstContainer, Container,
 };
 use {
 	core::{

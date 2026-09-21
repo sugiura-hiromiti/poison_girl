@@ -1,14 +1,20 @@
 #![no_std]
 #![allow(incomplete_features)]
 #![cfg_attr(all(not(test), target_os = "uefi"), feature(alloc_error_handler))]
-#![feature(const_trait_impl)]
-#![feature(generic_const_exprs)]
-#![feature(associated_type_defaults)]
-#![feature(derive_const)]
-#![feature(const_default)]
-#![feature(iterator_try_collect)]
-// #![feature(nonzero_internals)]
-//#![feature(stdarch_arm_hints)]
+#![feature(
+	const_trait_impl,
+	min_generic_const_args,
+	generic_const_args,
+	generic_const_items,
+	macroless_generic_const_args,
+	associated_type_defaults,
+	derive_const,
+	const_default,
+	const_closures,
+	iterator_try_collect,
+	const_array,
+	const_convert
+)]
 
 extern crate alloc;
 #[cfg(test)] extern crate std;

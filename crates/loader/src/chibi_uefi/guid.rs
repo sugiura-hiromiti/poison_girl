@@ -8,7 +8,7 @@ use {
 macro_rules! guid {
 	($s:literal) => {{
 		use poison_girl_no_std_error::ConstContainer;
-		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,).unwrap();
+		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,).const_unwrap();
 		GUID
 	}};
 }
@@ -50,7 +50,7 @@ impl Guid
 	{
 		let guid_hex = match GuidHex::new(s,) {
 			X(guid_hex,) => guid_hex,
-			a => return a,
+			Y(e,) => return Y(e,),
 		};
 
 		let hex = guid_hex.into_bytes();
@@ -81,7 +81,7 @@ impl GuidHex
 	{
 		let hex_digits = match parse_hex_digits::<32,>(s,) {
 			X(s,) => s,
-			a => return a,
+			Y(e,) => return Y(e,),
 		};
 		let hex_bytes = bytes_from_nibble_pairs(hex_digits,);
 		X(Self(hex_bytes,),)
@@ -118,7 +118,7 @@ const fn parse_hex_digits<const N: usize,>(
 	}
 
 	let rslt =
-		s.as_bytes().iter().filter(|c| *c != b'-',).enumerate().try_for_each(
+		s.as_bytes().iter().filter(|c| **c != b'-',).enumerate().try_for_each(
 			|(i, c,)| {
 				let hex_digit = HexDigit::from_u8(*c,)?;
 				if i >= N {
@@ -131,7 +131,7 @@ const fn parse_hex_digits<const N: usize,>(
 
 	match rslt {
 		X(_,) => (),
-		a => return a,
+		Y(e,) => return Y(e,),
 	}
 
 	if buf[N - 1].is_none() {
@@ -142,8 +142,10 @@ const fn parse_hex_digits<const N: usize,>(
 	X(buf,)
 }
 
+const DOUBLE<const N: usize,>: usize = const { N * 2 };
+
 const fn bytes_from_nibble_pairs<const N: usize,>(
-	bytes: [HexDigit; N * 2],
+	bytes: [HexDigit; DOUBLE::<N,>],
 ) -> [HexByte; N]
 {
 	bytes
@@ -363,7 +365,7 @@ mod tests
 			"09576e91-6d3f-11d2-8e39-00a0c969723b",
 			"09576E91-6D3F-11D2-8E39-00A0C969723B",
 		] {
-			assert_eq!(Guid::gen_from_str(guid,)?, Guid::fix_by(guid,));
+			assert_eq!(Guid::gen_from_str(guid,)?, Guid::fix_by(guid,)?);
 		}
 		success!()
 	}

@@ -599,7 +599,13 @@ impl AsCargoOpt for FixArgs
 }
 
 #[derive(clap::Args, Default, Clone,)]
-pub struct DocArgs {}
+pub struct DocArgs
+{
+	#[arg(long)]
+	no_deps:                bool,
+	#[arg(long)]
+	document_private_items: bool,
+}
 
 impl AsCargoOpt for DocArgs
 {
@@ -607,7 +613,18 @@ impl AsCargoOpt for DocArgs
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
+		let no_deps = if self.no_deps { vec!["--no-deps"] } else { vec![] };
+		let document_private_items = if self.document_private_items {
+			vec!["--document-private-items"]
+		} else {
+			vec![]
+		};
+		let cargo_args = no_deps
+			.into_iter()
+			.chain(document_private_items,)
+			.map(|s| s.to_string(),)
+			.collect();
+		CargoInvocationArgs { cargo_args, tool_args: vec![], }
 	}
 }
 
