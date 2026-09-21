@@ -1541,9 +1541,9 @@ dependencies = [
 
 [[package]]
 name = "this_is_b"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "952cbe9cf179490a59ae3caff8442ac64cd6c6c457a5557eb610f5deb4f735ee"
+checksum = "1aeb15d6f30f84b797d5bcbd83a3d1012ef28a379d3c6a99bb959898c818a707"
 
 [[package]]
 name = "toml"
