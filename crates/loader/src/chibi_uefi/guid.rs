@@ -120,23 +120,25 @@ const fn parse_hex_digits<const N: usize,>(
 	let mut idx = 0;
 
 	for i in 0..bytes.len() {
+		if idx >= N {
+			return Y(poison_girl_err!(GuidError::InvalidLength),);
+		}
+
 		let byte = bytes[i];
 
 		if byte == b'-' {
 			continue;
 		}
 
-		let hex = match HexDigit::from_u8(byte,) {
-			X(h,) => h,
-			Y(e,) => return Y(e,),
-		};
+		let hex = HexDigit::from_u8(byte,)?;
+		buf[idx] = hex;
+		idx += 1;
 	}
 
-	if buf[N - 1].is_none() {
+	if idx != N {
 		return Y(poison_girl_err!(GuidError::InvalidLength),);
 	}
 
-	let buf = buf.map(const |hex| hex.unwrap_or(HexDigit::Zero,),);
 	X(buf,)
 }
 

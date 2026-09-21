@@ -9,6 +9,7 @@
 	macroless_generic_const_args,
 	associated_type_defaults,
 	derive_const,
+	const_for,
 	const_default,
 	const_closures,
 	iterator_try_collect,
