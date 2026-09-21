@@ -18,9 +18,9 @@ aquamarine = "*"
 clap = { version = "*", features = ["derive"] }
 clap_derive = { version = "*" }
 colored = "*"
-html5ever = "*"
+html5ever = "0.39"
 itertools = "*"
-markup5ever_rcdom = "*"
+markup5ever_rcdom = "0.39"
 ovmf-prebuilt = "*"
 poison_girl_dev_cargo = { path = "./crates/dev/cargo/" }
 poison_girl_dev_cli = { path = "./crates/dev/cli/" }
