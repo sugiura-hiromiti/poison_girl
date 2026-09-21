@@ -142,7 +142,7 @@ const fn parse_hex_digits<const N: usize,>(
 	X(buf,)
 }
 
-const DOUBLE<const N: usize,>: usize = const { N * 2 };
+const DOUBLE<const N: usize,>: usize = N * 2;
 
 const fn bytes_from_nibble_pairs<const N: usize,>(
 	bytes: [HexDigit; DOUBLE::<N,>],
@@ -189,7 +189,7 @@ fn next_nibble_chunk<const N: usize, I: Iterator<Item = u8,>,>(
 }
 
 fn convert_nibble_chunk_to_byte_chunk<const N: usize,>(
-	nibbles: [u8; N * 2],
+	nibbles: [u8; DOUBLE::<N,>],
 ) -> [u8; N]
 {
 	let mut byte_chunk = [0; N];
@@ -202,9 +202,9 @@ fn convert_nibble_chunk_to_byte_chunk<const N: usize,>(
 fn next_byte_chunk<const N: usize, I: Iterator<Item = u8,>,>(
 	hexes: &mut I,
 ) -> PoisonGirlB<[u8; N],>
-where [(); N * 2]:
+where [(); DOUBLE::<N,>]:
 {
-	let nibble_chunk = next_nibble_chunk::<{ N * 2 }, _,>(hexes,)?;
+	let nibble_chunk = next_nibble_chunk::<{ DOUBLE::<N,> }, _,>(hexes,)?;
 	let byte_chunk = convert_nibble_chunk_to_byte_chunk::<N,>(nibble_chunk,);
 	X(byte_chunk,)
 }
