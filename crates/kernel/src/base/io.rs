@@ -41,7 +41,7 @@ static CONSOLE: TextBuf<(usize, usize,),> = TextBuf::new((0, 0,), 8, 16,);
 ///
 /// # Type Parameters
 ///
-/// * `C` - Coordinate type that implements the [`Coordinal`] trait
+/// * `C` - Coordinate type that implements the \[`Coordinal`\] trait
 ///
 /// # Fields
 ///
@@ -481,9 +481,9 @@ fn drop_fmt_result(result: core::fmt::Result,)
 ///
 /// # Methods
 ///
-/// - [`digit_count`]: Returns the number of digits in the integer
-/// - [`nth_digit`]: Returns the nth digit of the integer
-/// - [`shift_right`]: Removes and returns the rightmost digit
+/// - \[`digit_count`\]: Returns the number of digits in the integer
+/// - \[`nth_digit`\]: Returns the nth digit of the integer
+/// - \[`shift_right`\]: Removes and returns the rightmost digit
 ///
 /// # Examples
 ///

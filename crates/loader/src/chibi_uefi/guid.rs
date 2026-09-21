@@ -115,24 +115,23 @@ const fn parse_hex_digits<const N: usize,>(
 		return Y(poison_girl_err!(GuidError::NonAsciiChar),);
 	}
 
-	let mut buf: [HexDigit; N];
+	let mut buf = [HexDigit::Zero; N];
 	let bytes = s.as_bytes();
 	let mut idx = 0;
 
-	for i in 0..bytes.len() {
-		if idx >= N {
-			return Y(poison_girl_err!(GuidError::InvalidLength),);
-		}
-
+	let mut i = 0;
+	while i < bytes.len() {
 		let byte = bytes[i];
 
-		if byte == b'-' {
-			continue;
-		}
+		if byte != b'-' {
+			if idx >= N {
+				return Y(poison_girl_err!(GuidError::InvalidLength),);
+			}
 
-		let hex = HexDigit::from_u8(byte,)?;
-		buf[idx] = hex;
-		idx += 1;
+			buf[idx] = HexDigit::from_u8(byte,)?;
+			idx += 1;
+		}
+		i += 1;
 	}
 
 	if idx != N {

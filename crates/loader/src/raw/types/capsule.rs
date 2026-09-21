@@ -17,9 +17,9 @@ impl CapsuleFlags
 {
 	/// Trigger a system reset after passing the capsule to the firmware.
 	///
-	/// If this flag is set, [`PERSIST_ACROSS_RESET`] must be set as well.
+	/// If this flag is set, \[`PERSIST_ACROSS_RESET`\] must be set as well.
 	///
-	/// [`PERSIST_ACROSS_RESET`]: Self::PERSIST_ACROSS_RESET
+	/// \[`PERSIST_ACROSS_RESET`\]: Self::PERSIST_ACROSS_RESET
 	pub const INITIATE_RESET: u32 = 1 << 18;
 	/// Indicates the firmware should process the capsule after system reset.
 	pub const PERSIST_ACROSS_RESET: u32 = 1 << 16;
@@ -28,9 +28,9 @@ impl CapsuleFlags
 	/// that buffer will be placed in the configuration table after system
 	/// reset.
 	///
-	/// If this flag is set, [`PERSIST_ACROSS_RESET`] must be set as well.
+	/// If this flag is set, \[`PERSIST_ACROSS_RESET`\] must be set as well.
 	///
-	/// [`PERSIST_ACROSS_RESET`]: Self::PERSIST_ACROSS_RESET
+	/// \[`PERSIST_ACROSS_RESET`\]: Self::PERSIST_ACROSS_RESET
 	pub const POPULATE_SYSTEM_TABLE: u32 = 1 << 17;
 	/// The meaning of this bit depends on the capsule GUID.
 	pub const TYPE_SPECIFIC_BIT_0: u32 = 1 << 0;

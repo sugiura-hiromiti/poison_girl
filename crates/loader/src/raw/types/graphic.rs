@@ -128,7 +128,7 @@ mod tests
 	use {
 		super::*,
 		core::mem::{align_of, size_of},
-		poison_girl_no_std::bridge::graphic::PixelFormatConf,
+		poison_girl_no_std_support::bridge::graphic::PixelFormatConf,
 	};
 
 	#[test]

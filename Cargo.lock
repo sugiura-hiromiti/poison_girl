@@ -1045,7 +1045,6 @@ dependencies = [
  "poison_girl_dev_fs",
  "poison_girl_dev_util",
  "poison_girl_macro_error",
- "poison_girl_proc_macro_helper",
  "proc-macro2",
  "quote",
  "syn 3.0.6",
@@ -1057,7 +1056,6 @@ name = "poison_girl_macro_impl_font"
 version = "0.1.0"
 dependencies = [
  "poison_girl_macro_error",
- "poison_girl_proc_macro_helper",
  "proc-macro2",
  "quote",
  "syn 3.0.6",
@@ -1072,7 +1070,6 @@ dependencies = [
  "poison_girl_dev_fs",
  "poison_girl_dev_util",
  "poison_girl_macro_error",
- "poison_girl_proc_macro_helper",
  "proc-macro2",
  "quote",
  "syn 3.0.6",
@@ -1084,7 +1081,6 @@ name = "poison_girl_macro_impl_impl_int"
 version = "0.1.0"
 dependencies = [
  "poison_girl_macro_error",
- "poison_girl_proc_macro_helper",
  "proc-macro2",
  "quote",
  "syn 3.0.6",
@@ -1097,7 +1093,6 @@ dependencies = [
  "html5ever",
  "markup5ever_rcdom",
  "poison_girl_macro_error",
- "poison_girl_proc_macro_helper",
  "proc-macro2",
  "quote",
  "string_cache",
@@ -1129,7 +1124,6 @@ version = "0.1.0"
 dependencies = [
  "colored",
  "itertools 0.15.0",
- "poison_girl_dev_error",
  "poison_girl_dev_test",
  "proc-macro2",
  "quote",

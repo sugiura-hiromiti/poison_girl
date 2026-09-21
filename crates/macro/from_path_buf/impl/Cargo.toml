@@ -10,7 +10,6 @@ debug-diagnostics = []
 poison_girl_dev_error = { workspace = true }
 poison_girl_dev_fs = { workspace = true }
 poison_girl_dev_util = { workspace = true }
-poison_girl_proc_macro_helper = { workspace = true }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }

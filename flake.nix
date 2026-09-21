@@ -115,9 +115,9 @@
             # doc, udeps, audit
             workspaceBuild = xtaskWrapper "build";
             workspaceTest = xtaskWrapper "test";
-            workspaceClippy = xtaskWrapper "clippy";
+            workspaceClippy = xtaskWrapper "clippy --allow-dirty --allow-staged";
             workspaceFmt = ciCargoDerivationWrapper "cargo fmt --all --check" "fmt";
-            workspaceDoc = xtaskWrapper "doc";
+            workspaceDoc = xtaskWrapper "doc --no-deps --document-private-items";
             workspaceUdeps = xtaskWrapper "udeps";
             workspaceAudit = craneLib.cargoAudit {
               src = ./.;

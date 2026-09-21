@@ -1,9 +1,12 @@
-#![feature(exit_status_error)]
+#![feature(exit_status_error, const_convert, const_trait_impl)]
+
+use std::process::ExitStatusError;
 
 pub use poison_girl_this_is_b_wrapper_dev::{
 	B::{X, Y},
 	Container, ReShape,
 };
+
 use {
 	core::{fmt::Debug, panic::Location},
 	poison_girl_this_is_b_wrapper_dev::B,
@@ -34,7 +37,7 @@ impl Display for PoisonGirlError
 	}
 }
 
-impl From<std::io::Error,> for PoisonGirlError
+const impl From<std::io::Error,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: std::io::Error,) -> Self
@@ -52,7 +55,7 @@ impl From<&std::io::Error,> for PoisonGirlError
 	}
 }
 
-impl From<std::process::ExitStatusError,> for PoisonGirlError
+const impl From<std::process::ExitStatusError,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: std::process::ExitStatusError,) -> Self
@@ -61,7 +64,7 @@ impl From<std::process::ExitStatusError,> for PoisonGirlError
 	}
 }
 
-impl From<PathNotFound,> for PoisonGirlError
+const impl From<PathNotFound,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: PathNotFound,) -> Self
@@ -70,7 +73,7 @@ impl From<PathNotFound,> for PoisonGirlError
 	}
 }
 
-impl From<std::string::FromUtf8Error,> for PoisonGirlError
+const impl From<std::string::FromUtf8Error,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: std::string::FromUtf8Error,) -> Self
@@ -79,7 +82,7 @@ impl From<std::string::FromUtf8Error,> for PoisonGirlError
 	}
 }
 
-impl From<toml::de::Error,> for PoisonGirlError
+const impl From<toml::de::Error,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: toml::de::Error,) -> Self
@@ -88,7 +91,7 @@ impl From<toml::de::Error,> for PoisonGirlError
 	}
 }
 
-impl From<HostTupleNotFound,> for PoisonGirlError
+const impl From<HostTupleNotFound,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: HostTupleNotFound,) -> Self
@@ -100,7 +103,7 @@ impl From<HostTupleNotFound,> for PoisonGirlError
 	}
 }
 
-impl From<ovmf_prebuilt::Error,> for PoisonGirlError
+const impl From<ovmf_prebuilt::Error,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: ovmf_prebuilt::Error,) -> Self
@@ -109,28 +112,7 @@ impl From<ovmf_prebuilt::Error,> for PoisonGirlError
 	}
 }
 
-impl From<&str,> for PoisonGirlError
-{
-	#[track_caller]
-	fn from(value: &str,) -> Self
-	{
-		Self {
-			loc: Location::caller(),
-			src: DevError::Todo(value.to_string(),),
-		}
-	}
-}
-
-impl From<String,> for PoisonGirlError
-{
-	#[track_caller]
-	fn from(value: String,) -> Self
-	{
-		Self { loc: Location::caller(), src: DevError::Todo(value,), }
-	}
-}
-
-impl From<toml::ser::Error,> for PoisonGirlError
+const impl From<toml::ser::Error,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: toml::ser::Error,) -> Self
@@ -139,7 +121,7 @@ impl From<toml::ser::Error,> for PoisonGirlError
 	}
 }
 
-impl From<InvalidManifest,> for PoisonGirlError
+const impl From<InvalidManifest,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: InvalidManifest,) -> Self
@@ -150,7 +132,7 @@ impl From<InvalidManifest,> for PoisonGirlError
 	}
 }
 
-impl From<PathIsNotValidUtf8,> for PoisonGirlError
+const impl From<PathIsNotValidUtf8,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: PathIsNotValidUtf8,) -> Self
@@ -162,7 +144,7 @@ impl From<PathIsNotValidUtf8,> for PoisonGirlError
 	}
 }
 
-impl From<NotObedientPath,> for PoisonGirlError
+const impl From<NotObedientPath,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: NotObedientPath,) -> Self
@@ -173,7 +155,7 @@ impl From<NotObedientPath,> for PoisonGirlError
 	}
 }
 
-impl From<hadris_fat::error::Error,> for PoisonGirlError
+const impl From<hadris_fat::error::Error,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: hadris_fat::error::Error,) -> Self
@@ -182,7 +164,7 @@ impl From<hadris_fat::error::Error,> for PoisonGirlError
 	}
 }
 
-impl From<ProjectRootNotFound,> for PoisonGirlError
+const impl From<ProjectRootNotFound,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: ProjectRootNotFound,) -> Self
@@ -194,7 +176,7 @@ impl From<ProjectRootNotFound,> for PoisonGirlError
 	}
 }
 
-impl From<InvalidProjectRootFound,> for PoisonGirlError
+const impl From<InvalidProjectRootFound,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: InvalidProjectRootFound,) -> Self
@@ -206,7 +188,7 @@ impl From<InvalidProjectRootFound,> for PoisonGirlError
 	}
 }
 
-impl From<InvalidCurrentCratePath,> for PoisonGirlError
+const impl From<InvalidCurrentCratePath,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: InvalidCurrentCratePath,) -> Self
@@ -218,7 +200,7 @@ impl From<InvalidCurrentCratePath,> for PoisonGirlError
 	}
 }
 
-impl From<InvalidHostName,> for PoisonGirlError
+const impl From<InvalidHostName,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: InvalidHostName,) -> Self
@@ -229,7 +211,7 @@ impl From<InvalidHostName,> for PoisonGirlError
 	}
 }
 
-impl From<YourHostPlatformIsOutOfSupport,> for PoisonGirlError
+const impl From<YourHostPlatformIsOutOfSupport,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: YourHostPlatformIsOutOfSupport,) -> Self
@@ -241,7 +223,7 @@ impl From<YourHostPlatformIsOutOfSupport,> for PoisonGirlError
 	}
 }
 
-impl From<PointerOperationFailed,> for PoisonGirlError
+const impl From<PointerOperationFailed,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: PointerOperationFailed,) -> Self
@@ -253,7 +235,7 @@ impl From<PointerOperationFailed,> for PoisonGirlError
 	}
 }
 
-impl From<strum::ParseError,> for PoisonGirlError
+const impl From<strum::ParseError,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: strum::ParseError,) -> Self
@@ -262,7 +244,7 @@ impl From<strum::ParseError,> for PoisonGirlError
 	}
 }
 
-impl From<InvalidMetadataSchema,> for PoisonGirlError
+const impl From<InvalidMetadataSchema,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: InvalidMetadataSchema,) -> Self
@@ -274,7 +256,7 @@ impl From<InvalidMetadataSchema,> for PoisonGirlError
 	}
 }
 
-impl From<InvalidPolicy,> for PoisonGirlError
+const impl From<InvalidPolicy,> for PoisonGirlError
 {
 	#[track_caller]
 	fn from(value: InvalidPolicy,) -> Self
@@ -283,10 +265,20 @@ impl From<InvalidPolicy,> for PoisonGirlError
 	}
 }
 
+const impl From<CargoError,> for PoisonGirlError
+{
+	#[track_caller]
+	fn from(value: CargoError,) -> Self
+	{
+		Self { loc: Location::caller(), src: DevError::Cargo(value,), }
+	}
+}
+
 #[allow(dead_code)]
 #[derive(Debug,)]
 enum DevError
 {
+	Cargo(CargoError,),
 	Io(std::io::Error,),
 	ExitStatus(std::process::ExitStatusError,),
 	FromUtf8(std::string::FromUtf8Error,),
@@ -299,7 +291,6 @@ enum DevError
 	PathIsNotValidUtf8(PathIsNotValidUtf8,),
 	NotObedientPath(NotObedientPath,),
 	FatError(hadris_fat::error::Error,),
-	Todo(String,),
 	ProjectRootNotFound(ProjectRootNotFound,),
 	InvalidProjectRootFound(InvalidProjectRootFound,),
 	InvalidCurrentCratePath(InvalidCurrentCratePath,),
@@ -372,6 +363,26 @@ pub struct InvalidMetadataSchema;
 
 #[derive(Debug,)]
 pub struct InvalidPolicy;
+
+#[derive(Debug,)]
+pub struct CargoError
+{
+	pub stderr:  String,
+	pub context: String,
+	pub status:  ExitStatusError,
+}
+
+impl CargoError
+{
+	pub fn new(
+		stderr: impl Into<String,>,
+		context: impl Into<String,>,
+		status: ExitStatusError,
+	) -> Self
+	{
+		Self { stderr: stderr.into(), context: context.into(), status, }
+	}
+}
 
 #[macro_export]
 macro_rules! poison_girl_err {

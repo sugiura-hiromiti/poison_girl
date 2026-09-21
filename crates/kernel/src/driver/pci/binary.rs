@@ -9,7 +9,7 @@ use poison_girl_no_std_error::PoisonGirlB;
 /// # Type Parameters
 ///
 /// * `IS_LITTLE_ENDIAN` - Compile-time constant indicating endianness
-/// * `T` - Target type that implements [`BinaryParserTarget`]
+/// * `T` - Target type that implements \[`BinaryParserTarget`\]
 ///
 /// # Endianness
 ///
