@@ -138,7 +138,7 @@ const fn parse_hex_digits<const N: usize,>(
 		return Y(poison_girl_err!(GuidError::InvalidLength),);
 	}
 
-	let buf = buf.map(|hex| hex.unwrap_or(HexDigit::Zero,),);
+	let buf = buf.map(const |hex| hex.unwrap_or(HexDigit::Zero,),);
 	X(buf,)
 }
 
@@ -148,10 +148,10 @@ const fn bytes_from_nibble_pairs<const N: usize,>(
 	bytes: [HexDigit; DOUBLE::<N,>],
 ) -> [HexByte; N]
 {
-	bytes
-		.chunks(2,)
-		.map(|chunk| HexByte { high: chunk[0], low: chunk[1], },)
-		.collect()
+	core::array::from_fn(const |i| HexByte {
+		high: bytes[i * 2],
+		low:  bytes[i * 2 + 1],
+	},)
 }
 
 fn guid_hexes(s: &str,) -> PoisonGirlB<Vec<u8,>,>
@@ -161,9 +161,9 @@ fn guid_hexes(s: &str,) -> PoisonGirlB<Vec<u8,>,>
 		if c == '-' {
 			continue;
 		}
-		match HexDigit::try_from(c,) {
-			Ok(hex,) => hexes.push(hex as u8,),
-			Err(err,) => return Y(poison_girl_err!(err),),
+		match HexDigit::from_u8(c as u8,) {
+			X(hex,) => hexes.push(hex as u8,),
+			Y(err,) => return Y(poison_girl_err!(err),),
 		}
 	}
 	X(hexes,)
@@ -312,7 +312,9 @@ pub trait BytesIsEven<const B: bool, const N: usize,>
 {
 }
 
-impl<const BYTES: usize,> BytesIsEven<{ bytes_is_even::<BYTES,>() }, BYTES,>
+const BYTE_IS_EVEN<const BYTES: usize,>: bool = bytes_is_even::<BYTES,>();
+
+impl<const BYTES: usize,> BytesIsEven<{ BYTE_IS_EVEN::<BYTES,> }, BYTES,>
 	for [HexDigit; BYTES]
 {
 }
