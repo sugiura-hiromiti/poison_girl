@@ -180,13 +180,7 @@ where
 
 	let mut val = (&binary[*offset..]).as_int();
 	if !IS_LITTLE {
-		let byte_count = size_of::<I,>();
-		val = (0..byte_count)
-			.map(|i| (val & ((1 << ((i + 1) * 8)) - (1 << (i * 8)))) >> (i * 8),)
-			.rev()
-			.enumerate()
-			.map(|(i, v,)| v << (i * 8),)
-			.sum();
+		val = val.swap_endian();
 	}
 
 	*offset += size;
@@ -224,7 +218,7 @@ fn read_le_bytes_or<I: PrimitiveInteger,>(
 where
 	for<'a> &'a [u8]: AsInt<I,>,
 {
-	match read_le_bytes(offset, binary,) {
+	match read_bytes_with_endian::<true, _,>(offset, binary,) {
 		Some(value,) => X(value,),
 		None => Y(poison_girl_err!(ElfParseError::EndOfBinary {
 			parser_pos,
@@ -296,43 +290,162 @@ trait PrimitiveInteger:
 	+ Sized
 	+ BitAnd
 {
+	fn swap_endian(self,) -> Self;
 }
 
 impl PrimitiveInteger for u8
 {
+	fn swap_endian(self,) -> Self
+	{
+		self
+	}
 }
 impl PrimitiveInteger for u16
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for u32
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for u64
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for u128
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for usize
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for i8
 {
+	fn swap_endian(self,) -> Self
+	{
+		self
+	}
 }
 impl PrimitiveInteger for i16
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for i32
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for i64
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for i128
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 impl PrimitiveInteger for isize
 {
+	fn swap_endian(mut self,) -> Self
+	{
+		let mut rslt = 0;
+		let byte_count = size_of::<Self,>();
+		for i in 0..byte_count {
+			let cropped = 0b1111_1111 & self;
+			self = self >> 8;
+			rslt += cropped << (byte_count - 1 - i);
+		}
+		rslt
+	}
 }
 
 impl Integer<u8,> for u8
@@ -436,13 +549,15 @@ trait AsInt<T: PrimitiveInteger,>
 	fn as_int(&self,) -> T;
 }
 
+const BYTES<T,>: usize = size_of::<T,>();
+
 macro_rules! impl_as_int {
 	($ty:ty) => {
 		impl AsInt<$ty,> for &[u8]
 		{
 			fn as_int(&self,) -> $ty
 			{
-				let mut bytes = [0; size_of::<$ty,>()];
+				let mut bytes = [0; BYTES::<$ty,>];
 				for (dst, src,) in bytes.iter_mut().zip(self.iter().copied(),) {
 					*dst = src;
 				}

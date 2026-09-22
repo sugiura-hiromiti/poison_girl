@@ -20,9 +20,9 @@
 //!
 //! ## Modules
 //!
-//! - [`graphic`]: Graphics and display management functionality
-//! - [`io`]: Input/output operations and device communication
-//! - [`util`]: System utilities and helper functions
+//! - \[`graphic`\]: Graphics and display management functionality
+//! - \[`io`\]: Input/output operations and device communication
+//! - \[`util`\]: System utilities and helper functions
 //!
 //! ## Usage
 //!

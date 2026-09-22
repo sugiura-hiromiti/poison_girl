@@ -98,11 +98,11 @@ impl BuildArtifactPolicyResolver for PoisonGirlCargoInterface
 
 	/// current(20260609) cargo's target directory determination follows these
 	/// rules (numbers are priority)
-	/// 1. --target-dir <path>
-	/// 2. CARGO_TARGET_DIR=<path>
-	/// 3. CARGO_BUILD_TARGET_DIR=<path>
-	/// 4. .cargo/config.toml: [build] target-dir = ..
-	/// 5. default <workspace-root>/target
+	/// 1. --target-dir \<path\>
+	/// 2. CARGO_TARGET_DIR=\<path\>
+	/// 3. CARGO_BUILD_TARGET_DIR=\<path\>
+	/// 4. .cargo/config.toml: \[build\] target-dir = ..
+	/// 5. default \<workspace-root\>/target
 	///
 	/// for rule 1, we ignore by filtering in xtask. this keeps things easy
 	fn resolve_target_dir(&self,) -> PoisonGirlB<PathBuf,>
@@ -135,7 +135,7 @@ impl BuildArtifactPolicyResolver for PoisonGirlCargoInterface
 	}
 
 	/// if --target do not specified, profile name comes after target/
-	/// if --target specified, target/<target tuple>/...
+	/// if --target specified, target/\<target tuple\>/...
 	/// even when user specifies host target, these use different directories.
 	/// that means, if user specifies their host target explicitly by `--target
 	/// <host tuple>`, then directory goes `target/<host's target tuple>/ ..`,

@@ -13,8 +13,8 @@
 //!
 //! ## Key Components
 //!
-//! - [`PixelFormatConf`]: Enum representing different pixel formats
-//! - [`FrameBufConf`]: Structure containing framebuffer configuration
+//! - \[`PixelFormatConf`\]: Enum representing different pixel formats
+//! - \[`FrameBufConf`\]: Structure containing framebuffer configuration
 //!   parameters
 //!
 //! ## Design Principles
