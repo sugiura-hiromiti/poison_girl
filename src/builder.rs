@@ -95,6 +95,7 @@ impl Xtask
 			CliCommandDiscriminants::Fixture => self.fixture(),
 			CliCommandDiscriminants::Fix => self.fix(),
 			CliCommandDiscriminants::Doc => self.doc(),
+			CliCommandDiscriminants::Udeps => self.udeps(),
 		}
 	}
 
@@ -154,6 +155,21 @@ impl Xtask
 	}
 
 	fn doc(&self,) -> PoisonGirlB<(),>
+	{
+		let args = self.interface.policy();
+		PoisonGirlCrateChart::all_variants().into_iter().try_for_each(
+			|at| {
+				self.ws().cargo_xxx_at_with(
+					self.interface.policy().command_discriminant(),
+					at,
+					args,
+				)
+			},
+		)?;
+		X((),)
+	}
+
+	fn udeps(&self,) -> PoisonGirlB<(),>
 	{
 		let args = self.interface.policy();
 		PoisonGirlCrateChart::all_variants().into_iter().try_for_each(

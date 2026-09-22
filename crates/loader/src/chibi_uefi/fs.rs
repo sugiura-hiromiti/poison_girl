@@ -352,6 +352,10 @@ impl FileProtocolV1
 	/// # Return
 	///
 	/// returns bytes amount of read data
+	///
+	/// # Safety
+	///
+	/// idk
 	pub unsafe fn read(&mut self, buf: &mut [u8],) -> PoisonGirlB<usize,>
 	{
 		let mut len = buf.len();

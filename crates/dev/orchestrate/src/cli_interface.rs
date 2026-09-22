@@ -376,6 +376,8 @@ pub enum CliCommand
 	Fix(FixArgs,),
 	#[command(alias = "d")]
 	Doc(DocArgs,),
+	#[command(alias = "u")]
+	Udeps(UdepsArgs,),
 }
 
 impl CliCommand
@@ -396,6 +398,9 @@ impl CliCommand
 			},
 			CliCommandDiscriminants::Fix => Self::Fix(FixArgs::default(),),
 			CliCommandDiscriminants::Doc => Self::Doc(DocArgs::default(),),
+			CliCommandDiscriminants::Udeps => {
+				Self::Udeps(UdepsArgs::default(),)
+			},
 		}
 	}
 }
@@ -414,6 +419,7 @@ impl AsCargoOpt for CliCommand
 			Self::Fixture(args,) => args.as_cargo_opt(),
 			Self::Fix(args,) => args.as_cargo_opt(),
 			Self::Doc(args,) => args.as_cargo_opt(),
+			Self::Udeps(args,) => args.as_cargo_opt(),
 		}
 	}
 }
@@ -625,6 +631,19 @@ impl AsCargoOpt for DocArgs
 			.map(|s| s.to_string(),)
 			.collect();
 		CargoInvocationArgs { cargo_args, tool_args: vec![], }
+	}
+}
+
+#[derive(clap::Args, Default, Clone,)]
+pub struct UdepsArgs;
+
+impl AsCargoOpt for UdepsArgs
+{
+	type Out = CargoInvocationArgs;
+
+	fn as_cargo_opt(&self,) -> Self::Out
+	{
+		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
 	}
 }
 
