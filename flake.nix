@@ -115,7 +115,7 @@
             # doc, udeps, audit
             workspaceBuild = xtaskWrapper "build";
             workspaceTest = xtaskWrapper "test";
-            workspaceClippy = xtaskWrapper "clippy --allow-dirty --allow-staged";
+            workspaceClippy = xtaskWrapper "clippy --deny-warnings";
             workspaceFmt = ciCargoDerivationWrapper "cargo fmt --all --check" "fmt";
             workspaceDoc = xtaskWrapper "doc --no-deps --document-private-items";
             workspaceUdeps = xtaskWrapper "udeps";
