@@ -309,7 +309,7 @@ impl PrimitiveInteger for u16
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -323,7 +323,7 @@ impl PrimitiveInteger for u32
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -337,7 +337,7 @@ impl PrimitiveInteger for u64
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -351,7 +351,7 @@ impl PrimitiveInteger for u128
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -365,7 +365,7 @@ impl PrimitiveInteger for usize
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -386,7 +386,7 @@ impl PrimitiveInteger for i16
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -400,7 +400,7 @@ impl PrimitiveInteger for i32
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -414,7 +414,7 @@ impl PrimitiveInteger for i64
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -428,7 +428,7 @@ impl PrimitiveInteger for i128
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
@@ -442,7 +442,7 @@ impl PrimitiveInteger for isize
 		for i in 0..byte_count {
 			let cropped = 0b1111_1111 & self;
 			self = self >> 8;
-			rslt += cropped << (byte_count - 1 - i);
+			rslt += cropped << ((byte_count - 1 - i) * 8);
 		}
 		rslt
 	}
