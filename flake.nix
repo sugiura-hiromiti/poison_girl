@@ -2,6 +2,14 @@
   description = "poison girl dev env";
 
   inputs = {
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs = {
+        nixpkgs = {
+          follows = "nixpkgs";
+        };
+      };
+    };
     files = {
       url = "github:mightyiam/files";
       flake = false;
@@ -51,6 +59,7 @@
 
   outputs =
     inputs@{
+      treefmt-nix,
       files,
       github-actions-nix,
       advisory-db,
@@ -64,6 +73,7 @@
 
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
+        treefmt-nix.flakeModule
         github-actions-nix.flakeModules.default
         ./nix/ci.nix
       ];
@@ -105,18 +115,30 @@
             name: ciCargoDerivationWrapper "cargo run --locked -p poison_girl -q -- --locked ${name}" name;
         in
         {
-
-          formatter = pkgs.nixfmt;
+          treefmt = {
+            settings = {
+              global = {
+                excludes = [ "target/**" ];
+              };
+            };
+            programs = {
+              taplo = {
+                enable = true;
+              };
+              nixfmt = {
+                enable = true;
+              };
+              rustfmt = {
+                enable = true;
+                package = rustToolchain;
+              };
+            };
+          };
 
           checks = {
-            # TODO: 以下の５種類をxtaskの薄いwrapperとして定義する
-            # build, clippy, test
-            # 以下はnix flake check 独自のlintとして定義する
-            # doc, udeps, audit
             workspaceBuild = xtaskWrapper "build";
             workspaceTest = xtaskWrapper "test";
             workspaceClippy = xtaskWrapper "clippy --deny-warnings";
-            workspaceFmt = ciCargoDerivationWrapper "cargo fmt --all --check" "fmt";
             workspaceDoc = xtaskWrapper "doc --no-deps --document-private-items";
             workspaceUdeps = xtaskWrapper "udeps";
             workspaceAudit = craneLib.cargoAudit {
