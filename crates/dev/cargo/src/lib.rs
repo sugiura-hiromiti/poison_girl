@@ -3,7 +3,8 @@
 use {
 	ovmf_prebuilt::{FileType, Prebuilt, Source},
 	poison_girl_dev_error::{
-		HostTupleNotFound, PoisonGirlB, ReShape, X, poison_girl_err,
+		CargoError, HostTupleNotFound, PoisonGirlB, ReShape, X,
+		poison_girl_err,
 	},
 	std::{path::PathBuf, process::Command},
 	strum_macros::Display,
@@ -213,8 +214,8 @@ fn checked_stdout(
 	let output = command.output()?;
 	if let Err(status,) = output.status.exit_ok() {
 		let stderr = String::from_utf8_lossy(&output.stderr,);
-		return poison_girl_dev_error::Y(poison_girl_err!(format!(
-			"{context} failed with {status}: {stderr}"
+		return poison_girl_dev_error::Y(poison_girl_err!(CargoError::new(
+			stderr, context, status
 		)),);
 	}
 	X(output.stdout,)

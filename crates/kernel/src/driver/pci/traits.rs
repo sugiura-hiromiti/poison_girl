@@ -11,7 +11,7 @@ pub trait DeviceTree:
 	///
 	/// # Returns
 	///
-	/// A reference to an object implementing [`DeviceTreeMemoryReservation`]
+	/// A reference to an object implementing \[`DeviceTreeMemoryReservation`\]
 	fn memory_reservation_parser(&self,) -> &impl DeviceTreeMemoryReservation
 	{
 		self
@@ -24,7 +24,7 @@ pub trait DeviceTree:
 	///
 	/// # Returns
 	///
-	/// A reference to an object implementing [`DeviceTreeStructure`]
+	/// A reference to an object implementing \[`DeviceTreeStructure`\]
 	fn structure_parser(&self,) -> &impl DeviceTreeStructure
 	{
 		self
@@ -38,7 +38,7 @@ pub trait DeviceTree:
 	///
 	/// # Returns
 	///
-	/// A reference to an object implementing [`DeviceTreeStrings`]
+	/// A reference to an object implementing \[`DeviceTreeStrings`\]
 	fn strings_parser(&self,) -> &impl DeviceTreeStrings
 	{
 		self

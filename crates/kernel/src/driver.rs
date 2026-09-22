@@ -33,8 +33,8 @@
 //!
 //! ## Modules
 //!
-//! - [`pci`]: PCI bus and device driver implementation
-//! - [`usb`]: USB host controller and device drivers
+//! - \[`pci`\]: PCI bus and device driver implementation
+//! - \[`usb`\]: USB host controller and device drivers
 //!
 //! ## Usage
 //!

@@ -39,11 +39,11 @@
 //!
 //! The module is organized around several key traits:
 //!
-//! - [`DeviceTree`]: Main interface for device tree operations
-//! - [`DeviceTreeHeader`]: Header parsing and validation
-//! - [`DeviceTreeMemoryReservation`]: Memory reservation handling
-//! - [`DeviceTreeStructure`]: Node and property parsing
-//! - [`BinaryParser`]: Generic binary data parsing framework
+//! - \[`DeviceTree`\]: Main interface for device tree operations
+//! - \[`DeviceTreeHeader`\]: Header parsing and validation
+//! - \[`DeviceTreeMemoryReservation`\]: Memory reservation handling
+//! - \[`DeviceTreeStructure`\]: Node and property parsing
+//! - \[`BinaryParser`\]: Generic binary data parsing framework
 //!
 //! ## Usage
 //!

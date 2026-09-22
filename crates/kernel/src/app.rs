@@ -15,7 +15,7 @@
 //!
 //! ## Modules
 //!
-//! - [`cursor`]: Cursor management and display utilities for applications
+//! - \[`cursor`\]: Cursor management and display utilities for applications
 //!
 //! ## Usage
 //!

@@ -8,7 +8,7 @@ use {
 macro_rules! guid {
 	($s:literal) => {{
 		use poison_girl_no_std_error::ConstContainer;
-		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,).unwrap();
+		const GUID: $crate::raw::types::Guid = Guid::fix_by($s,).const_unwrap();
 		GUID
 	}};
 }
@@ -50,7 +50,7 @@ impl Guid
 	{
 		let guid_hex = match GuidHex::new(s,) {
 			X(guid_hex,) => guid_hex,
-			a => return a,
+			Y(e,) => return Y(e,),
 		};
 
 		let hex = guid_hex.into_bytes();
@@ -81,7 +81,7 @@ impl GuidHex
 	{
 		let hex_digits = match parse_hex_digits::<32,>(s,) {
 			X(s,) => s,
-			a => return a,
+			Y(e,) => return Y(e,),
 		};
 		let hex_bytes = bytes_from_nibble_pairs(hex_digits,);
 		X(Self(hex_bytes,),)
@@ -111,45 +111,46 @@ const fn parse_hex_digits<const N: usize,>(
 	s: &str,
 ) -> PoisonGirlB<[HexDigit; N],>
 {
-	let mut buf = [None; N];
-
 	if !s.is_ascii() {
 		return Y(poison_girl_err!(GuidError::NonAsciiChar),);
 	}
 
-	let rslt =
-		s.as_bytes().iter().filter(|c| *c != b'-',).enumerate().try_for_each(
-			|(i, c,)| {
-				let hex_digit = HexDigit::from_u8(*c,)?;
-				if i >= N {
-					return Y(poison_girl_err!(GuidError::InvalidLength),);
-				}
-				buf[i] = Some(hex_digit,);
-				X((),)
-			},
-		);
+	let mut buf = [HexDigit::Zero; N];
+	let bytes = s.as_bytes();
+	let mut idx = 0;
 
-	match rslt {
-		X(_,) => (),
-		a => return a,
+	let mut i = 0;
+	while i < bytes.len() {
+		let byte = bytes[i];
+
+		if byte != b'-' {
+			if idx >= N {
+				return Y(poison_girl_err!(GuidError::InvalidLength),);
+			}
+
+			buf[idx] = HexDigit::from_u8(byte,)?;
+			idx += 1;
+		}
+		i += 1;
 	}
 
-	if buf[N - 1].is_none() {
+	if idx != N {
 		return Y(poison_girl_err!(GuidError::InvalidLength),);
 	}
 
-	let buf = buf.map(|hex| hex.unwrap_or(HexDigit::Zero,),);
 	X(buf,)
 }
 
+const DOUBLE<const N: usize,>: usize = N * 2;
+
 const fn bytes_from_nibble_pairs<const N: usize,>(
-	bytes: [HexDigit; N * 2],
+	bytes: [HexDigit; DOUBLE::<N,>],
 ) -> [HexByte; N]
 {
-	bytes
-		.chunks(2,)
-		.map(|chunk| HexByte { high: chunk[0], low: chunk[1], },)
-		.collect()
+	core::array::from_fn(const |i| HexByte {
+		high: bytes[i * 2],
+		low:  bytes[i * 2 + 1],
+	},)
 }
 
 fn guid_hexes(s: &str,) -> PoisonGirlB<Vec<u8,>,>
@@ -159,9 +160,9 @@ fn guid_hexes(s: &str,) -> PoisonGirlB<Vec<u8,>,>
 		if c == '-' {
 			continue;
 		}
-		match HexDigit::try_from(c,) {
-			Ok(hex,) => hexes.push(hex as u8,),
-			Err(err,) => return Y(poison_girl_err!(err),),
+		match HexDigit::from_u8(c as u8,) {
+			X(hex,) => hexes.push(hex as u8,),
+			Y(err,) => return Y(poison_girl_err!(err),),
 		}
 	}
 	X(hexes,)
@@ -187,7 +188,7 @@ fn next_nibble_chunk<const N: usize, I: Iterator<Item = u8,>,>(
 }
 
 fn convert_nibble_chunk_to_byte_chunk<const N: usize,>(
-	nibbles: [u8; N * 2],
+	nibbles: [u8; DOUBLE::<N,>],
 ) -> [u8; N]
 {
 	let mut byte_chunk = [0; N];
@@ -200,9 +201,9 @@ fn convert_nibble_chunk_to_byte_chunk<const N: usize,>(
 fn next_byte_chunk<const N: usize, I: Iterator<Item = u8,>,>(
 	hexes: &mut I,
 ) -> PoisonGirlB<[u8; N],>
-where [(); N * 2]:
+where [(); DOUBLE::<N,>]:
 {
-	let nibble_chunk = next_nibble_chunk::<{ N * 2 }, _,>(hexes,)?;
+	let nibble_chunk = next_nibble_chunk::<{ DOUBLE::<N,> }, _,>(hexes,)?;
 	let byte_chunk = convert_nibble_chunk_to_byte_chunk::<N,>(nibble_chunk,);
 	X(byte_chunk,)
 }
@@ -310,7 +311,9 @@ pub trait BytesIsEven<const B: bool, const N: usize,>
 {
 }
 
-impl<const BYTES: usize,> BytesIsEven<{ bytes_is_even::<BYTES,>() }, BYTES,>
+const BYTE_IS_EVEN<const BYTES: usize,>: bool = bytes_is_even::<BYTES,>();
+
+impl<const BYTES: usize,> BytesIsEven<{ BYTE_IS_EVEN::<BYTES,> }, BYTES,>
 	for [HexDigit; BYTES]
 {
 }
@@ -363,7 +366,7 @@ mod tests
 			"09576e91-6d3f-11d2-8e39-00a0c969723b",
 			"09576E91-6D3F-11D2-8E39-00A0C969723B",
 		] {
-			assert_eq!(Guid::gen_from_str(guid,)?, Guid::fix_by(guid,));
+			assert_eq!(Guid::gen_from_str(guid,)?, Guid::fix_by(guid,)?);
 		}
 		success!()
 	}
