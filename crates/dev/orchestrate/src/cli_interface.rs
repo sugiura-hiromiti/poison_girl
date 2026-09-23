@@ -6,7 +6,7 @@ use {
 		InvalidPolicy, PoisonGirlB, X, Y, poison_girl_err,
 	},
 	poison_girl_macro_def_features::features,
-	std::path::PathBuf,
+	std::{collections::HashMap, path::PathBuf},
 	strum::IntoDiscriminant,
 };
 
@@ -15,6 +15,7 @@ pub struct Policy
 {
 	pub global:  GlobalArg,
 	pub command: CliCommand,
+	pub env:     HashMap<String, String,>,
 }
 
 impl Policy
@@ -28,7 +29,7 @@ impl Policy
 	{
 		let Cli { global, command, } = cli;
 		let command = command.unwrap_or_default();
-		Self { global, command, }
+		Self { global, command, env: HashMap::new(), }
 	}
 
 	pub fn from_arch_build_mode(arch: Arch, build_mode: BuildMode,) -> Self
@@ -134,6 +135,7 @@ impl Policy
 		Self {
 			global:  Default::default(),
 			command: CliCommand::from_discriminants(command,),
+			env:     HashMap::new(),
 		}
 	}
 
@@ -146,7 +148,7 @@ impl Policy
 			match self.command().discriminant() {
 				CliCommandDiscriminants::Build => self.clone(),
 				CliCommandDiscriminants::Run => {
-					let Policy { global, command, } = self;
+					let Policy { global, command, .. } = self;
 					let CliCommand::Run(run_args,) = command else {
 						return Y(poison_girl_err!(InvalidPolicy),);
 					};
@@ -154,6 +156,7 @@ impl Policy
 					Self {
 						global:  global.clone(),
 						command: CliCommand::Build(run_args.build_opts.clone(),),
+						env:     HashMap::new(),
 					}
 				},
 				_ => return Y(poison_girl_err!(InvalidPolicy),),
@@ -172,12 +175,12 @@ impl Policy
 
 impl AsCargoOpt for Policy
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
 		let args = self.global.as_cargo_opt();
-		let mut args = CargoInvocationArgs::from_cargo_args(args,);
+		let mut args = CargoInvocation::from_cargo_args(args,);
 		let cmd_args = self.command.as_cargo_opt();
 
 		args.extend(cmd_args,);
@@ -235,6 +238,12 @@ impl CompileOpt for Policy
 	{
 		self.global.features.iter().map(|f| f.as_ref(),).collect()
 	}
+}
+
+pub trait AsCargoEnv
+{
+	type Out;
+	fn as_cargo_env(&self,) -> Self::Out;
 }
 
 pub trait AsCargoOpt
@@ -296,33 +305,42 @@ impl AsCargoOpt for GlobalArg
 }
 
 #[derive(Debug, Default, Eq, PartialEq,)]
-pub struct CargoInvocationArgs
+pub struct CargoInvocation
 {
 	cargo_args: Vec<String,>,
 	tool_args:  Vec<String,>,
+	env:        HashMap<String, String,>,
 }
 
-impl CargoInvocationArgs
+impl CargoInvocation
 {
 	pub fn from_cargo_args(cargo_args: Vec<String,>,) -> Self
 	{
-		Self { cargo_args, tool_args: vec![], }
+		Self { cargo_args, ..Default::default() }
 	}
 
 	pub fn from_tool_args(tool_args: Vec<String,>,) -> Self
 	{
-		Self { cargo_args: vec![], tool_args, }
+		Self { tool_args, ..Default::default() }
 	}
 
-	pub fn extend(&mut self, Self { cargo_args, tool_args, }: Self,)
+	pub fn from_env(env: impl Into<HashMap<String, String,>,>,) -> Self
+	{
+		Self { env: env.into(), ..Default::default() }
+	}
+
+	pub fn extend(&mut self, Self { cargo_args, tool_args, env, }: Self,)
 	{
 		self.cargo_args.extend(cargo_args,);
 		self.tool_args.extend(tool_args,);
+		self.env.extend(env,);
 	}
 
+	/// this method throws environment variable
+	/// idk this is correct/desirable design 0w0
 	pub fn into_cargo_args(self,) -> Vec<String,>
 	{
-		let Self { mut cargo_args, tool_args, } = self;
+		let Self { mut cargo_args, tool_args, .. } = self;
 
 		if !tool_args.is_empty() {
 			cargo_args.push("--".to_owned(),);
@@ -333,21 +351,35 @@ impl CargoInvocationArgs
 	}
 }
 
-impl AsCargoOpt for Vec<CargoInvocationArgs,>
+impl AsCargoOpt for Vec<CargoInvocation,>
 {
 	type Out = Vec<String,>;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		let mut args = CargoInvocationArgs::default();
+		let mut args = CargoInvocation::default();
 		for arg_set in self {
-			args.extend(CargoInvocationArgs {
+			args.extend(CargoInvocation {
 				cargo_args: arg_set.cargo_args.clone(),
 				tool_args:  arg_set.tool_args.clone(),
+				env:        arg_set.env.clone(),
 			},);
 		}
 
 		args.into_cargo_args()
+	}
+}
+
+impl AsCargoEnv for Vec<CargoInvocation,>
+{
+	type Out = HashMap<String, String,>;
+
+	fn as_cargo_env(&self,) -> Self::Out
+	{
+		self.iter().fold(HashMap::new(), |mut acc, elem| {
+			acc.extend(elem.env.clone(),);
+			acc
+		},)
 	}
 }
 
@@ -407,7 +439,7 @@ impl CliCommand
 
 impl AsCargoOpt for CliCommand
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
@@ -437,11 +469,15 @@ pub struct BuildArgs {}
 
 impl AsCargoOpt for BuildArgs
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
+		CargoInvocation {
+			cargo_args: vec![],
+			tool_args:  vec![],
+			env:        HashMap::new(),
+		}
 	}
 }
 
@@ -450,11 +486,15 @@ pub struct TestArgs {}
 
 impl AsCargoOpt for TestArgs
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
+		CargoInvocation {
+			cargo_args: vec![],
+			tool_args:  vec![],
+			env:        HashMap::new(),
+		}
 	}
 }
 
@@ -467,11 +507,15 @@ pub struct RunArgs
 
 impl AsCargoOpt for RunArgs
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
+		CargoInvocation {
+			cargo_args: vec![],
+			tool_args:  vec![],
+			env:        HashMap::new(),
+		}
 	}
 }
 
@@ -536,7 +580,7 @@ impl ClippyArgs
 
 impl AsCargoOpt for ClippyArgs
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
@@ -557,7 +601,7 @@ impl AsCargoOpt for ClippyArgs
 		.map(|s| s.to_owned(),)
 		.collect();
 
-		CargoInvocationArgs { cargo_args, tool_args, }
+		CargoInvocation { cargo_args, tool_args, env: HashMap::new(), }
 	}
 }
 
@@ -566,11 +610,15 @@ pub struct FixtureArgs {}
 
 impl AsCargoOpt for FixtureArgs
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
+		CargoInvocation {
+			cargo_args: vec![],
+			tool_args:  vec![],
+			env:        HashMap::new(),
+		}
 	}
 }
 
@@ -585,7 +633,7 @@ pub struct FixArgs
 
 impl AsCargoOpt for FixArgs
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
@@ -600,7 +648,7 @@ impl AsCargoOpt for FixArgs
 			.map(|s| s.to_string(),)
 			.collect();
 
-		CargoInvocationArgs { cargo_args, tool_args: vec![], }
+		CargoInvocation { cargo_args, tool_args: vec![], env: HashMap::new(), }
 	}
 }
 
@@ -615,7 +663,7 @@ pub struct DocArgs
 
 impl AsCargoOpt for DocArgs
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
@@ -630,7 +678,7 @@ impl AsCargoOpt for DocArgs
 			.chain(document_private_items,)
 			.map(|s| s.to_string(),)
 			.collect();
-		CargoInvocationArgs { cargo_args, tool_args: vec![], }
+		CargoInvocation { cargo_args, tool_args: vec![], env: HashMap::new(), }
 	}
 }
 
@@ -639,11 +687,15 @@ pub struct UdepsArgs;
 
 impl AsCargoOpt for UdepsArgs
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
-		CargoInvocationArgs { cargo_args: vec![], tool_args: vec![], }
+		CargoInvocation {
+			cargo_args: vec![],
+			tool_args:  vec![],
+			env:        HashMap::new(),
+		}
 	}
 }
 
@@ -683,6 +735,7 @@ mod tests
 				..Default::default()
 			},
 			command: CliCommand::Build(Default::default(),),
+			env:     HashMap::new(),
 		};
 
 		let opt = policy.as_cargo_opt();
@@ -707,6 +760,7 @@ mod tests
 				all_targets:   true,
 				target_mode:   Default::default(),
 			},),
+			env:     HashMap::new(),
 		};
 
 		let opt = policy.as_cargo_opt();

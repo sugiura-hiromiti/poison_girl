@@ -1,6 +1,8 @@
 use {
+	self::invocation_plan::CargoInvocationPlan,
 	crate::{
 		AsCargoOpt, CliCommandDiscriminants, CompileOpt, Policy,
+		cli_interface::AsCargoEnv,
 		decl_manage::crate_::{
 			Crate, CrateInfo, PoisonGirlCrate, PoisonGirlCrateChart,
 		},
@@ -14,12 +16,11 @@ use {
 	},
 	poison_girl_dev_fs::{current_crate_path, project_root_path},
 	std::{
+		collections::HashMap,
 		path::{Path, PathBuf},
 		process::Command,
 	},
 };
-
-use self::invocation_plan::CargoInvocationPlan;
 
 pub mod crate_;
 mod invocation_plan;
@@ -52,9 +53,10 @@ impl PoisonGirlCargoInterface
 	pub fn run(&self,) -> PoisonGirlB<(),>
 	{
 		let command = self.policy().command_discriminant();
+		let envs = self.invocation_envs();
 		for args in self.invocation_args()? {
 			let mut cargo = Command::new("cargo",);
-			let cargo = cargo.arg(command.as_ref(),);
+			let cargo = cargo.arg(command.as_ref(),).envs(&envs,);
 			if !args.is_empty() {
 				cargo.args(args,);
 			}
@@ -76,6 +78,16 @@ impl PoisonGirlCargoInterface
 			args.push(Self::new(*self.ws.as_chart(), policy,).as_cargo_opt()?,);
 		}
 		X(args,)
+	}
+
+	fn invocation_envs(&self,) -> HashMap<String, String,>
+	{
+		let plan = self.invocation_plan();
+		let build_std = plan.build_std_policies().as_cargo_env();
+		let build_std_features =
+			plan.build_std_features_policies().as_cargo_env();
+
+		vec![build_std_features, build_std].as_cargo_env()
 	}
 }
 
@@ -188,9 +200,6 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 		let straight_cmd = plan.policy().as_cargo_opt();
 		let command = plan.command();
 		let target = plan.target_policy().as_cargo_opt();
-		let build_std = plan.build_std_policies().as_cargo_opt();
-		let build_std_features =
-			plan.build_std_features_policies().as_cargo_opt();
 
 		let PoisonGirlPackageMetadata { no_std, } =
 			self.ws.custom_metadata()?;
@@ -204,9 +213,7 @@ impl AsCargoOpt for PoisonGirlCargoInterface
 			additional_opts.push("--lib".to_string(),);
 		}
 
-		let resolved_args =
-			vec![straight_cmd, target, build_std, build_std_features]
-				.as_cargo_opt();
+		let resolved_args = vec![straight_cmd, target].as_cargo_opt();
 
 		let opts = additional_opts
 			.into_iter()

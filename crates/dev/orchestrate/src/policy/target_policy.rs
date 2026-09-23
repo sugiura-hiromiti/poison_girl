@@ -1,8 +1,9 @@
-use poison_girl_dev_cargo::{Arch, Runtime};
-
-use crate::{
-	AsCargoOpt, cli_interface::CargoInvocationArgs,
-	decl_manage::crate_::PoisonGirlCrateChart,
+use {
+	crate::{
+		AsCargoOpt, cli_interface::CargoInvocation,
+		decl_manage::crate_::PoisonGirlCrateChart,
+	},
+	poison_girl_dev_cargo::{Arch, Runtime},
 };
 
 pub struct TargetPolicy
@@ -61,12 +62,12 @@ impl TargetPolicy
 
 impl AsCargoOpt for TargetPolicy
 {
-	type Out = CargoInvocationArgs;
+	type Out = CargoInvocation;
 
 	fn as_cargo_opt(&self,) -> Self::Out
 	{
 		let Some(tuple,) = self.target_spec() else {
-			return CargoInvocationArgs::default();
+			return CargoInvocation::default();
 		};
 
 		let mut cargo_args = vec!["--target".to_owned(), tuple];
@@ -75,7 +76,7 @@ impl AsCargoOpt for TargetPolicy
 				.extend(["-Z".to_owned(), "json-target-spec".to_owned(),],);
 		}
 
-		CargoInvocationArgs::from_cargo_args(cargo_args,)
+		CargoInvocation::from_cargo_args(cargo_args,)
 	}
 }
 
