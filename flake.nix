@@ -148,9 +148,7 @@
           };
 
           devShells = {
-
             default = craneLib.devShell {
-
               buildInputs =
                 with pkgs;
                 [
@@ -170,9 +168,7 @@
                 ]
                 ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
                 ];
-
               shellHook = "";
-
             };
           };
         };

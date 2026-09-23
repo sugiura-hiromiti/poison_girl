@@ -76,11 +76,6 @@ impl CargoInvocationPlan
 		}
 	}
 
-	pub(super) fn target_policy(&self,) -> TargetPolicy
-	{
-		TargetPolicy::new(self.policy.arch(), self.target_runtime(),)
-	}
-
 	pub(super) fn build_target_tuple_representation(&self,) -> PathBuf
 	{
 		TargetPolicy::new(self.policy.arch(), self.build_target_runtime(),)
@@ -92,6 +87,11 @@ impl CargoInvocationPlan
 	fn uses_custom_target(&self,) -> bool
 	{
 		!matches!(self.target_runtime(), Runtime::Host)
+	}
+
+	pub(super) fn target_policy(&self,) -> TargetPolicy
+	{
+		TargetPolicy::new(self.policy.arch(), self.target_runtime(),)
 	}
 
 	pub(super) fn build_std_policies(&self,) -> BuildStdPolicies

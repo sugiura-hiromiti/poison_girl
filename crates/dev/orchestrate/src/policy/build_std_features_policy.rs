@@ -1,15 +1,15 @@
 use {
-	crate::cli_interface::{AsCargoEnv, CargoInvocation},
+	crate::cli_interface::{CargoInvocation, Invocate},
 	std::{collections::HashSet, hash_map},
 };
 
 pub struct BuildStdFeaturesPolicies(HashSet<BuildStdFeaturesPolicy,>,);
 
-impl AsCargoEnv for BuildStdFeaturesPolicies
+impl Invocate for BuildStdFeaturesPolicies
 {
 	type Out = CargoInvocation;
 
-	fn as_cargo_env(&self,) -> Self::Out
+	fn invocate(self,) -> Self::Out
 	{
 		let build_std_features: Vec<_,> =
 			self.0.iter().map(BuildStdFeaturesPolicy::as_ref,).collect();

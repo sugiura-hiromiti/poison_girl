@@ -10,12 +10,12 @@ use {
 	strum::IntoDiscriminant,
 };
 
+/// `Policy` means what do we want to do
 #[derive(Default, Clone,)]
 pub struct Policy
 {
 	pub global:  GlobalArg,
 	pub command: CliCommand,
-	pub env:     HashMap<String, String,>,
 }
 
 impl Policy
@@ -29,7 +29,7 @@ impl Policy
 	{
 		let Cli { global, command, } = cli;
 		let command = command.unwrap_or_default();
-		Self { global, command, env: HashMap::new(), }
+		Self { global, command, }
 	}
 
 	pub fn from_arch_build_mode(arch: Arch, build_mode: BuildMode,) -> Self
@@ -135,7 +135,6 @@ impl Policy
 		Self {
 			global:  Default::default(),
 			command: CliCommand::from_discriminants(command,),
-			env:     HashMap::new(),
 		}
 	}
 
@@ -156,7 +155,6 @@ impl Policy
 					Self {
 						global:  global.clone(),
 						command: CliCommand::Build(run_args.build_opts.clone(),),
-						env:     HashMap::new(),
 					}
 				},
 				_ => return Y(poison_girl_err!(InvalidPolicy),),
@@ -240,6 +238,12 @@ impl CompileOpt for Policy
 	}
 }
 
+pub trait Invocate
+{
+	type Out;
+	fn invocate(self,) -> Self::Out;
+}
+
 pub trait AsCargoEnv
 {
 	type Out;
@@ -304,6 +308,7 @@ impl AsCargoOpt for GlobalArg
 	}
 }
 
+/// `Invocation` means How do we tell to cargo
 #[derive(Debug, Default, Eq, PartialEq,)]
 pub struct CargoInvocation
 {
@@ -735,7 +740,6 @@ mod tests
 				..Default::default()
 			},
 			command: CliCommand::Build(Default::default(),),
-			env:     HashMap::new(),
 		};
 
 		let opt = policy.as_cargo_opt();
@@ -760,7 +764,6 @@ mod tests
 				all_targets:   true,
 				target_mode:   Default::default(),
 			},),
-			env:     HashMap::new(),
 		};
 
 		let opt = policy.as_cargo_opt();
