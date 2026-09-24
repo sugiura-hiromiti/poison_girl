@@ -1,6 +1,7 @@
 use {
 	crate::{
 		CliCommandDiscriminants, Policy,
+		cli_interface::CargoInvocation,
 		decl_manage::crate_::PoisonGirlCrateChart,
 		policy::{
 			build_std_features_policy::{
@@ -29,6 +30,29 @@ impl CargoInvocationPlan
 	) -> Self
 	{
 		Self { chart, policy, }
+	}
+
+	fn resolve(self,) -> PoisonGirlB<Vec<CargoInvocation,>,>
+	{
+		let policies = self.invocation_policies()?;
+		policies.into_iter().map(|policy| self.resolve_one(policy,),).collect()
+	}
+
+	fn resolve_one(&self, policy: Policy,) -> PoisonGirlB<CargoInvocation,>
+	{
+		let target = todo!();
+		let build_std = todo!();
+		let build_std_features = todo!();
+
+		let mut invocation = CargoInvocation::default();
+
+		invocation.extend(policy,);
+		invocation.extend(package,);
+		invocation.extend(target,);
+		invocation.extend(build_std,);
+		invocation.extend(build_std_features,);
+
+		X(invocation,)
 	}
 
 	pub(super) fn with_supported_features(mut self,) -> Self

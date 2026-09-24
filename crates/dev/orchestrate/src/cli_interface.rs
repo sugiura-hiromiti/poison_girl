@@ -10,6 +10,14 @@ use {
 	strum::IntoDiscriminant,
 };
 
+// refactor later
+pub(crate) enum TargetKind
+{
+	Lib,
+	Test,
+	Bin,
+}
+
 /// `Policy` means what do we want to do
 #[derive(Default, Clone,)]
 pub struct Policy
@@ -171,20 +179,20 @@ impl Policy
 	}
 }
 
-impl AsCargoOpt for Policy
-{
-	type Out = CargoInvocation;
+// impl AsCargoOpt for Policy
+// {
+// 	type Out = CargoInvocation;
 
-	fn as_cargo_opt(&self,) -> Self::Out
-	{
-		let args = self.global.as_cargo_opt();
-		let mut args = CargoInvocation::from_cargo_args(args,);
-		let cmd_args = self.command.as_cargo_opt();
+// 	fn as_cargo_opt(&self,) -> Self::Out
+// 	{
+// 		let args = self.global.as_cargo_opt();
+// 		let mut args = CargoInvocation::from_cargo_args(args,);
+// 		let cmd_args = self.command.as_cargo_opt();
 
-		args.extend(cmd_args,);
-		args
-	}
-}
+// 		args.extend(cmd_args,);
+// 		args
+// 	}
+// }
 
 #[features(PoisonGirlCrateChart)]
 #[derive(
@@ -309,6 +317,7 @@ impl AsCargoOpt for GlobalArg
 }
 
 /// `Invocation` means How do we tell to cargo
+/// cargo を1回起動するための完全な記述
 #[derive(Debug, Default, Eq, PartialEq,)]
 pub struct CargoInvocation
 {
