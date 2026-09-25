@@ -1,3 +1,5 @@
+#![feature(hash_map_macro, iterator_try_collect)]
+
 use {
 	crate::decl_manage::{
 		PoisonGirlCargoInterface, crate_::PoisonGirlCrateChart,

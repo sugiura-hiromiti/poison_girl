@@ -39,6 +39,7 @@ pub enum BuildMode
 	Debug,
 }
 
+#[derive(Copy, Clone,)]
 pub enum Runtime
 {
 	Host,

@@ -1,28 +1,31 @@
-use std::collections::HashSet;
-
-use crate::{AsCargoOpt, cli_interface::CargoInvocationArgs};
+use {
+	crate::cli_interface::{CargoInvocation, RenderCargoInvocation},
+	std::{collections::HashSet, hash_map},
+};
 
 pub struct BuildStdPolicies(HashSet<BuildStdPolicy,>,);
 
-impl AsCargoOpt for BuildStdPolicies
+impl RenderCargoInvocation for BuildStdPolicies
 {
-	type Out = CargoInvocationArgs;
-
-	fn as_cargo_opt(&self,) -> Self::Out
+	fn render(&self,) -> CargoInvocation
 	{
+		if self.0.is_empty() {
+			return CargoInvocation::default();
+		}
+
 		let build_std: Vec<_,> =
 			self.0.iter().map(BuildStdPolicy::as_ref,).collect();
 
-		let cargo_args = if build_std.is_empty() {
-			vec![]
-		} else {
-			vec![
-				"-Z".to_string(),
-				format!("build-std={}", build_std.join(",",),),
-			]
-		};
+		let env_val = build_std
+			.into_iter()
+			.map(|s| s.to_string(),)
+			.collect::<Vec<String,>>()
+			.join(",",);
 
-		CargoInvocationArgs::from_cargo_args(cargo_args,)
+		let build_std_env_var_name = "CARGO_UNSTABLE_BUILD_STD".to_string();
+		CargoInvocation::from_env(
+			hash_map! { build_std_env_var_name => env_val},
+		)
 	}
 }
 

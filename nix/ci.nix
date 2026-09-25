@@ -38,8 +38,8 @@
                 failFast = false;
                 matrix = {
                   runner = [
-                    "ubuntu-24.04-arm"
-                    "macos-15"
+                    "ubuntu-26.04-arm"
+                    "macos-latest"
                   ];
                 };
               };

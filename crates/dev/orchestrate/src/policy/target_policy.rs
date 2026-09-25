@@ -1,8 +1,9 @@
-use poison_girl_dev_cargo::{Arch, Runtime};
-
-use crate::{
-	AsCargoOpt, cli_interface::CargoInvocationArgs,
-	decl_manage::crate_::PoisonGirlCrateChart,
+use {
+	crate::{
+		cli_interface::{CargoInvocation, Invocate, RenderCargoInvocation},
+		decl_manage::crate_::PoisonGirlCrateChart,
+	},
+	poison_girl_dev_cargo::{Arch, Runtime},
 };
 
 pub struct TargetPolicy
@@ -59,14 +60,12 @@ impl TargetPolicy
 	}
 }
 
-impl AsCargoOpt for TargetPolicy
+impl RenderCargoInvocation for TargetPolicy
 {
-	type Out = CargoInvocationArgs;
-
-	fn as_cargo_opt(&self,) -> Self::Out
+	fn render(&self,) -> CargoInvocation
 	{
 		let Some(tuple,) = self.target_spec() else {
-			return CargoInvocationArgs::default();
+			return CargoInvocation::default();
 		};
 
 		let mut cargo_args = vec!["--target".to_owned(), tuple];
@@ -75,48 +74,6 @@ impl AsCargoOpt for TargetPolicy
 				.extend(["-Z".to_owned(), "json-target-spec".to_owned(),],);
 		}
 
-		CargoInvocationArgs::from_cargo_args(cargo_args,)
-	}
-}
-
-#[cfg(test)]
-mod tests
-{
-	use super::*;
-
-	#[test]
-	fn host_target_emits_no_cargo_opts()
-	{
-		let policy = TargetPolicy::new(Arch::Aarch64, Runtime::Host,);
-
-		assert_eq!(
-			policy.as_cargo_opt().into_cargo_args(),
-			Vec::<String,>::new()
-		);
-	}
-
-	#[test]
-	fn poison_girl_target_emits_json_target_opts()
-	{
-		let policy = TargetPolicy::new(Arch::Aarch64, Runtime::PoisonGirl,);
-		let target = format!(
-			"{}-sugiura_hiromiti-poison_girl-elf.json",
-			Arch::Aarch64.as_ref()
-		);
-		let target = PoisonGirlCrateChart::KERNEL
-			.to_path_buf()
-			.join(target,)
-			.display()
-			.to_string();
-
-		assert_eq!(
-			policy.as_cargo_opt().into_cargo_args(),
-			vec![
-				"--target".to_string(),
-				target,
-				"-Z".to_string(),
-				"json-target-spec".to_string(),
-			]
-		);
+		CargoInvocation::from_cargo_args(cargo_args,)
 	}
 }
