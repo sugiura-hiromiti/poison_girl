@@ -67,29 +67,33 @@ impl PoisonGirlCargoInterface
 		CargoInvocationPlan::new(*self.ws.as_chart(), self.policy.clone(),)
 	}
 
-	fn invocations(&self,) -> PoisonGirlB<Vec<Vec<CargoInvocation,>,>,>
+	pub(in crate::decl_manage) fn resolve()
 	{
-		let chart = self.ws.as_chart();
-		let invocations = self
-			.invocation_plan()
-			.execution_policies()?
-			.into_iter()
-			.map(|p| {
-				let invocation_plan = CargoInvocationPlan::new(*chart, p,);
-				let target_policy = invocation_plan.target_policy();
-				let build_std_policies = invocation_plan.build_std_policies();
-				let build_std_features_policies =
-					invocation_plan.build_std_features_policies();
-				vec![
-					target_policy.invocate(),
-					build_std_policies.invocate(),
-					build_std_features_policies.invocate(),
-				]
-			},)
-			.collect();
-
-		X(invocations,)
 	}
+
+	// fn invocations(&self,) -> PoisonGirlB<Vec<Vec<CargoInvocation,>,>,>
+	// {
+	// 	let chart = self.ws.as_chart();
+	// 	let invocations = self
+	// 		.invocation_plan()
+	// 		.execution_policies()?
+	// 		.into_iter()
+	// 		.map(|p| {
+	// 			let invocation_plan = CargoInvocationPlan::new(*chart, p,);
+	// 			let target_policy = invocation_plan.target_policy();
+	// 			let build_std_policies = invocation_plan.build_std_policies();
+	// 			let build_std_features_policies =
+	// 				invocation_plan.build_std_features_policies();
+	// 			vec![
+	// 				target_policy.invocate(),
+	// 				build_std_policies.invocate(),
+	// 				build_std_features_policies.invocate(),
+	// 			]
+	// 		},)
+	// 		.collect();
+
+	// 	X(invocations,)
+	// }
 }
 
 impl BuildArtifactPolicyResolver for PoisonGirlCargoInterface

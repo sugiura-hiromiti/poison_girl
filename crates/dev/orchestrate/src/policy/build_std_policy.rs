@@ -1,31 +1,29 @@
 use {
-	crate::cli_interface::{CargoInvocation, Invocate},
+	crate::cli_interface::{CargoInvocation, Invocate, RenderCargoInvocation},
 	std::{collections::HashSet, hash_map},
 };
 
 pub struct BuildStdPolicies(HashSet<BuildStdPolicy,>,);
 
-// impl Invocate for BuildStdPolicies
-// {
-// 	type Out = CargoInvocation;
+impl RenderCargoInvocation for BuildStdPolicies
+{
+	fn render(&self,) -> CargoInvocation
+	{
+		let build_std: Vec<_,> =
+			self.0.iter().map(BuildStdPolicy::as_ref,).collect();
 
-// 	fn invocate(self,) -> Self::Out
-// 	{
-// 		let build_std: Vec<_,> =
-// 			self.0.iter().map(BuildStdPolicy::as_ref,).collect();
+		let env_val = build_std
+			.into_iter()
+			.map(|s| s.to_string(),)
+			.collect::<Vec<String,>>()
+			.join(",",);
 
-// 		let env_val = build_std
-// 			.into_iter()
-// 			.map(|s| s.to_string(),)
-// 			.collect::<Vec<String,>>()
-// 			.join(",",);
-
-// 		let build_std_env_var_name = "CARGO_UNSTABLE_BUILD_STD".to_string();
-// 		CargoInvocation::from_env(
-// 			hash_map! { build_std_env_var_name => env_val},
-// 		)
-// 	}
-// }
+		let build_std_env_var_name = "CARGO_UNSTABLE_BUILD_STD".to_string();
+		CargoInvocation::from_env(
+			hash_map! { build_std_env_var_name => env_val},
+		)
+	}
+}
 
 impl From<Vec<BuildStdPolicy,>,> for BuildStdPolicies
 {

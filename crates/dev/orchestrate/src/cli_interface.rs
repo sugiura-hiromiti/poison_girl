@@ -309,6 +309,11 @@ impl AsCargoOpt for GlobalArg
 	}
 }
 
+pub trait RenderCargoInvocation
+{
+	fn render(&self,) -> CargoInvocation;
+}
+
 /// `Invocation` means How do we tell to cargo
 /// cargo を1回起動するための完全な記述
 #[derive(Debug, Default, Eq, PartialEq,)]

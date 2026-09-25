@@ -1,7 +1,7 @@
 use {
 	crate::{
 		CliCommandDiscriminants, Policy,
-		cli_interface::{CargoInvocation, TargetKind},
+		cli_interface::{CargoInvocation, RenderCargoInvocation, TargetKind},
 		decl_manage::crate_::PoisonGirlCrateChart,
 		policy::{
 			build_std_features_policy::{
@@ -9,6 +9,7 @@ use {
 			},
 			build_std_policy::{BuildStdPolicies, BuildStdPolicy},
 			execution_policy::ExecutionPolicy,
+			package_policy::PackagePolicy,
 			target_policy::TargetPolicy,
 		},
 	},
@@ -49,14 +50,15 @@ impl CargoInvocationPlan
 		let target = self.target_policy(&execution,);
 		let build_std = self.build_std_policies(&execution,);
 		let build_std_features = self.build_std_features_policies(&execution,);
+		let package = self.package_policy();
 
 		let mut invocation = CargoInvocation::default();
 
-		invocation.extend(execution,);
-		invocation.extend(package,);
-		invocation.extend(target,);
-		invocation.extend(build_std,);
-		invocation.extend(build_std_features,);
+		invocation.extend(execution.render(),);
+		invocation.extend(package.render(),);
+		invocation.extend(target.render(),);
+		invocation.extend(build_std.render(),);
+		invocation.extend(build_std_features.render(),);
 
 		X(invocation,)
 	}
@@ -172,6 +174,11 @@ impl CargoInvocationPlan
 			},
 			TargetKind::Auto,
 		)],)
+	}
+
+	fn package_policy(&self,) -> PackagePolicy
+	{
+		PackagePolicy::new(self.chart,)
 	}
 
 	fn splits_clippy_targets(&self,) -> bool

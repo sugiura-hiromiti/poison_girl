@@ -2,16 +2,14 @@
 #![feature(const_convert)]
 #![feature(const_trait_impl)]
 
+use core::{
+	fmt::{Debug, Display},
+	panic::Location,
+};
 pub use poison_girl_this_is_b_wrapper_no_std::{
+	B,
 	B::{X, Y},
 	ConstContainer, Container,
-};
-use {
-	core::{
-		fmt::{Debug, Display},
-		panic::Location,
-	},
-	poison_girl_this_is_b_wrapper_no_std::B,
 };
 
 /// X/Y はResultの別名ではなく、分岐値 B の左右である

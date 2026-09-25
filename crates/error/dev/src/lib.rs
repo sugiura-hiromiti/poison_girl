@@ -3,13 +3,13 @@
 use std::process::ExitStatusError;
 
 pub use poison_girl_this_is_b_wrapper_dev::{
+	B,
 	B::{X, Y},
 	Container, ReShape,
 };
 
 use {
 	core::{fmt::Debug, panic::Location},
-	poison_girl_this_is_b_wrapper_dev::B,
 	std::fmt::Display,
 };
 

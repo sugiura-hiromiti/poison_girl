@@ -1,6 +1,6 @@
 use {
 	crate::{
-		cli_interface::{CargoInvocation, Invocate},
+		cli_interface::{CargoInvocation, Invocate, RenderCargoInvocation},
 		decl_manage::crate_::PoisonGirlCrateChart,
 	},
 	poison_girl_dev_cargo::{Arch, Runtime},
@@ -60,22 +60,20 @@ impl TargetPolicy
 	}
 }
 
-// impl Invocate for TargetPolicy
-// {
-// 	type Out = CargoInvocation;
+impl RenderCargoInvocation for TargetPolicy
+{
+	fn render(&self,) -> CargoInvocation
+	{
+		let Some(tuple,) = self.target_spec() else {
+			return CargoInvocation::default();
+		};
 
-// 	fn invocate(self,) -> Self::Out
-// 	{
-// 		let Some(tuple,) = self.target_spec() else {
-// 			return CargoInvocation::default();
-// 		};
+		let mut cargo_args = vec!["--target".to_owned(), tuple];
+		if self.has_json_spec() {
+			cargo_args
+				.extend(["-Z".to_owned(), "json-target-spec".to_owned(),],);
+		}
 
-// 		let mut cargo_args = vec!["--target".to_owned(), tuple];
-// 		if self.has_json_spec() {
-// 			cargo_args
-// 				.extend(["-Z".to_owned(), "json-target-spec".to_owned(),],);
-// 		}
-
-// 		CargoInvocation::from_cargo_args(cargo_args,)
-// 	}
-// }
+		CargoInvocation::from_cargo_args(cargo_args,)
+	}
+}
