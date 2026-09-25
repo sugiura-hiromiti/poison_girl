@@ -1,5 +1,5 @@
 use {
-	crate::cli_interface::{CargoInvocation, Invocate, RenderCargoInvocation},
+	crate::cli_interface::{CargoInvocation, RenderCargoInvocation},
 	std::{collections::HashSet, hash_map},
 };
 
@@ -9,6 +9,10 @@ impl RenderCargoInvocation for BuildStdPolicies
 {
 	fn render(&self,) -> CargoInvocation
 	{
+		if self.0.is_empty() {
+			return CargoInvocation::default();
+		}
+
 		let build_std: Vec<_,> =
 			self.0.iter().map(BuildStdPolicy::as_ref,).collect();
 

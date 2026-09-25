@@ -34,7 +34,7 @@ impl CargoInvocationPlan
 		Self { chart, policy, }
 	}
 
-	fn resolve(self,) -> PoisonGirlB<Vec<CargoInvocation,>,>
+	pub fn resolve(self,) -> PoisonGirlB<Vec<CargoInvocation,>,>
 	{
 		self.execution_policies()?
 			.into_iter()
@@ -59,6 +59,7 @@ impl CargoInvocationPlan
 		invocation.extend(target.render(),);
 		invocation.extend(build_std.render(),);
 		invocation.extend(build_std_features.render(),);
+		invocation.extend(self.policy.render(),);
 
 		X(invocation,)
 	}

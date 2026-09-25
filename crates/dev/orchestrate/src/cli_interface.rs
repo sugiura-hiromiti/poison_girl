@@ -16,8 +16,7 @@ pub(crate) enum TargetKind
 {
 	Auto,
 	Lib,
-	Test,
-	Bin,
+	Tests,
 }
 
 /// `Policy` means what do we want to do
@@ -172,6 +171,19 @@ impl Policy
 	}
 }
 
+impl RenderCargoInvocation for Policy
+{
+	fn render(&self,) -> CargoInvocation
+	{
+		let mut invocation =
+			CargoInvocation::from_cargo_args(self.global.as_cargo_opt(),);
+		invocation.extend(CargoInvocation::from_cargo_args(
+			self.command.as_cargo_opt(),
+		),);
+		invocation
+	}
+}
+
 // impl AsCargoOpt for Policy
 // {
 // 	type Out = CargoInvocation;
@@ -237,12 +249,6 @@ impl CompileOpt for Policy
 	{
 		self.global.features.iter().map(|f| f.as_ref(),).collect()
 	}
-}
-
-pub trait Invocate
-{
-	type Out;
-	fn invocate(self,) -> Self::Out;
 }
 
 pub trait AsCargoEnv
@@ -749,7 +755,7 @@ mod tests
 			command: CliCommand::Build(Default::default(),),
 		};
 
-		let opt = policy.as_cargo_opt();
+		let opt = policy.render();
 
 		assert_eq!(
 			opt.into_cargo_args(),
@@ -773,7 +779,7 @@ mod tests
 			},),
 		};
 
-		let opt = policy.as_cargo_opt();
+		let opt = policy.render();
 
 		assert_eq!(
 			opt.into_cargo_args(),
@@ -793,7 +799,7 @@ mod tests
 	{
 		let policy = Policy::from_cmd(CliCommandDiscriminants::Fix,);
 
-		let opt = policy.as_cargo_opt();
+		let opt = policy.render();
 
 		assert_eq!(opt.into_cargo_args(), Vec::<String,>::new());
 		success!()
@@ -810,7 +816,7 @@ mod tests
 		],);
 		let policy = Policy::from_cli(cli,);
 
-		let opt = policy.as_cargo_opt();
+		let opt = policy.render();
 
 		assert_eq!(
 			opt.into_cargo_args(),
@@ -825,7 +831,7 @@ mod tests
 		let policy = Policy::from_cmd(CliCommandDiscriminants::Clippy,)
 			.with_clippy_custom_target_lib()?;
 
-		let opt = policy.as_cargo_opt();
+		let opt = policy.render();
 
 		assert_eq!(
 			opt.into_cargo_args(),
@@ -845,7 +851,7 @@ mod tests
 		let policy = Policy::from_cmd(CliCommandDiscriminants::Clippy,)
 			.with_clippy_host_tests()?;
 
-		let opt = policy.as_cargo_opt();
+		let opt = policy.render();
 
 		assert_eq!(
 			opt.into_cargo_args(),

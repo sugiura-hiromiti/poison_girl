@@ -35,9 +35,9 @@ impl TargetKind
 	fn target(&self,) -> B<&str, (),>
 	{
 		match self {
-			Self::Auto | Self::Bin => Y((),),
+			Self::Auto => Y((),),
 			Self::Lib => X("--lib",),
-			Self::Test => X("--test",),
+			Self::Tests => X("--tests",),
 		}
 	}
 }
