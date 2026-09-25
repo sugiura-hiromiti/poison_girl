@@ -1,7 +1,7 @@
 use {
 	crate::{
 		CliCommandDiscriminants, Policy,
-		cli_interface::CargoInvocation,
+		cli_interface::{CargoInvocation, TargetKind},
 		decl_manage::crate_::PoisonGirlCrateChart,
 		policy::{
 			build_std_features_policy::{
@@ -38,7 +38,7 @@ impl CargoInvocationPlan
 		self.execution_policies()?
 			.into_iter()
 			.map(|execution| self.resolve_one(execution,),)
-			.collect()
+			.try_collect()
 	}
 
 	fn resolve_one(
@@ -99,19 +99,25 @@ impl CargoInvocationPlan
 			.unwrap_or_default()
 	}
 
-	fn uses_custom_target(&self,) -> bool
+	fn uses_custom_target(&self, execution: &ExecutionPolicy,) -> bool
 	{
-		!matches!(self.target_runtime(), Runtime::Host)
+		!matches!(execution.runtime(), Runtime::Host)
 	}
 
-	pub(super) fn target_policy(&self,) -> TargetPolicy
+	pub(super) fn target_policy(
+		&self,
+		execution: &ExecutionPolicy,
+	) -> TargetPolicy
 	{
-		TargetPolicy::new(self.policy.arch(), self.target_runtime(),)
+		TargetPolicy::new(self.policy.arch(), execution.runtime(),)
 	}
 
-	pub(super) fn build_std_policies(&self,) -> BuildStdPolicies
+	pub(super) fn build_std_policies(
+		&self,
+		execution: &ExecutionPolicy,
+	) -> BuildStdPolicies
 	{
-		let policies = if self.uses_custom_target() {
+		let policies = if self.uses_custom_target(execution,) {
 			match self.chart {
 				PoisonGirlCrateChart::KERNEL => vec![BuildStdPolicy::Core],
 				PoisonGirlCrateChart::LOADER => vec![
@@ -130,14 +136,16 @@ impl CargoInvocationPlan
 
 	pub(super) fn build_std_features_policies(
 		&self,
+		execution: &ExecutionPolicy,
 	) -> BuildStdFeaturesPolicies
 	{
-		let policies =
-			if self.uses_custom_target() && self.chart.uses_custom_runtime() {
-				vec![BuildStdFeaturesPolicy::CompilerBuiltinsMem]
-			} else {
-				vec![]
-			};
+		let policies = if self.uses_custom_target(execution,)
+			&& self.chart.uses_custom_runtime()
+		{
+			vec![BuildStdFeaturesPolicy::CompilerBuiltinsMem]
+		} else {
+			vec![]
+		};
 
 		BuildStdFeaturesPolicies::from(policies,)
 	}
@@ -148,12 +156,22 @@ impl CargoInvocationPlan
 	{
 		if self.splits_clippy_targets() {
 			return X(vec![
-				self.policy.clone().with_clippy_custom_target_lib()?,
-				self.policy.clone().with_clippy_host_tests()?,
+				ExecutionPolicy::new(
+					self.build_target_runtime(),
+					TargetKind::Lib,
+				),
+				ExecutionPolicy::new(Runtime::Host, TargetKind::Test,),
 			],);
 		}
 
-		X(vec![self.policy.clone()],)
+		X(vec![ExecutionPolicy::new(
+			if self.command() == CliCommandDiscriminants::Test {
+				Runtime::Host
+			} else {
+				self.build_target_runtime()
+			},
+			TargetKind::Auto,
+		)],)
 	}
 
 	fn splits_clippy_targets(&self,) -> bool

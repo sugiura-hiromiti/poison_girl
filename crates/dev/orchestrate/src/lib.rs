@@ -1,4 +1,4 @@
-#![feature(hash_map_macro)]
+#![feature(hash_map_macro, iterator_try_collect)]
 
 use {
 	crate::decl_manage::{

@@ -11,6 +11,7 @@ use {
 };
 
 // refactor later
+#[derive(Clone, Copy,)]
 pub(crate) enum TargetKind
 {
 	Auto,
