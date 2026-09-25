@@ -13,6 +13,7 @@ use {
 // refactor later
 pub(crate) enum TargetKind
 {
+	Auto,
 	Lib,
 	Test,
 	Bin,
@@ -127,15 +128,6 @@ impl Policy
 
 		self.command = CliCommand::Clippy(args.with_host_tests(),);
 		X(self,)
-	}
-
-	pub(crate) fn clippy_uses_host_target(&self,) -> bool
-	{
-		let CliCommand::Clippy(args,) = self.command() else {
-			return false;
-		};
-
-		args.uses_host_target()
 	}
 
 	pub fn from_cmd(command: CliCommandDiscriminants,) -> Self

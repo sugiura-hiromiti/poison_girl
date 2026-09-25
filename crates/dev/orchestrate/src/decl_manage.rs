@@ -72,7 +72,7 @@ impl PoisonGirlCargoInterface
 		let chart = self.ws.as_chart();
 		let invocations = self
 			.invocation_plan()
-			.invocation_policies()?
+			.execution_policies()?
 			.into_iter()
 			.map(|p| {
 				let invocation_plan = CargoInvocationPlan::new(*chart, p,);

@@ -8,6 +8,7 @@ use {
 				BuildStdFeaturesPolicies, BuildStdFeaturesPolicy,
 			},
 			build_std_policy::{BuildStdPolicies, BuildStdPolicy},
+			execution_policy::ExecutionPolicy,
 			target_policy::TargetPolicy,
 		},
 	},
@@ -34,19 +35,24 @@ impl CargoInvocationPlan
 
 	fn resolve(self,) -> PoisonGirlB<Vec<CargoInvocation,>,>
 	{
-		let policies = self.invocation_policies()?;
-		policies.into_iter().map(|policy| self.resolve_one(policy,),).collect()
+		self.execution_policies()?
+			.into_iter()
+			.map(|execution| self.resolve_one(execution,),)
+			.collect()
 	}
 
-	fn resolve_one(&self, policy: Policy,) -> PoisonGirlB<CargoInvocation,>
+	fn resolve_one(
+		&self,
+		execution: ExecutionPolicy,
+	) -> PoisonGirlB<CargoInvocation,>
 	{
-		let target = todo!();
-		let build_std = todo!();
-		let build_std_features = todo!();
+		let target = self.target_policy(&execution,);
+		let build_std = self.build_std_policies(&execution,);
+		let build_std_features = self.build_std_features_policies(&execution,);
 
 		let mut invocation = CargoInvocation::default();
 
-		invocation.extend(policy,);
+		invocation.extend(execution,);
 		invocation.extend(package,);
 		invocation.extend(target,);
 		invocation.extend(build_std,);
@@ -74,21 +80,6 @@ impl CargoInvocationPlan
 	pub(super) fn command(&self,) -> CliCommandDiscriminants
 	{
 		self.policy.command_discriminant()
-	}
-
-	fn target_runtime(&self,) -> Runtime
-	{
-		if self.command() == CliCommandDiscriminants::Test
-			|| self.policy.clippy_uses_host_target()
-		{
-			return Runtime::Host;
-		}
-
-		match self.chart {
-			PoisonGirlCrateChart::KERNEL => Runtime::PoisonGirl,
-			PoisonGirlCrateChart::LOADER => Runtime::Efi,
-			_ => Runtime::Host,
-		}
 	}
 
 	fn build_target_runtime(&self,) -> Runtime
@@ -151,9 +142,9 @@ impl CargoInvocationPlan
 		BuildStdFeaturesPolicies::from(policies,)
 	}
 
-	pub(in crate::decl_manage) fn invocation_policies(
+	pub(in crate::decl_manage) fn execution_policies(
 		&self,
-	) -> PoisonGirlB<Vec<Policy,>,>
+	) -> PoisonGirlB<Vec<ExecutionPolicy,>,>
 	{
 		if self.splits_clippy_targets() {
 			return X(vec![
